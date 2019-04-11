@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <bean id="${moduleId}-cacheConfigEmitter"
+        class="de.acosix.alfresco.utility.common.spring.BeanDefinitionFromPropertiesPostProcessor">
+        <property name="enabledPropertyKeys">
+            <list>
+                <value>${moduleId}.core.enabled</value>
+                <value>${moduleId}.caches.enabled</value>
+            </list>
+        </property>
+        <property name="propertyPrefix" value="${moduleId}.caches" />
+        <property name="beanTypes">
+            <list>
+                <value>cacheFactory</value>
+                <value>lockStoreFactory</value>
+                <value>node</value>
+                <value>immutableEntityCache</value>
+            </list>
+        </property>
+        <property name="propertiesSource" ref="global-properties" />
+    </bean>
+
+    <bean id="${moduleId}-immutableEntityCacheValueTransformer" class="${project.artifactId}.cache.ImmutableEntityTransformer" />
+
+    <bean id="${moduleId}-nodeAspectsCacheValueTransformer" class="${project.artifactId}.cache.QNameSetTransformer">
+        <property name="qnameDAO" ref="qnameDAO" />
+    </bean>
+
+    <bean id="${moduleId}-nodePropertiesCacheValueTransformer" class="${project.artifactId}.cache.NodePropertiesTransformer">
+        <property name="qnameDAO" ref="qnameDAO" />
+        <property name="contentDataDAO" ref="contentDataDAO" />
+        <property name="dictionaryService" ref="dictionaryService" />
+    </bean>
+
+</beans>

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>de.acosix.alfresco.maven</groupId>
+        <artifactId>de.acosix.alfresco.maven.module.parent-6.0.7</artifactId>
+        <version>1.0.0.4-SNAPSHOT</version>
+    </parent>
+
+    <groupId>de.acosix.alfresco.ignite</groupId>
+    <artifactId>de.acosix.alfresco.ignite.parent</artifactId>
+    <version>1.0.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Alfresco Ignite - Parent</name>
+    <description>Addon providing an alternative caching solution and clustering framework based on Apache Ignite</description>
+
+    <properties>
+        <messages.path>acosix/ignite</messages.path>
+        <messages.packageId>acosix.ignite</messages.packageId>
+
+        <utility.version>1.0.3.0-SNAPSHOT</utility.version>
+        <ignite.version>2.7.0</ignite.version>
+        <surf.version>6.11</surf.version>
+
+        <common.artifactId>de.acosix.alfresco.ignite.common</common.artifactId>
+        <moduleId>acosix-ignite</moduleId>
+
+        <fabric8io.docker.version>0.28-SNAPSHOT</fabric8io.docker.version>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>acosix-nexus</id>
+            <url>https://acosix.de/nexus/content/groups/public</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>acosix-nexus</id>
+            <url>https://acosix.de/nexus/content/groups/public</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <distributionManagement>
+        <repository>
+            <id>acosix-nexus</id>
+            <url>http://acosix.de/nexus/content/repositories/releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>acosix-nexus</id>
+            <url>http://acosix.de/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-core</artifactId>
+                <version>${ignite.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.gridgain</groupId>
+                        <artifactId>ignite-shmem</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-web</artifactId>
+                <version>${ignite.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.tomcat</groupId>
+                        <artifactId>tomcat-servlet-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-slf4j</artifactId>
+                <version>${ignite.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-beans</artifactId>
+                <version>${spring.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context</artifactId>
+                <version>${spring.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-web</artifactId>
+                <version>${spring.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>${surf.groupId}</groupId>
+                <artifactId>spring-surf</artifactId>
+                <version>${surf.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.utility</groupId>
+                <artifactId>de.acosix.alfresco.utility.common</artifactId>
+                <version>${utility.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.utility</groupId>
+                <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+                <version>${utility.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.utility</groupId>
+                <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+                <version>${utility.version}</version>
+                <classifier>installable</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.utility</groupId>
+                <artifactId>de.acosix.alfresco.utility.share</artifactId>
+                <version>${utility.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.utility</groupId>
+                <artifactId>de.acosix.alfresco.utility.share</artifactId>
+                <version>${utility.version}</version>
+                <classifier>installable</classifier>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+    </build>
+
+    <modules>
+        <module>common</module>
+        <module>repository</module>
+        <module>share</module>
+    </modules>
+</project>

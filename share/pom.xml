@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>de.acosix.alfresco.ignite</groupId>
+        <artifactId>de.acosix.alfresco.ignite.parent</artifactId>
+        <version>1.0.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>de.acosix.alfresco.ignite.share</artifactId>
+    <name>Alfresco Ignite - Share Module</name>
+
+    <properties>
+
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>de.acosix.alfresco.ignite</groupId>
+            <artifactId>de.acosix.alfresco.ignite.common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.utility</groupId>
+            <artifactId>de.acosix.alfresco.utility.share</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.alfresco</groupId>
+            <artifactId>share</artifactId>
+            <classifier>classes</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>${surf.groupId}</groupId>
+            <artifactId>spring-surf</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>.gitkeep</exclude>
+                </excludes>
+            </resource>
+            <!-- the following are only for mapping source folders in Eclipse -->
+            <resource>
+                <directory>src/main/config</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/globalConfig</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/messages</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/site-webscripts</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/templates</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/webapp</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>.gitkeep</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
+
+        <plugins>
+
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-toolchains-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>de.acosix.maven</groupId>
+                <artifactId>i18n-resources-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.alfresco.maven.plugin</groupId>
+                <artifactId>alfresco-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>yuicompressor-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>de.acosix.maven</groupId>
+                <artifactId>jshint-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+            </plugin>
+
+        </plugins>
+
+    </build>
+
+</project>

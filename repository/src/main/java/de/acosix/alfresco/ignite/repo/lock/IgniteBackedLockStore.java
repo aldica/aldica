@@ -1,0 +1,44 @@
+/*
+ * Copyright 2016 - 2019 Acosix GmbH
+ */
+package de.acosix.alfresco.ignite.repo.lock;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.alfresco.repo.lock.mem.AbstractLockStore;
+import org.alfresco.repo.lock.mem.LockState;
+import org.alfresco.service.cmr.repository.NodeRef;
+import org.apache.ignite.IgniteCache;
+
+/**
+ * This class provides a lock store implementation backed by a local or distributed Ignite cache.
+ *
+ * @author Axel Faust
+ */
+public class IgniteBackedLockStore extends AbstractLockStore<CacheConcurrentMapFacade<NodeRef, LockState>>
+{
+
+    protected final IgniteCache<NodeRef, LockState> lockCache;
+
+    public IgniteBackedLockStore(final IgniteCache<NodeRef, LockState> lockCache)
+    {
+        super(new CacheConcurrentMapFacade<>(lockCache, NodeRef.class));
+        this.lockCache = lockCache;
+    }
+
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public Set<NodeRef> getNodes()
+    {
+        // need to override this as CacheConcurrentMapFacade does not support values()
+        final Set<NodeRef> nodes = new HashSet<>();
+        this.lockCache.iterator().forEachRemaining(entry -> {
+            nodes.add(entry.getKey());
+        });
+        return nodes;
+    }
+}

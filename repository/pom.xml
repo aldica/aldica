@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>de.acosix.alfresco.ignite</groupId>
+        <artifactId>de.acosix.alfresco.ignite.parent</artifactId>
+        <version>1.0.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>de.acosix.alfresco.ignite.repo</artifactId>
+    <name>Alfresco Ignite - Repository Module</name>
+
+    <properties>
+        <docker.tests.versionSpecificJavaOpts></docker.tests.versionSpecificJavaOpts>
+        <acosix.alfresco.client.version>0.1.0-SNAPSHOT</acosix.alfresco.client.version>
+    </properties>
+    
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>de.acosix.alfresco.rest.client</groupId>
+                <artifactId>de.acosix.alfresco.rest.client</artifactId>
+                <version>${acosix.alfresco.client.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.alfresco</groupId>
+            <artifactId>alfresco-repository</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.alfresco</groupId>
+                    <artifactId>alfresco-xmlfactory</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.ignite</groupId>
+            <artifactId>${common.artifactId}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.utility</groupId>
+            <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.utility</groupId>
+            <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+            <classifier>installable</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxb-provider</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson2-provider</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.rest.client</groupId>
+            <artifactId>de.acosix.alfresco.rest.client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>.gitkeep</exclude>
+                </excludes>
+            </resource>
+            <!-- the following are only for mapping source folders in Eclipse -->
+            <resource>
+                <directory>src/main/config</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/globalConfig</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/messages</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/webscripts</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/webapp</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <configuration>
+                        <sourceDirectory>src/test/docker</sourceDirectory>
+                        <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
+                        <volumes>
+                            <volume>
+                                <name>${moduleId}-repository-test-contentstore</name>
+                                <driver>local</driver>
+                            </volume>
+                        </volumes>
+                        <images>
+                            <image>
+                                <name>postgres:10.1</name>
+                                <alias>postgres</alias>
+                                <run>
+                                    <hostname>postgres</hostname>
+                                    <cmd>postgres -c max_connections=300 -c log_min_messages=LOG</cmd>
+                                    <network>
+                                        <mode>custom</mode>
+                                        <name>${moduleId}-test</name>
+                                        <alias>postgres</alias>
+                                    </network>
+                                </run>
+                            </image>
+                            <image>
+                                <name>${moduleId}-repository-test</name>
+                                <alias>repository-1</alias>
+                                <build>
+                                    <from>${docker.tests.repositoryBaseImage}</from>
+                                    <skip>${docker.tests.skipRepositoryImageBuild}</skip>
+                                    <assembly>
+                                        <targetDir>${docker.tests.repositoryWebappPath}</targetDir>
+                                        <descriptorRef>${docker.tests.repositoryDescriptorRef}</descriptorRef>
+                                        <descriptor>${docker.tests.repositoryDescriptor}</descriptor>
+                                        <escapeString>\</escapeString>
+                                    </assembly>
+                                </build>
+                                <run>
+                                    <!-- need to override skip as otherwise it could inherit from differen timage (position-based) from parent POM -->
+                                    <skip>false</skip>
+                                    <hostname>repository-1</hostname>
+                                    <env>
+                                        <JAVA_OPTS><![CDATA[
+                                            ${docker.tests.versionSpecificJavaOpts}
+                                            -Ddb.driver=org.postgresql.Driver
+                                            -Ddb.username=alfresco
+                                            -Ddb.password=alfresco
+                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                                            -Dsolr.host=search
+                                            -Dsolr.port=${docker.tests.searchPort}
+                                            -Dsolr.secureComms=none
+                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
+                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
+                                            -Dcsrf.filter.enabled=false
+                                            -Dacosix-ignite.core.caches.enableRemoteSupport=true
+                                            -Dacosix-ignite.webSessionCache.enabled=true
+                                            -Dacosix-ignite.core.storage.defaultStorageRegion.maxSize=1073741824
+                                            -Dmessaging.subsystem.autoStart=false
+                                            -Xms2g -Xmx2g
+                                            -XX:+UseG1GC
+                                            -XX:+ParallelRefProcEnabled
+                                            -XX:+UseStringDeduplication
+                                            -XX:+ScavengeBeforeFullGC
+                                            -XX:+DisableExplicitGC
+                                            -XX:+AlwaysPreTouch
+                                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                                            -DIGNITE_QUIET=true
+                                            -DIGNITE_NO_ASCII=true
+                                            -DIGNITE_UPDATE_NOTIFIER=false
+                                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                                        ]]></JAVA_OPTS>
+                                    </env>
+                                    <ports>
+                                        <port>8082:8080</port>
+                                    </ports>
+                                    <network>
+                                        <mode>custom</mode>
+                                        <name>${moduleId}-test</name>
+                                        <alias>repository-1</alias>
+                                    </network>
+                                    <volumes>
+                                        <bind>
+                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
+                                        </bind>
+                                    </volumes>
+                                    <dependsOn>
+                                        <container>postgres</container>
+                                    </dependsOn>
+                                    <wait>
+                                        <http>
+                                            <url>http://localhost:8082/alfresco/favicon.ico</url>
+                                            <method>GET</method>
+                                            <status>200</status>
+                                        </http>
+                                        <time>${docker.tests.repositoryStartupWaitTime}</time>
+                                    </wait>
+                                </run>
+                            </image>
+                            <image>
+                                <name>${moduleId}-repository-test</name>
+                                <alias>repository-2</alias>
+                                <build>
+                                    <!-- no need to build -->
+                                    <skip>true</skip>
+                                </build>
+                                <run>
+                                    <!-- need to override skip as otherwise it could inherit from different image (position-based) from parent POM -->
+                                    <skip>false</skip>
+                                    <hostname>repository-2</hostname>
+                                    <env>
+                                        <JAVA_OPTS><![CDATA[
+                                            ${docker.tests.versionSpecificJavaOpts}
+                                            -Ddb.driver=org.postgresql.Driver
+                                            -Ddb.username=alfresco
+                                            -Ddb.password=alfresco
+                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                                            -Dsolr.host=search
+                                            -Dsolr.port=${docker.tests.searchPort}
+                                            -Dsolr.secureComms=none
+                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
+                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
+                                            -Dcsrf.filter.enabled=false
+                                            -Dacosix-ignite.core.caches.enableRemoteSupport=true
+                                            -Dacosix-ignite.webSessionCache.enabled=true
+                                            -Dacosix-ignite.core.storage.defaultStorageRegion.maxSize=1073741824
+                                            -Dmessaging.subsystem.autoStart=false
+                                            -Xms2g -Xmx2g
+                                            -XX:+UseG1GC
+                                            -XX:+ParallelRefProcEnabled
+                                            -XX:+UseStringDeduplication
+                                            -XX:+ScavengeBeforeFullGC
+                                            -XX:+DisableExplicitGC
+                                            -XX:+AlwaysPreTouch
+                                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                                            -DIGNITE_QUIET=true
+                                            -DIGNITE_NO_ASCII=true
+                                            -DIGNITE_UPDATE_NOTIFIER=false
+                                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                                        ]]></JAVA_OPTS>
+                                    </env>
+                                    <ports>
+                                        <port>8182:8080</port>
+                                    </ports>
+                                    <network>
+                                        <mode>custom</mode>
+                                        <name>${moduleId}-test</name>
+                                        <alias>repository-2</alias>
+                                    </network>
+                                    <volumes>
+                                        <bind>
+                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
+                                        </bind>
+                                    </volumes>
+                                    <dependsOn>
+                                        <container>postgres</container>
+                                    </dependsOn>
+                                    <wait>
+                                        <http>
+                                            <url>http://localhost:8182/alfresco/favicon.ico</url>
+                                            <method>GET</method>
+                                            <status>200</status>
+                                        </http>
+                                        <time>${docker.tests.repositoryStartupWaitTime}</time>
+                                    </wait>
+                                </run>
+                            </image>
+                        </images>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-toolchains-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>de.acosix.maven</groupId>
+                <artifactId>i18n-resources-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.alfresco.maven.plugin</groupId>
+                <artifactId>alfresco-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>de.acosix.maven</groupId>
+                <artifactId>jshint-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+            </plugin>
+
+        </plugins>
+
+    </build>
+    
+    <profiles>
+        <profile>
+            <id>alfresco-6.1-it</id>
+            <properties>
+                <docker.tests.repositoryBaseImage>alfresco/alfresco-content-repository-community:6.1.2-ga</docker.tests.repositoryBaseImage>
+                <docker.tests.versionSpecificJavaOpts><![CDATA[
+                    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+                    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+                    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                    --illegal-access=permit
+                ]]></docker.tests.versionSpecificJavaOpts>
+            </properties>
+        </profile>
+    </profiles>
+
+</project>

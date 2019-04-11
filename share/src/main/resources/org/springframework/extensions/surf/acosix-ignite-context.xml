@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--  Copyright 2016 - 2019 Acosix GmbH -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <!-- included here to ensure this is loaded as soon as possible before other lifecycle beans -->
+    <bean id="Lifecycle.${moduleId}.core.grid" abstract="true" class="${common.artifactId}.lifecycle.SpringIgniteLifecycleBean">
+        <property name="enabled" value="\${${moduleId}.core.enabled}" />
+        <property name="configuration" ref="Configuration.${moduleId}.core" />
+    </bean>
+    
+</beans>

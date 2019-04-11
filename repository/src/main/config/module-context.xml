@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <bean class="org.alfresco.i18n.ResourceBundleBootstrapComponent">
+        <property name="resourceBundles">
+            <list>
+                <value>alfresco.messages.${messages.packageId}.common</value>
+            </list>
+        </property>
+    </bean>
+
+    <import resource="classpath:alfresco/module/${moduleId}/context/core-instance-context.xml" />
+    <import resource="classpath:alfresco/module/${moduleId}/context/caches-context.xml" />
+
+</beans>

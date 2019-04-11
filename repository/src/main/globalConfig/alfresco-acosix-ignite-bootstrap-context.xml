@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <!-- included here to ensure order of lifecycle bean before others in bootstrap-context.xml (patchExecuter is minimal dependency to ensure schema is up-to-date) -->
+    <bean id="Lifecycle.${moduleId}.core" abstract="true" class="${common.artifactId}.lifecycle.SpringIgniteLifecycleBean" depends-on="patchExecuter">
+        <property name="enabled" value="\${${moduleId}.core.enabled}" />
+        <property name="configuration" ref="Configuration.${moduleId}.core" />
+    </bean>
+
+</beans>

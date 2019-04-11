@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<webscript>
+    <shortname>Ignite caches</shortname>
+    <description>Display status / metrics for Ignite caches</description>
+    <url>/acosix/admin/ignite-caches</url>
+    <family>AdminConsole</family>
+    <format default="html" />
+    <negotiate accept="text/html">html</negotiate>
+    <negotiate accept="application/json">json</negotiate>
+    <authentication>admin</authentication>
+    <lifecycle>internal</lifecycle>
+    <transaction allow="readonly">required</transaction>
+</webscript>

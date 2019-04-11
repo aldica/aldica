@@ -1,0 +1,186 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <bean id="${moduleId}-predefinedBeansEnabler"
+        class="de.acosix.alfresco.utility.common.spring.BeanDeAbstractifyingBeanDefinitionRegistryPostProcessor">
+        <property name="enabledPropertyKeys">
+            <list>
+                <value>${moduleId}.core.enabled</value>
+            </list>
+        </property>
+        <property name="propertiesSource" ref="global-properties" />
+        <property name="targetBeanNamePattern" value="^[A-Z][a-zA-Z]+\.${moduleId}\..+$" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core" abstract="true" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="discoverySpi" ref="DiscoverySPI.${moduleId}.core" />
+        <property name="addressResolver" ref="AddressResolver.${moduleId}.core" />
+        <property name="communicationSpi" ref="CommunicationSPI.${moduleId}.core" />
+        <property name="collisionSpi" ref="CollisionSPI.${moduleId}.core" />
+        <property name="gridLogger" ref="Misc.${moduleId}.core.logger" />
+        <property name="igniteInstanceName" value="\${${moduleId}.core.name}" />
+        <property name="consistentId" value="\${${moduleId}.core.local.id}" />
+        <property name="localHost" value="\${${moduleId}.core.local.host}" />
+        <property name="metricsExpireTime" value="1200000" />
+        <property name="metricsLogFrequency" value="600000" />
+        <property name="peerClassLoadingEnabled" value="false" />
+        <property name="connectorConfiguration">
+            <null />
+        </property>
+        <property name="failureDetectionTimeout" value="\${${moduleId}.core.failureDetectionTimeout}" />
+        <property name="systemWorkerBlockedTimeout" value="\${${moduleId}.core.systemWorkerBlockedTimeout}" />
+        <property name="segmentationPolicy" value="NOOP" />
+        <property name="includeEventTypes">
+            <list>
+                <value>10</value>
+                <value>11</value>
+                <value>12</value>
+                <value>13</value>
+                <value>14</value>
+                <value>80</value>
+                <value>81</value>
+                <value>82</value>
+                <value>83</value>
+                <value>86</value>
+                <value>98</value>
+                <value>99</value>
+                <value>100</value>
+            </list>
+        </property>
+        <property name="pluginConfigurations">
+            <list>
+                <ref bean="PluginConfiguration.${moduleId}.core.security" />
+            </list>
+        </property>
+
+        <property name="publicThreadPoolSize" value="\${${moduleId}.core.publicThreadPoolSize}" />
+        <property name="serviceThreadPoolSize" value="\${${moduleId}.core.serviceThreadPoolSize}" />
+        <property name="systemThreadPoolSize" value="\${${moduleId}.core.systemThreadPoolSize}" />
+        <property name="asyncCallbackPoolSize" value="\${${moduleId}.core.asyncCallbackThreadPoolSize}" />
+        <property name="managementThreadPoolSize" value="\${${moduleId}.core.managementThreadPoolSize}" />
+        <property name="peerClassLoadingThreadPoolSize" value="\${${moduleId}.core.peerClassLoadingThreadPoolSize}" />
+        <property name="igfsThreadPoolSize" value="\${${moduleId}.core.igfsThreadPoolSize}" />
+        <property name="dataStreamerThreadPoolSize" value="\${${moduleId}.core.dataStreamerThreadPoolSize}" />
+        <property name="utilityCachePoolSize" value="\${${moduleId}.core.utilityCacheThreadPoolSize}" />
+        <property name="queryThreadPoolSize" value="\${${moduleId}.core.queryThreadPoolSize}" />
+        <property name="rebalanceThreadPoolSize" value="\${${moduleId}.core.rebalanceThreadPoolSize}" />
+
+        <property name="timeServerPortBase" value="\${${moduleId}.core.local.time.port}" />
+        <property name="timeServerPortRange" value="\${${moduleId}.core.local.time.portRange}" />
+
+        <property name="cacheConfiguration">
+            <list>
+                <ref bean="Configuration.${moduleId}.core.webSessionCache" />
+            </list>
+        </property>
+        <property name="dataStorageConfiguration" ref="Configuration.${moduleId}.core.storage" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.storage" abstract="true" class="org.apache.ignite.configuration.DataStorageConfiguration">
+        <property name="defaultDataRegionConfiguration" ref="Configuration.${moduleId}.core.storage.defaultDataRegion" />
+
+        <property name="pageSize" value="\${${moduleId}.core.storage.pageSize}" />
+        <property name="systemRegionInitialSize" value="\${${moduleId}.core.storage.systemInitialSize}" />
+        <property name="systemRegionMaxSize" value="\${${moduleId}.core.storage.systemMaxSize}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.storage.dataRegionBeanEmitter"
+        class="${project.artifactId}.spring.DataRegionBeanDefinitionEmitter">
+        <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
+        <property name="propertyPrefix" value="${moduleId}.core.region." />
+        <property name="storageBeanDefinitionName">
+            <idref bean="Configuration.${moduleId}.core.storage" />
+        </property>
+        <property name="dataRegionBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.storage.region." />
+        <property name="instanceNameProperty" value="${moduleId}.core.name" />
+        <property name="propertiesSource" ref="global-properties" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.storage.defaultDataRegion" abstract="true"
+        class="org.apache.ignite.configuration.DataRegionConfiguration">
+        <property name="name" value="\${${moduleId}.core.name}.defaultDataRegion" />
+        <property name="initialSize" value="\${${moduleId}.core.storage.defaultStorageRegion.initialSize}" />
+        <property name="maxSize" value="\${${moduleId}.core.storage.defaultStorageRegion.maxSize}" />
+        <property name="metricsEnabled" value="true" />
+
+        <property name="swapPath" value="\${${moduleId}.core.storage.defaultStorageRegion.swapPath}" />
+        <property name="pageEvictionMode" value="RANDOM_2_LRU" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.webSessionCache" abstract="true"
+        class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="evictionPolicyFactory" ref="Configuration.${moduleId}.core.webSessionCache.evictionPolicyFactory" />
+        <property name="name" value="\${${moduleId}.webSessionCache.cacheName}" />
+        <property name="cacheMode" value="\${${moduleId}.webSessionCache.cacheMode}" />
+        <property name="backups" value="\${${moduleId}.webSessionCache.backups}" />
+        <property name="onheapCacheEnabled" value="true" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.webSessionCache.evictionPolicyFactory" abstract="true"
+        class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory">
+        <property name="maxSize" value="\${${moduleId}.webSessionCache.maxSize}" />
+    </bean>
+
+    <bean id="DiscoverySPI.${moduleId}.core" abstract="true" class="${common.artifactId}.discovery.CredentialsAwareTcpDiscoverySpi">
+        <property name="ipFinder" ref="DiscoverySPI.${moduleId}.core.MemberFinder" />
+        <property name="credentials" ref="DiscoverySPI.${moduleId}.core.credentials" />
+
+        <property name="localPort" value="\${${moduleId}.core.local.disco.port}" />
+        <property name="localPortRange" value="\${${moduleId}.core.local.disco.portRange}" />
+        <property name="joinTimeout" value="\${${moduleId}.core.local.disco.joinTimeout}" />
+        <property name="ackTimeout" value="\${${moduleId}.core.local.disco.ackTimeout}" />
+        <property name="socketTimeout" value="\${${moduleId}.core.local.disco.socketTimeout}" />
+        <property name="networkTimeout" value="\${${moduleId}.core.local.disco.networkTimeout}" />
+    </bean>
+
+    <bean id="DiscoverySPI.${moduleId}.core.MemberFinder" abstract="true"
+        class="${project.artifactId}.discovery.MemberTcpDiscoveryIpFinder">
+        <property name="transactionService" ref="TransactionService" />
+        <property name="attributeService" ref="AttributeService" />
+        <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
+    </bean>
+
+    <bean id="DiscoverySPI.${moduleId}.core.credentials" abstract="true" class="org.apache.ignite.plugin.security.SecurityCredentials">
+        <property name="login" value="\${${moduleId}.core.login}" />
+        <property name="password" value="\${${moduleId}.core.password}" />
+    </bean>
+
+    <bean id="AddressResolver.${moduleId}.core" abstract="true" class="${common.artifactId}.discovery.GridAddressResolutionManager">
+        <property name="configuration" ref="Configuration.${moduleId}.core" />
+        <property name="externalHost" value="\${${moduleId}.core.public.host}" />
+        <property name="externalDiscoPortBase" value="\${${moduleId}.core.public.disco.port}" />
+        <property name="externalCommPortBase" value="\${${moduleId}.core.public.comm.port}" />
+        <property name="externalTimePortBase" value="\${${moduleId}.core.public.time.port}" />
+    </bean>
+
+    <bean id="CommunicationSPI.${moduleId}.core" abstract="true" class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+        <property name="localPort" value="\${${moduleId}.core.local.comm.port}" />
+        <property name="localPortRange" value="\${${moduleId}.core.local.comm.portRange}" />
+
+        <property name="connectTimeout" value="\${${moduleId}.core.local.comm.connectTimeout}" />
+        <property name="maxConnectTimeout" value="\${${moduleId}.core.local.comm.maxConnectTimeout}" />
+        <property name="socketWriteTimeout" value="\${${moduleId}.core.local.comm.socketWriteTimeout}" />
+        <property name="connectionsPerNode" value="\${${moduleId}.core.local.comm.connectionsPerNode}" />
+        <property name="filterReachableAddresses" value="\${${moduleId}.core.local.comm.filterReachableAddresses}" />
+
+        <property name="messageQueueLimit" value="\${${moduleId}.core.local.comm.messageQueueLimit}" />
+    </bean>
+
+    <bean id="CollisionSPI.${moduleId}.core" abstract="true" class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi" />
+
+    <bean id="PluginConfiguration.${moduleId}.core.security" abstract="true"
+        class="${common.artifactId}.plugin.SimpleSecurityPluginConfiguration">
+        <property name="enabled" value="true" />
+        <property name="allowedNodeCredentials">
+            <list>
+                <ref bean="DiscoverySPI.${moduleId}.core.credentials" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="Misc.${moduleId}.core.logger" abstract="true" class="org.apache.ignite.logger.slf4j.Slf4jLogger" />
+</beans>

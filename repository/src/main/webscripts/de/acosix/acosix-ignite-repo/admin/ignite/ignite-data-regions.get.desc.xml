@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<webscript>
+    <shortname>Ignite data regions</shortname>
+    <description>Display status / metrics for Ignite data regions</description>
+    <url>/acosix/admin/ignite-data-regions</url>
+    <family>AdminConsole</family>
+    <format default="html">argument</format>
+    <authentication>admin</authentication>
+    <lifecycle>internal</lifecycle>
+    <transaction allow="readonly">required</transaction>
+</webscript>
