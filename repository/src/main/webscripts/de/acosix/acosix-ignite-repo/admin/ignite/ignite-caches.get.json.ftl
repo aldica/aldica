@@ -1,4 +1,6 @@
-<#-- Copyright 2016 - 2019 Acosix GmbH --><#compress>
+<#-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. --><#compress>
 <#setting locale="en"><#-- need to make sure we use this locale for proper number formatting -->
 <#escape x as jsonUtils.encodeJSONString(x)>
 {

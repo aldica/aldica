@@ -1,6 +1,6 @@
-/*
- * Copyright 2016 - 2019 Acosix GmbH
- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package de.acosix.alfresco.ignite.common.plugin;
 
 import java.io.Serializable;
@@ -34,21 +34,33 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
     @Override
     public String name()
     {
-        return "SimpleSecurityPlugin (acosix-ignite)";
+        return "SimpleSecurityPlugin (alfresco-community-open-grid)";
     }
 
+    /**
+     *
+     * {@inheritDoc}
+     */
     @Override
     public String version()
     {
         return "1.0.0.0";
     }
 
+    /**
+     *
+     * {@inheritDoc}
+     */
     @Override
     public String copyright()
     {
-        return "Copyright 2016 - 2019 Acosix GmbH";
+        return "Copyright 2019 Acosix GmbH, Copyright 2019 MAGENTA ApS";
     }
 
+    /**
+     *
+     * {@inheritDoc}
+     */
     @Override
     public <T extends IgnitePlugin> T plugin()
     {

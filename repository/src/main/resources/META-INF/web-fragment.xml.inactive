@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
 <web-fragment xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
     xsi:schemaLocation="http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd" id="WebAppFragment_ID" version="3.0">
 
@@ -15,13 +17,13 @@
     <!-- this file is basically just a sample for configuration to put into web.xml to use web session caching -->
 
     <filter>
-        <description>Acosix Ignite - Web Session Cache Filter</description>
-        <filter-name>AcosixIgniteWebSessionCacheFilter</filter-name>
+        <description>${project.longName} - Web Session Cache Filter</description>
+        <filter-name>${project.longNameNoWs}WebSessionCacheFilter</filter-name>
         <filter-class>${common.artifactId}.web.GlobalConfigAwareWebSessionFilter</filter-class>
     </filter>
 
     <filter-mapping>
-        <filter-name>AcosixIgniteWebSessionCacheFilter</filter-name>
+        <filter-name>${project.longNameNoWs}WebSessionCacheFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 </web-fragment>

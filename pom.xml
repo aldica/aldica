@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright 2016 - 2019 Acosix GmbH -->
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -10,47 +12,78 @@
         <version>1.0.0.4-SNAPSHOT</version>
     </parent>
 
+    <!-- TODO Refactor Maven coordinates once available / stable name has been found -->
+    <!-- Note: com.github.acog was intended as potential name, but an account named "ACOG" already exists (https://github.com/ACOG) though apparently completely inactive -->
     <groupId>de.acosix.alfresco.ignite</groupId>
     <artifactId>de.acosix.alfresco.ignite.parent</artifactId>
     <version>1.0.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Alfresco Ignite - Parent</name>
-    <description>Addon providing an alternative caching solution and clustering framework based on Apache Ignite</description>
+    <name>Alfresco Community Open Grid - Parent</name>
+    <description>Addon providing distributed caching and data grid capabilities to Alfresco Content Services and Share</description>
+
+    <!-- temporary details pending completion of open sourcing process -->
+    <url>https://github.com/AFaust/alfresco-community-open-grid</url>
+    
+    <licenses>
+        <license>
+            <name>Mozilla Public License, Version 2.0</name>
+            <url>https://www.mozilla.org/en-US/MPL/2.0/</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:git@github.com:AFaust/alfresco-community-open-grid.git</connection>
+        <developerConnection>scm:git:git@github.com:AFaust/alfresco-community-open-grid.git</developerConnection>
+        <url>git@github.com:AFaust/alfresco-community-open-grid.git</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>AFaust</id>
+            <name>Axel Faust</name>
+            <email>axel.faust@acosix.de</email>
+            <organization>Acosix GmbH</organization>
+            <roles>
+                <role>Founder</role>
+                <role>Architect</role>
+                <role>Developer</role>
+            </roles>
+            <properties>
+                <twitter>twitter.com/ReluctantBird83</twitter>
+            </properties>
+        </developer>
+        
+        <!-- TODO Add details of Magenta Apps collaborators -->
+    </developers>
 
     <properties>
-        <messages.path>acosix/ignite</messages.path>
-        <messages.packageId>acosix.ignite</messages.packageId>
+        <!-- TODO Refactor once available / stable name has been found -->
+        <messages.path>acog</messages.path>
+        <messages.packageId>acog</messages.packageId>
+        <moduleId>acog</moduleId>
+        
+        <project.longName>Alfresco Community Open Grid</project.longName>
+        <project.longNameNoWs>AlfrescoCommunityOpenGrid</project.longNameNoWs>
 
-        <utility.version>1.0.3.0-SNAPSHOT</utility.version>
-        <ignite.version>2.7.0</ignite.version>
-        <surf.version>6.11</surf.version>
-
+        <!-- TODO Refactor Maven coordinates once available / stable name has been found -->
         <common.artifactId>de.acosix.alfresco.ignite.common</common.artifactId>
-        <moduleId>acosix-ignite</moduleId>
+
+        <acosix.utility.version>1.0.3.0-SNAPSHOT</acosix.utility.version>
+        <apache.ignite.version>2.7.0</apache.ignite.version>
 
         <fabric8io.docker.version>0.28-SNAPSHOT</fabric8io.docker.version>
     </properties>
 
     <repositories>
         <repository>
-            <id>acosix-nexus</id>
-            <url>https://acosix.de/nexus/content/groups/public</url>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
         </repository>
     </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>acosix-nexus</id>
-            <url>https://acosix.de/nexus/content/groups/public</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
 
     <distributionManagement>
         <repository>
@@ -68,7 +101,7 @@
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-core</artifactId>
-                <version>${ignite.version}</version>
+                <version>${apache.ignite.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.gridgain</groupId>
@@ -80,7 +113,7 @@
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-web</artifactId>
-                <version>${ignite.version}</version>
+                <version>${apache.ignite.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.tomcat</groupId>
@@ -92,7 +125,7 @@
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-slf4j</artifactId>
-                <version>${ignite.version}</version>
+                <version>${apache.ignite.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -102,51 +135,23 @@
             </dependency>
 
             <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-beans</artifactId>
-                <version>${spring.version}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-context</artifactId>
-                <version>${spring.version}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-                <version>${spring.version}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>${surf.groupId}</groupId>
-                <artifactId>spring-surf</artifactId>
-                <version>${surf.version}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
                 <groupId>de.acosix.alfresco.utility</groupId>
                 <artifactId>de.acosix.alfresco.utility.common</artifactId>
-                <version>${utility.version}</version>
+                <version>${acosix.utility.version}</version>
                 <scope>provided</scope>
             </dependency>
 
             <dependency>
                 <groupId>de.acosix.alfresco.utility</groupId>
                 <artifactId>de.acosix.alfresco.utility.repo</artifactId>
-                <version>${utility.version}</version>
+                <version>${acosix.utility.version}</version>
                 <scope>provided</scope>
             </dependency>
 
             <dependency>
                 <groupId>de.acosix.alfresco.utility</groupId>
                 <artifactId>de.acosix.alfresco.utility.repo</artifactId>
-                <version>${utility.version}</version>
+                <version>${acosix.utility.version}</version>
                 <classifier>installable</classifier>
                 <scope>test</scope>
             </dependency>
@@ -154,14 +159,14 @@
             <dependency>
                 <groupId>de.acosix.alfresco.utility</groupId>
                 <artifactId>de.acosix.alfresco.utility.share</artifactId>
-                <version>${utility.version}</version>
+                <version>${acosix.utility.version}</version>
                 <scope>provided</scope>
             </dependency>
 
             <dependency>
                 <groupId>de.acosix.alfresco.utility</groupId>
                 <artifactId>de.acosix.alfresco.utility.share</artifactId>
-                <version>${utility.version}</version>
+                <version>${acosix.utility.version}</version>
                 <classifier>installable</classifier>
                 <scope>test</scope>
             </dependency>
