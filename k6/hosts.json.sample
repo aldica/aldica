@@ -1,0 +1,16 @@
+{
+    "default" : {
+        "protocol" : "http",
+        "host" : "localhost",
+        "port" : "80",
+        "rootContext" : "/alfresco"
+    },
+    "fineGrained" : {
+        "clusterNode1" : {
+            "port" : "8180"
+        },
+        "clusterNode2" : {
+            "port" : "8280"
+        }
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "admin" : {
+        "default" : {
+            "userId" : "admin",
+            "password" : "admin"
+        },
+        "fineGrained" : {
+            "clusterNode1" : {
+                
+            },
+            "clusterNode2" : {
+                
+            }
+        }
+    }
+}
