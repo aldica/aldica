@@ -255,6 +255,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
             // old behaviour was to always invalidate on put - keep as long as no override has been configured
             final boolean alwaysInvalidateOnPut = Boolean
                     .parseBoolean(this.getProperty(cacheName, "ignite.forceInvalidateOnPut", "forceInvalidateOnPut", "true"));
+            final boolean allowValueSentinels = Boolean
+                    .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
 
             switch (cacheType)
             {
@@ -266,11 +268,11 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                     break;
                 case CACHE_TYPE_INVALIDATING:
                     cache = this.createLocalCache(grid, cacheName);
-                    cache = new InvalidatingCacheFacade<>(cache, cacheName, grid, alwaysInvalidateOnPut);
+                    cache = new InvalidatingCacheFacade<>(cacheName, cache, grid, alwaysInvalidateOnPut, allowValueSentinels);
                     break;
                 case CACHE_TYPE_INVALIDATING_DEFAULT_SIMPLE:
                     cache = this.createLocalDefaultSimpleCache(cacheName);
-                    cache = new InvalidatingCacheFacade<>(cache, cacheName, grid, alwaysInvalidateOnPut);
+                    cache = new InvalidatingCacheFacade<>(cacheName, cache, grid, alwaysInvalidateOnPut, allowValueSentinels);
                     break;
                 case CACHE_TYPE_ALFRESCO_FULLY_DISTRIBUTED:
                 case CACHE_TYPE_PARTITIONED:
@@ -361,8 +363,11 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         this.processMemoryConfig(cacheName, cacheConfig);
         this.processExpiryPolicy(cacheName, cacheConfig);
 
+        final boolean allowValueSentinels = Boolean
+                .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
+
         final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(backingCache);
+        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(backingCache, allowValueSentinels);
         return localCache;
     }
 
@@ -393,8 +398,12 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         this.processExpiryPolicy(cacheName, cacheConfig);
         this.processNearCache(cacheName, cacheConfig);
 
+        final boolean allowValueSentinels = Boolean
+                .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
+
         final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(this.instanceName, backingCache);
+        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(this.instanceName, backingCache,
+                allowValueSentinels);
         return localCache;
     }
 
@@ -413,8 +422,11 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         this.processMemoryConfig(cacheName, cacheConfig);
         this.processExpiryPolicy(cacheName, cacheConfig);
 
+        final boolean allowValueSentinels = Boolean
+                .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
+
         final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(backingCache);
+        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(backingCache, allowValueSentinels);
         return localCache;
     }
 
