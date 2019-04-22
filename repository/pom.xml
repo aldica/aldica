@@ -192,9 +192,9 @@
                                             -Dsolr.base.url=${docker.tests.searchBaseUrl}
                                             -Dindex.subsystem.name=${docker.tests.searchSubsystem}
                                             -Dcsrf.filter.enabled=false
-                                            -Dacosix-ignite.core.caches.enableRemoteSupport=true
-                                            -Dacosix-ignite.webSessionCache.enabled=true
-                                            -Dacosix-ignite.core.storage.defaultStorageRegion.maxSize=1073741824
+                                            -D${moduleId}.core.caches.enableRemoteSupport=true
+                                            -D${moduleId}.webSessionCache.enabled=true
+                                            -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
                                             -Dmessaging.subsystem.autoStart=false
                                             -Xms2g -Xmx2g
                                             -XX:+UseG1GC
@@ -260,9 +260,9 @@
                                             -Dsolr.base.url=${docker.tests.searchBaseUrl}
                                             -Dindex.subsystem.name=${docker.tests.searchSubsystem}
                                             -Dcsrf.filter.enabled=false
-                                            -Dacosix-ignite.core.caches.enableRemoteSupport=true
-                                            -Dacosix-ignite.webSessionCache.enabled=true
-                                            -Dacosix-ignite.core.storage.defaultStorageRegion.maxSize=1073741824
+                                            -D${moduleId}.core.caches.enableRemoteSupport=true
+                                            -D${moduleId}.webSessionCache.enabled=true
+                                            -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
                                             -Dmessaging.subsystem.autoStart=false
                                             -Xms2g -Xmx2g
                                             -XX:+UseG1GC
