@@ -51,12 +51,12 @@
 
         <dependency>
             <groupId>de.acosix.alfresco.utility</groupId>
-            <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
         </dependency>
 
         <dependency>
             <groupId>de.acosix.alfresco.utility</groupId>
-            <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
             <classifier>installable</classifier>
         </dependency>
 

@@ -38,7 +38,7 @@
 
         <dependency>
             <groupId>de.acosix.alfresco.utility</groupId>
-            <artifactId>de.acosix.alfresco.utility.share</artifactId>
+            <artifactId>de.acosix.alfresco.utility.core.share</artifactId>
         </dependency>
 
         <dependency>

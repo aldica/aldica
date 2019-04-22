@@ -55,7 +55,7 @@
             <outputDirectory>WEB-INF/lib</outputDirectory>
             <includes>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.common:*</include>
-                <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.repo:jar:installable:*</include>
+                <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo:jar:installable:*</include>
             </includes>
             <scope>test</scope>
         </dependencySet>
