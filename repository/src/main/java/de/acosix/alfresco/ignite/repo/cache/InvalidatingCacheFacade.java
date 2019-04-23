@@ -120,7 +120,7 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
                 @SuppressWarnings("unchecked")
                 final K typedKey = (K) key;
                 final V typedValue = this.backingCache.get(typedKey);
-                if (VALUE_NOT_FOUND.equals(typedValue))
+                if (VALUE_NOT_FOUND.equals(typedValue) || VALUE_NULL.equals(typedValue))
                 {
                     this.backingCache.remove(typedKey);
                 }
