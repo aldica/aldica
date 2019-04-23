@@ -30,6 +30,8 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
     // value copied from EntityLookupCache (not accessible there)
     private static final Serializable VALUE_NOT_FOUND = "@@VALUE_NOT_FOUND@@";
 
+    private final Logger instanceLogger;
+
     protected final SimpleCache<K, V> backingCache;
 
     protected final String cacheName;
@@ -82,8 +84,11 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
         this.valueNotFoundInvalidationTopic = cacheName + "-valueNotFoundInvalidate";
         this.bulkInvalidationTopic = cacheName + "-bulkInvalidate";
 
+        this.instanceLogger = LoggerFactory.getLogger("de.acosix.alfresco.ignite.repo.cache.SimpleCacheInstance." + cacheName);
+
         grid.message().localListen(this.invalidationTopic, (uuid, key) -> {
             LOGGER.debug("Received regular invalidation message on topic {} for {}", this.invalidationTopic, key);
+            this.instanceLogger.debug("Received regular invalidation message for {}", key);
             @SuppressWarnings("unchecked")
             final K typedKey = (K) key;
             this.backingCache.remove(typedKey);
@@ -94,6 +99,7 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
 
         grid.message().localListen(this.bulkInvalidationTopic, (uuid, col) -> {
             LOGGER.debug("Received bulk invalidation message on topic {} for {}", this.invalidationTopic, col);
+            this.instanceLogger.debug("Received bulk invalidation message for {}", col);
             if (col instanceof Collection<?>)
             {
                 @SuppressWarnings("unchecked")
@@ -110,6 +116,7 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
         {
             grid.message().localListen(this.valueNotFoundInvalidationTopic, (uuid, key) -> {
                 LOGGER.debug("Received value-not-found invalidation message on topic {} for {}", this.invalidationTopic, key);
+                this.instanceLogger.debug("Received value-not-found invalidation message for {}", key);
                 @SuppressWarnings("unchecked")
                 final K typedKey = (K) key;
                 final V typedValue = this.backingCache.get(typedKey);
@@ -120,6 +127,7 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
                 else
                 {
                     LOGGER.debug("No value-not-found sentinel cached for {}", key);
+                    this.instanceLogger.debug("No value-not-found sentinel cached for {}", key);
                 }
                 // keep listening
                 return true;
@@ -143,8 +151,13 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
     public boolean contains(final K key)
     {
         LOGGER.debug("Checking cache {} for containment of {}", this.cacheName, key);
+        this.instanceLogger.debug("Checking for containment of {}", key);
+
         final boolean containsKey = this.backingCache.contains(key);
+
         LOGGER.debug("Cache {} contains key {}: {}", this.cacheName, key, containsKey);
+        this.instanceLogger.debug("Cache contains key {}: {}", key, containsKey);
+
         return containsKey;
     }
 
@@ -155,8 +168,27 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
     public Collection<K> getKeys()
     {
         LOGGER.debug("Retrieving all (local) keys from cache {}", this.cacheName);
+        this.instanceLogger.debug("Retrieving all (local) keys");
+
         final Collection<K> keys = this.backingCache.getKeys();
-        LOGGER.debug("Retrieved (local) keys {} from cache {}", keys, this.cacheName);
+
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace("Retrieved (local) keys {} from cache {}", keys, this.cacheName);
+        }
+        else
+        {
+            LOGGER.debug("Retrieved {} (local) keys from cache {}", keys.size(), this.cacheName);
+        }
+        if (this.instanceLogger.isTraceEnabled())
+        {
+            this.instanceLogger.trace("Retrieved (local) keys {}", keys, this.cacheName);
+        }
+        else
+        {
+            this.instanceLogger.debug("Retrieved {} (local) keys", keys.size(), this.cacheName);
+        }
+
         return keys;
     }
 
@@ -167,6 +199,7 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
     public V get(final K key)
     {
         LOGGER.debug("Getting value for key {} from cache {}", key, this.cacheName);
+        this.instanceLogger.debug("Getting value for key {}", key);
 
         final V value = this.backingCache.get(key);
         if (this.localMetrics != null)
@@ -174,16 +207,19 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
             if (value != null)
             {
                 LOGGER.trace("Cache hit in {} for key {} yields {}", this.cacheName, key, value);
+                this.instanceLogger.trace("Cache hit for key {} yields {}", key, value);
                 this.localMetrics.recordHit();
             }
             else
             {
                 LOGGER.trace("Cache miss in {} for key {}", this.cacheName, key);
+                this.instanceLogger.trace("Cache miss for key {}", key);
                 this.localMetrics.recordMiss();
             }
         }
 
         LOGGER.debug("Retrieved value {} for key {} from cache {}", value, key, this.cacheName);
+        this.instanceLogger.debug("Retrieved value {} for key {}", value, key);
 
         return value;
     }
@@ -196,6 +232,7 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
     public void put(final K key, final V value)
     {
         LOGGER.debug("Putting value {} into cache {} with key {}", value, this.cacheName, key);
+        this.instanceLogger.debug("Putting value {} into cache with key {}", value, key);
 
         final V oldValue = this.backingCache.get(key);
 
@@ -220,6 +257,8 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
         if (value == null)
         {
             LOGGER.debug("Call to put with null-value for key {} instead of proper remove (cache: {})", key, this.cacheName);
+            this.instanceLogger.debug("Call to put with null-value for key {} instead of proper remove", key);
+
             this.backingCache.remove(key);
         }
         else if (!this.allowDummyValueSentinelsInBackingCache
@@ -228,6 +267,10 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
             LOGGER.debug(
                     "Call to put with sentinel-value for key {} will be treated as a remove as sentinel values are not allowed in backing cache (cache: {})",
                     key, this.cacheName);
+            this.instanceLogger.debug(
+                    "Call to put with sentinel-value for key {} will be treated as a remove as sentinel values are not allowed in backing cache",
+                    key);
+
             this.backingCache.remove(key);
         }
         else
@@ -254,6 +297,7 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
     public void remove(final K key)
     {
         LOGGER.debug("Removing value for key {} from cache {}", key, this.cacheName);
+        this.instanceLogger.debug("Removing value for key {}", key);
 
         this.backingCache.remove(key);
 
@@ -268,6 +312,7 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
     public void clear()
     {
         LOGGER.debug("Clearing all data from cache {}", this.cacheName);
+        this.instanceLogger.debug("Clearing all data");
 
         final Collection<K> keys = this.getKeys();
 
@@ -324,11 +369,13 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
         if (!remotes.nodes().isEmpty())
         {
             LOGGER.debug("Sending remote message on topic {} for {}", topic, msg);
+            this.instanceLogger.debug("Sending remote message on topic {} for {}", topic, msg);
             this.grid.message(remotes).send(topic, msg);
         }
         else
         {
             LOGGER.debug("Not sending remote message on topic {} for {} as there are no remote nodes", topic, msg);
+            this.instanceLogger.debug("Not sending remote message on topic {} for {} as there are no remote nodes", topic, msg);
         }
     }
 }
