@@ -52,7 +52,7 @@ The profile (-P) enables running integration tests in general, and the system pr
 
 ## K6 benchmark / load tests
 
-TODO
+See the description in the [k6](https://github.com/AFaust/alfresco-community-open-grid/tree/master/k6) folder.
 
 ## Dependencies
 
