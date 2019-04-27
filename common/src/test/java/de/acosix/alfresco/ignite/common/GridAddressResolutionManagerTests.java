@@ -1,3 +1,6 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package de.acosix.alfresco.ignite.common;
 
 import java.io.IOException;
@@ -15,8 +18,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.BlockJUnit4ClassRunner;
 
 import de.acosix.alfresco.ignite.common.discovery.GridAddressResolutionManager;
 
@@ -24,7 +25,6 @@ import de.acosix.alfresco.ignite.common.discovery.GridAddressResolutionManager;
  *
  * @author Axel Faust
  */
-@RunWith(BlockJUnit4ClassRunner.class)
 public class GridAddressResolutionManagerTests
 {
 
