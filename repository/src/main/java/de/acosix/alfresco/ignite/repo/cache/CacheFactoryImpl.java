@@ -41,7 +41,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import de.acosix.alfresco.ignite.common.cache.CombinedExpiryPolicy;
-import de.acosix.alfresco.ignite.common.cache.MemoryCountingEvictionPolicyFactory;
 import de.acosix.alfresco.ignite.common.lifecycle.IgniteInstanceLifecycleAware;
 import de.acosix.alfresco.ignite.common.lifecycle.SpringIgniteLifecycleBean;
 import de.acosix.alfresco.ignite.repo.discovery.MemberTcpDiscoveryIpFinder;
@@ -470,16 +469,13 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     protected void processEvictionPolicy(final String cacheName, final CacheConfiguration<K, V> cacheConfig)
     {
-        final String onHeapEnabled = this.getProperty(cacheName, "ignite.heap.enabled", "heap.enabled", "true");
-        final boolean onHeapEnabledB = Boolean.parseBoolean(onHeapEnabled);
-
         final long maxMemory = Long.parseLong(this.getProperty(cacheName, "ignite.heap.maxMemory", "heap.maxMemory", "0"));
         final int maxItems = Integer.parseInt(this.getProperty(cacheName, "ignite.heap.maxItems", "heap.maxItems", "maxItems", "0"));
 
         final String evictionPolicy = this.getProperty(cacheName, "ignite.heap.eviction-policy", "heap.eviction-policy", "eviction-policy",
                 EVICTION_POLICY_LRU);
 
-        if (onHeapEnabledB && !EVICTION_POLICY_NONE.equals(evictionPolicy) && (maxMemory > 0 || maxItems > 0))
+        if (!EVICTION_POLICY_NONE.equals(evictionPolicy) && (maxMemory > 0 || maxItems > 0))
         {
             cacheConfig.setOnheapCacheEnabled(true);
 
@@ -505,10 +501,6 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                 break;
             case EVICTION_POLICY_LRU:
                 evictPolicyFactory = new LruEvictionPolicyFactory<>();
-                break;
-            case EVICTION_POLICY_NONE:
-                // default fallback so we can expose the current heap memory size
-                evictPolicyFactory = new MemoryCountingEvictionPolicyFactory<>();
                 break;
             default:
                 throw new IllegalStateException("Unsupported eviction policy: " + evictionPolicy);
@@ -545,13 +537,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     protected void processNearCache(final String cacheName, final CacheConfiguration<K, V> cacheConfig)
     {
-        final String nearEnabled = this.getProperty(cacheName, "ignite.near.enabled", "near.enabled", "true");
-        final boolean nearEnabledB = Boolean.parseBoolean(nearEnabled);
-
-        final String evictionPolicy = this.getProperty(cacheName, "ignite.heap.eviction-policy", "heap.eviction-policy", "eviction-policy",
-                EVICTION_POLICY_LRU);
         final String nearEvictionPolicy = this.getProperty(cacheName, "ignite.near.eviction-policy", "near.eviction-policy",
-                evictionPolicy);
+                EVICTION_POLICY_NONE);
 
         final long cacheMaxMemory = Long.parseLong(this.getProperty(cacheName, "ignite.heap.maxMemory", "heap.maxMemory", "0"));
         final long nearMaxMemory = Long.parseLong(this.getProperty(cacheName, "ignite.near.maxMemory", "near.maxMemory",
@@ -561,7 +548,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         final int nearMaxItems = Integer.parseInt(this.getProperty(cacheName, "ignite.near.maxItems", "near.maxItems",
                 cacheMaxItems > 0 ? String.valueOf(cacheMaxItems / 4) : "0"));
 
-        if (nearEnabledB && !EVICTION_POLICY_NONE.equals(nearEvictionPolicy) && (nearMaxItems > 0 || nearMaxMemory > 0))
+        if (!EVICTION_POLICY_NONE.equals(nearEvictionPolicy) && (nearMaxItems > 0 || nearMaxMemory > 0))
         {
             final NearCacheConfiguration<K, V> nearCacheCfg = new NearCacheConfiguration<>();
             cacheConfig.setNearConfiguration(nearCacheCfg);
