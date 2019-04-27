@@ -3,27 +3,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package de.acosix.alfresco.ignite.common.cache;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.concurrent.atomic.LongAdder;
-
+import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
-import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 
 /**
- * Instances of this eviction policy implementation do nothing except counting the memory used by current entries in the cache.
+ * Instances of this eviction policy implementation do nothing except counting memory used by current entries in the cache. Configuring any
+ * instance to {@link #setMaxMemorySize(long) limit the memory size} or {@link #setMaxSize(int) limit the raw number of entries} of a cache
+ * will have no effect.
  *
  * @author Axel Faust
  */
-public class MemoryCountingEvictionPolicy<K, V> implements EvictionPolicy<K, V>, Externalizable
+public class MemoryCountingEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V>
 {
 
     private static final long serialVersionUID = 0L;
-
-    private final LongAdder memSize = new LongAdder();
 
     /**
      * Default constructor
@@ -34,56 +27,49 @@ public class MemoryCountingEvictionPolicy<K, V> implements EvictionPolicy<K, V>,
     }
 
     /**
+     *
      * {@inheritDoc}
      */
     @Override
-    public void onEntryAccessed(final boolean rmv, final EvictableEntry<K, V> entry)
+    protected int getCurrentSize()
     {
-        if (!rmv)
-        {
-            if (entry.putMetaIfAbsent(Boolean.TRUE) == null && entry.isCached())
-            {
-                this.memSize.add(entry.size());
-            }
-        }
-        else
-        {
-            final boolean wasAdded = entry.removeMeta(Boolean.TRUE);
-            if (wasAdded)
-            {
-                this.memSize.add(-entry.size());
-            }
-        }
+        // does not matter
+        return 0;
     }
 
     /**
-     * Retrieves the number of bytes currently used by cache entries.
      *
-     * @return the current memory size of all cache entries
+     * {@inheritDoc}
      */
-    public long getCurrentMemorySize()
+    @Override
+    protected int shrink0()
     {
-        return this.memSize.longValue();
+        // we don't shrink
+        return 0;
     }
 
-    /** {@inheritDoc} */
+    /**
+     *
+     * {@inheritDoc}
+     */
     @Override
-    public void writeExternal(final ObjectOutput out) throws IOException
+    protected boolean removeMeta(final Object meta)
     {
-        // NO-OP - no state to write
+        // we don't maintain a queue
+        return false;
     }
 
-    /** {@inheritDoc} */
+    /**
+     *
+     * {@inheritDoc}
+     */
     @Override
-    public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException
+    protected boolean touch(final EvictableEntry<K, V> entry)
     {
-        // NO-OP - no state to read
+        this.memSize.add(entry.size());
+        entry.putMetaIfAbsent(Boolean.TRUE);
+        // we don't maintain a queue
+        return false;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public String toString()
-    {
-        return GridToStringBuilder.toString(MemoryCountingEvictionPolicy.class, this);
-    }
 }

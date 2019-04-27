@@ -40,12 +40,13 @@ function buildInstanceInfo(instance)
 
 function buildCacheInfo(instanceName, cache, propertyGetter)
 {
-    var CacheConfiguration, cacheConfig, localMetrics, evictionPolicy, configuredType, cacheInfo;
+    var CacheConfiguration, cacheConfig, localMetrics, evictionManager, evictionPolicy, configuredType, cacheInfo;
 
     CacheConfiguration = Packages.org.apache.ignite.configuration.CacheConfiguration;
     cacheConfig = cache.getConfiguration(CacheConfiguration);
     localMetrics = cache.localMetrics();
-    evictionPolicy = cacheConfig.evictionPolicy;
+    evictionManager = cache.context().evicts();
+    evictionPolicy = evictionManager !== null ? evictionManager.evictionPolicy : null;
 
     configuredType = '<not set>';
     configuredType = propertyGetter('cache.' + cache.name + '.' + 'cluster.type') || configuredType;

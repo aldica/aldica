@@ -6,6 +6,10 @@ package de.acosix.alfresco.ignite.common.cache;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 
 /**
+ * Instances of this factory create eviction policy instances which do nothing except counting the memory used by current entries in the
+ * cache. Configuring any instance to {@link #setMaxMemorySize(long) limit the memory size} or {@link #setMaxSize(int) limit the raw number
+ * of entries} of a cache will have no effect.
+ *
  * @author Axel Faust
  */
 public class MemoryCountingEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactory<MemoryCountingEvictionPolicy<K, V>>

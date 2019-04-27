@@ -11,10 +11,10 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <root level="WARN">
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="${project.artifactId}" level="INFO" />
+    <logger name="${project.artifactId}" level="DEBUG" />
 
 </configuration>

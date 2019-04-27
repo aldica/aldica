@@ -30,6 +30,8 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.slf4j.Logger;
@@ -40,8 +42,6 @@ import org.springframework.context.ApplicationContextAware;
 
 import de.acosix.alfresco.ignite.common.cache.CombinedExpiryPolicy;
 import de.acosix.alfresco.ignite.common.cache.MemoryCountingEvictionPolicyFactory;
-import de.acosix.alfresco.ignite.common.cache.MemoryCountingFifoEvictionPolicyFactory;
-import de.acosix.alfresco.ignite.common.cache.MemoryCountingLruEvictionPolicyFactory;
 import de.acosix.alfresco.ignite.common.lifecycle.IgniteInstanceLifecycleAware;
 import de.acosix.alfresco.ignite.common.lifecycle.SpringIgniteLifecycleBean;
 import de.acosix.alfresco.ignite.repo.discovery.MemberTcpDiscoveryIpFinder;
@@ -501,10 +501,10 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         switch (evictionPolicy)
         {
             case EVICTION_POLICY_FIFO:
-                evictPolicyFactory = new MemoryCountingFifoEvictionPolicyFactory<>();
+                evictPolicyFactory = new FifoEvictionPolicyFactory<>();
                 break;
             case EVICTION_POLICY_LRU:
-                evictPolicyFactory = new MemoryCountingLruEvictionPolicyFactory<>();
+                evictPolicyFactory = new LruEvictionPolicyFactory<>();
                 break;
             case EVICTION_POLICY_NONE:
                 // default fallback so we can expose the current heap memory size
