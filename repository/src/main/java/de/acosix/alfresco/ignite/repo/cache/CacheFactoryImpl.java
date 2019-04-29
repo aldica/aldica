@@ -267,6 +267,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                     break;
                 case CACHE_TYPE_INVALIDATING:
                     cache = this.createLocalCache(grid, cacheName);
+                    // note: allowValueSentinels is redundant in this case between local cache and facade, but of very low overhead only for
+                    // (non-default) config value of "false"
                     cache = new InvalidatingCacheFacade<>(cacheName, cache, grid, alwaysInvalidateOnPut, allowValueSentinels);
                     break;
                 case CACHE_TYPE_INVALIDATING_DEFAULT_SIMPLE:
@@ -481,6 +483,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
             final int batchEvictionItems = Integer
                     .parseInt(this.getProperty(cacheName, "ignite.heap.batchEvictionItems", "heap.batchEvictionItems", "0"));
+            // eviction-percentage as an option is an artifact of pre 6.0 Alfresco default configuration
+            // it was removed as part of https://issues.alfresco.com/jira/browse/REPO-3050
             final int evictionPercentage = Integer.parseInt(
                     this.getProperty(cacheName, "ignite.heap.eviction-percentage", "heap.eviction-percentage", "eviction-percentage", "0"));
 
@@ -515,19 +519,14 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         {
             if (batchEvictionItems <= 0)
             {
-                // the Alfresco fallback value is a bit harder to use in this case since Ignite allows cache to grow up to maxItems +
-                // batchEvictionItems
                 if (evictionPercentage > 0)
                 {
                     batchEvictionItems = (int) Math.round(maxItems * evictionPercentage * 0.01d);
-                    maxItems = maxItems - batchEvictionItems;
                 }
-                else
-                {
-                    batchEvictionItems = 0;
-                }
-                batchEvictionItems++;
+                batchEvictionItems = Math.max(batchEvictionItems, 1);
             }
+            // Ignite allows cache to grow up to maxItems + (batchEvictionItems - 1) before running eviction
+            maxItems = maxItems - (batchEvictionItems - 1);
 
             evictPolicyFactory.setMaxSize(maxItems);
             evictPolicyFactory.setBatchSize(batchEvictionItems);

@@ -40,11 +40,9 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
 
     protected final boolean alwaysInvalidateOnPut;
 
-    protected final boolean allowDummyValueSentinelsInBackingCache;
+    protected final boolean allowSentinelsInBackingCache;
 
     protected final String invalidationTopic;
-
-    protected final String valueNotFoundInvalidationTopic;
 
     protected final String bulkInvalidationTopic;
 
@@ -65,11 +63,11 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
      * @param alwaysInvalidateOnPut
      *            {@code true} if this facade should always send invalidation messages to other nodes on the same data grid when values are
      *            put into the backing cache, {@code false} otherwise
-     * @param allowDummyValueSentinelsInBackingCache
+     * @param allowSentinelsInBackingCache
      *            {@code true} if sentinels for dummy values (defined by {@link EntityLookupCache}) are allowed to be stored in the cache
      */
     public InvalidatingCacheFacade(final String cacheName, final SimpleCache<K, V> backingCache, final Ignite grid,
-            final boolean alwaysInvalidateOnPut, final boolean allowDummyValueSentinelsInBackingCache)
+            final boolean alwaysInvalidateOnPut, final boolean allowSentinelsInBackingCache)
     {
         ParameterCheck.mandatoryString("cacheName", cacheName);
         ParameterCheck.mandatory("backingCache", backingCache);
@@ -79,12 +77,11 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
         this.backingCache = backingCache;
         this.grid = grid;
         this.alwaysInvalidateOnPut = alwaysInvalidateOnPut;
-        this.allowDummyValueSentinelsInBackingCache = allowDummyValueSentinelsInBackingCache;
+        this.allowSentinelsInBackingCache = allowSentinelsInBackingCache;
         this.invalidationTopic = cacheName + "-invalidate";
-        this.valueNotFoundInvalidationTopic = cacheName + "-valueNotFoundInvalidate";
         this.bulkInvalidationTopic = cacheName + "-bulkInvalidate";
 
-        this.instanceLogger = LoggerFactory.getLogger("de.acosix.alfresco.ignite.repo.cache.SimpleCacheInstance." + cacheName);
+        this.instanceLogger = LoggerFactory.getLogger(this.getClass().getPackage().getName() + ".SimpleCacheInstance." + cacheName);
 
         grid.message().localListen(this.invalidationTopic, (uuid, key) -> {
             LOGGER.debug("Received regular invalidation message on topic {} for {}", this.invalidationTopic, key);
@@ -111,28 +108,6 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
             // keep listening
             return true;
         });
-
-        if (this.allowDummyValueSentinelsInBackingCache)
-        {
-            grid.message().localListen(this.valueNotFoundInvalidationTopic, (uuid, key) -> {
-                LOGGER.debug("Received value-not-found invalidation message on topic {} for {}", this.invalidationTopic, key);
-                this.instanceLogger.debug("Received value-not-found invalidation message for {}", key);
-                @SuppressWarnings("unchecked")
-                final K typedKey = (K) key;
-                final V typedValue = this.backingCache.get(typedKey);
-                if (VALUE_NOT_FOUND.equals(typedValue) || VALUE_NULL.equals(typedValue))
-                {
-                    this.backingCache.remove(typedKey);
-                }
-                else
-                {
-                    LOGGER.debug("No value-not-found sentinel cached for {}", key);
-                    this.instanceLogger.debug("No value-not-found sentinel cached for {}", key);
-                }
-                // keep listening
-                return true;
-            });
-        }
 
         if (!(backingCache instanceof CacheWithMetrics))
         {
@@ -244,15 +219,7 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
             effectiveValue = ((ValueHolder<?>) effectiveValue).getValue();
         }
 
-        final boolean invalidate;
-        if (!this.allowDummyValueSentinelsInBackingCache && (VALUE_NOT_FOUND.equals(effectiveValue) || VALUE_NULL.equals(effectiveValue)))
-        {
-            invalidate = oldValue != null;
-        }
-        else
-        {
-            invalidate = this.alwaysInvalidateOnPut || (oldValue != null && !EqualsHelper.nullSafeEquals(oldValue, value));
-        }
+        boolean invalidate = this.alwaysInvalidateOnPut;
 
         if (value == null)
         {
@@ -260,9 +227,9 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
             this.instanceLogger.debug("Call to put with null-value for key {} instead of proper remove", key);
 
             this.backingCache.remove(key);
+            invalidate = invalidate || oldValue != null;
         }
-        else if (!this.allowDummyValueSentinelsInBackingCache
-                && (VALUE_NOT_FOUND.equals(effectiveValue) || VALUE_NULL.equals(effectiveValue)))
+        else if (!this.allowSentinelsInBackingCache && (VALUE_NOT_FOUND.equals(effectiveValue) || VALUE_NULL.equals(effectiveValue)))
         {
             LOGGER.debug(
                     "Call to put with sentinel-value for key {} will be treated as a remove as sentinel values are not allowed in backing cache (cache: {})",
@@ -272,20 +239,17 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
                     key);
 
             this.backingCache.remove(key);
+            invalidate = invalidate || oldValue != null;
         }
         else
         {
             this.backingCache.put(key, value);
+            invalidate = invalidate || (oldValue != null && !EqualsHelper.nullSafeEquals(oldValue, value));
         }
 
         if (invalidate)
         {
             this.sendInvalidationMessage(this.invalidationTopic, key);
-        }
-        else if ((oldValue == null || VALUE_NOT_FOUND.equals(oldValue) || VALUE_NULL.equals(oldValue))
-                && this.allowDummyValueSentinelsInBackingCache)
-        {
-            this.sendInvalidationMessage(this.valueNotFoundInvalidationTopic, key);
         }
     }
 
@@ -365,17 +329,21 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
 
     protected void sendInvalidationMessage(final String topic, final Object msg)
     {
+        final Object msgLogLabel = (LOGGER.isDebugEnabled() || this.instanceLogger.isDebugEnabled())
+                ? (msg instanceof Collection<?> ? (((Collection<?>) msg).size() + " keys") : msg)
+                : null;
+
         final ClusterGroup remotes = this.grid.cluster().forServers().forRemotes();
         if (!remotes.nodes().isEmpty())
         {
-            LOGGER.debug("Sending remote message on topic {} for {}", topic, msg);
-            this.instanceLogger.debug("Sending remote message on topic {} for {}", topic, msg);
+            LOGGER.debug("Sending remote message on topic {} for {}", topic, msgLogLabel);
+            this.instanceLogger.debug("Sending remote message on topic {} for {}", topic, msgLogLabel);
             this.grid.message(remotes).send(topic, msg);
         }
         else
         {
-            LOGGER.debug("Not sending remote message on topic {} for {} as there are no remote nodes", topic, msg);
-            this.instanceLogger.debug("Not sending remote message on topic {} for {} as there are no remote nodes", topic, msg);
+            LOGGER.debug("Not sending remote message on topic {} for {} as there are no remote nodes", topic, msgLogLabel);
+            this.instanceLogger.debug("Not sending remote message on topic {} for {} as there are no remote nodes", topic, msgLogLabel);
         }
     }
 }

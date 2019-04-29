@@ -19,13 +19,27 @@
         <docker.tests.versionSpecificJavaOpts></docker.tests.versionSpecificJavaOpts>
         <acosix.alfresco.client.version>0.1.0-SNAPSHOT</acosix.alfresco.client.version>
     </properties>
-    
+
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>de.acosix.alfresco.rest.client</groupId>
                 <artifactId>de.acosix.alfresco.rest.client</artifactId>
                 <version>${acosix.alfresco.client.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.ignite</groupId>
+                <artifactId>${common.artifactId}</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.ignite</groupId>
+                <artifactId>${common.artifactId}</artifactId>
+                <version>${project.version}</version>
+                <classifier>tests</classifier>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -46,7 +60,12 @@
         <dependency>
             <groupId>de.acosix.alfresco.ignite</groupId>
             <artifactId>${common.artifactId}</artifactId>
-            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.ignite</groupId>
+            <artifactId>${common.artifactId}</artifactId>
+            <classifier>tests</classifier>
         </dependency>
 
         <dependency>
@@ -133,9 +152,19 @@
                 </excludes>
             </resource>
         </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>.gitkeep</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
 
         <pluginManagement>
             <plugins>
+
                 <plugin>
                     <groupId>io.fabric8</groupId>
                     <artifactId>docker-maven-plugin</artifactId>
@@ -385,8 +414,27 @@
         </plugins>
 
     </build>
-    
+
     <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-surefire-plugin</artifactId>
+                            <configuration>
+                                <excludedGroups>${project.artifactId}.ExpensiveTestCategory</excludedGroups>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
         <profile>
             <id>alfresco-6.1-it</id>
             <properties>

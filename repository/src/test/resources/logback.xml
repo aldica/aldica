@@ -11,12 +11,14 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <root level="ERROR">
         <appender-ref ref="STDOUT" />
     </root>
 
     <logger name="${common.artifactId}" level="INFO" />
     <logger name="${project.artifactId}" level="INFO" />
+    <logger name="${project.artifactId}.cache.SimpleCacheInstance" level="INFO" />
+
     <logger name="org.apache.http.wire" level="INFO" />
     <logger name="org.jboss.resteasy" level="INFO" />
 

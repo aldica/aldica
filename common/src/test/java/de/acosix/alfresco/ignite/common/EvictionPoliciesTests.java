@@ -30,7 +30,7 @@ import de.acosix.alfresco.ignite.common.cache.MemoryCountingEvictionPolicyFactor
  *
  * @author Axel Faust
  */
-public class EvictionPoliciesTest extends GridTestsBase
+public class EvictionPoliciesTests extends GridTestsBase
 {
 
     @Test

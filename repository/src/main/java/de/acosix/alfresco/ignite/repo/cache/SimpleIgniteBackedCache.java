@@ -44,7 +44,7 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
 
     protected final IgniteCache<K, V> backingCache;
 
-    protected final boolean allowDummyValueSentinelsInBackingCache;
+    protected final boolean allowSentinelsInBackingCache;
 
     protected volatile boolean informedUnserializableValueType = false;
 
@@ -56,11 +56,11 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
      *            the name of the Ignite grid to use for communicating with other grid nodes
      * @param backingCache
      *            the low-level Ignite cache instance
-     * @param allowDummyValueSentinelsInBackingCache
+     * @param allowSentinelsInBackingCache
      *            {@code true} if sentinels for dummy values (defined by {@link EntityLookupCache}) are allowed to be stored in the cache
      */
     public SimpleIgniteBackedCache(final String gridName, final IgniteCache<K, V> backingCache,
-            final boolean allowDummyValueSentinelsInBackingCache)
+            final boolean allowSentinelsInBackingCache)
     {
         ParameterCheck.mandatoryString("gridName", gridName);
         ParameterCheck.mandatory("backingCache", backingCache);
@@ -68,9 +68,9 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         this.gridName = gridName;
         this.backingCache = backingCache;
         this.cacheName = backingCache.getName();
-        this.allowDummyValueSentinelsInBackingCache = allowDummyValueSentinelsInBackingCache;
+        this.allowSentinelsInBackingCache = allowSentinelsInBackingCache;
 
-        this.instanceLogger = LoggerFactory.getLogger("de.acosix.alfresco.ignite.repo.cache.SimpleCacheInstance." + this.cacheName);
+        this.instanceLogger = LoggerFactory.getLogger(this.getClass().getPackage().getName() + ".SimpleCacheInstance." + this.cacheName);
     }
 
     /**
@@ -88,9 +88,9 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         this.gridName = null;
         this.backingCache = backingCache;
         this.cacheName = backingCache.getName();
-        this.allowDummyValueSentinelsInBackingCache = allowDummyValueSentinelsInBackingCache;
+        this.allowSentinelsInBackingCache = allowDummyValueSentinelsInBackingCache;
 
-         this.instanceLogger = LoggerFactory.getLogger("de.acosix.alfresco.ignite.repo.cache.SimpleCacheInstance." + this.cacheName);
+        this.instanceLogger = LoggerFactory.getLogger(this.getClass().getPackage().getName() + ".SimpleCacheInstance." + this.cacheName);
     }
 
     /**
@@ -216,7 +216,7 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
 
             this.backingCache.remove(key);
         }
-        else if (!this.allowDummyValueSentinelsInBackingCache
+        else if (!this.allowSentinelsInBackingCache
                 && (VALUE_NOT_FOUND.equals(effectiveValue) || VALUE_NULL.equals(effectiveValue)))
         {
             LOGGER.debug(
