@@ -21,7 +21,7 @@
                 <value>cacheFactory</value>
                 <value>lockStoreFactory</value>
                 <value>node</value>
-                <value>immutableEntityCache</value>
+                <value>immutableEntitySharedCache</value>
             </list>
         </property>
         <property name="propertiesSource" ref="global-properties" />

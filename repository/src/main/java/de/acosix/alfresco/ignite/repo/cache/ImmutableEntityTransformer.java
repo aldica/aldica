@@ -3,8 +3,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package de.acosix.alfresco.ignite.repo.cache;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.Serializable;
 
 import org.alfresco.repo.domain.qname.QNameDAO;
@@ -59,18 +57,24 @@ public class ImmutableEntityTransformer implements CacheValueTransformer<Seriali
         }
         else if (cacheValue instanceof QNameValueHolder)
         {
-            // QName has no readResolve for efficient deserialisation
-            String namespace = ((QNameValueHolder) cacheValue).getNamespace();
-            if (namespace == null)
+            externalValue = ((QNameValueHolder) cacheValue).getActualValue();
+            if (externalValue == null)
             {
+                // QName has no readResolve for efficient deserialisation
                 if (this.qNameDAO == null)
                 {
                     this.qNameDAO = this.applicationContext.getBean("qnameDAOImpl", QNameDAO.class);
                 }
-                final Pair<Long, String> namespacePair = this.qNameDAO.getNamespace(((QNameValueHolder) cacheValue).getNamespaceId());
-                namespace = namespacePair.getSecond();
+                final long namespaceId = ((QNameValueHolder) cacheValue).getNamespaceId();
+                final Pair<Long, String> namespacePair = this.qNameDAO.getNamespace(namespaceId);
+                if (namespacePair == null)
+                {
+                    throw new IllegalStateException("Namespace ID " + namespaceId + " is not known to the QName DAO");
+                }
+                final String namespace = namespacePair.getSecond();
+                externalValue = QName.createQName(namespace, ((QNameValueHolder) cacheValue).getLocalName());
+                ((QNameValueHolder) cacheValue).setActualValue((QName) externalValue);
             }
-            externalValue = QName.createQName(namespace, ((QNameValueHolder) cacheValue).getLocalName());
         }
         // Locale.readResolve() already handles cache instances
 
@@ -93,67 +97,12 @@ public class ImmutableEntityTransformer implements CacheValueTransformer<Seriali
                 this.qNameDAO = this.applicationContext.getBean("qnameDAOImpl", QNameDAO.class);
             }
             final Pair<Long, String> namespacePair = this.qNameDAO.getNamespace(((QName) externalValue).getNamespaceURI());
-            cacheValue = new QNameValueHolder(namespacePair.getFirst().longValue(), ((QName) externalValue).getLocalName());
+            if (namespacePair == null)
+            {
+                throw new IllegalStateException("Namespace URI of QName " + externalValue + " is not known to the QName DAO");
+            }
+            cacheValue = new QNameValueHolder(namespacePair.getFirst().longValue(), (QName) externalValue);
         }
         return cacheValue;
-    }
-
-    protected static class QNameValueHolder implements Serializable
-    {
-
-        private static final long serialVersionUID = 1L;
-
-        protected final long namespaceId;
-
-        protected transient String namespace;
-
-        // technically final but due to readObject + intern() requirement we keep it without
-        protected String localName;
-
-        protected QNameValueHolder(final long namespaceId, final String localName)
-        {
-            this.namespaceId = namespaceId;
-            this.localName = localName;
-        }
-
-        /**
-         * @return the namespaceId
-         */
-        public long getNamespaceId()
-        {
-            return this.namespaceId;
-        }
-
-        /**
-         * @return the localName
-         */
-        public String getLocalName()
-        {
-            return this.localName;
-        }
-
-        /**
-         * @return the namespace
-         */
-        public String getNamespace()
-        {
-            return this.namespace;
-        }
-
-        /**
-         * @param namespace
-         *            the namespace to set
-         */
-        public void setNamespace(final String namespace)
-        {
-            this.namespace = namespace;
-        }
-
-        private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException
-        {
-            in.defaultReadObject();
-
-            this.localName = this.localName.intern();
-        }
     }
 }
