@@ -83,6 +83,19 @@ In line with [recommendations](https://apacheignite.readme.io/docs/jvm-and-syste
 
 Please see the documentation for your specific JVM for details of these settings.
 
+### Using Java 11
+
+The following additions to `JAVA_OPTS` are also needed in order to use the Aldica module with Java 11:
+
+```
+--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+--add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+--illegal-access=permit
+```
+
 ### Apache Ignite system properties
 
 Apache Ignite takes some global configuration from system properties, and does not provide APIs for them to be set via its regular configuration mechanisms. As such, these properties typically need to be set via JAVA_OPTS as -D parameters. The following parameters are recommended as a starting point:
