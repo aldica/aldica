@@ -1,5 +1,9 @@
 package de.acosix.alfresco.ignite.repo.integration;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.UriBuilder;
 
@@ -24,8 +29,8 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.BlockJUnit4ClassRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,13 +51,14 @@ import de.acosix.alfresco.rest.client.resteasy.MultiValuedParamConverterProvider
  *
  * @author Axel Faust
  */
-@RunWith(BlockJUnit4ClassRunner.class)
 public class CacheConsistency
 {
 
-    private static final String baseUrlServer1 = "http://localhost:8082/alfresco";
+    private static final Logger LOGGER = LoggerFactory.getLogger(CacheConsistency.class);
 
-    private static final String baseUrlServer2 = "http://localhost:8182/alfresco";
+    private static final String baseUrlServer1 = "http://localhost:8180/alfresco";
+
+    private static final String baseUrlServer2 = "http://localhost:8280/alfresco";
 
     private static ResteasyClient client;
 
@@ -207,5 +213,109 @@ public class CacheConsistency
                 new HashSet<>(server1SharedFolder.getAspectNames()), new HashSet<>(server2SharedFolder.getAspectNames()));
         Assert.assertEquals("Properties of Shared folder should be identical (after update) in cluster",
                 server1SharedFolder.getProperties(), server2SharedFolder.getProperties());
+    }
+
+    @Test
+    public void dynamicModelActivation() throws Exception
+    {
+        final String namespaceUri = UUID.randomUUID().toString();
+        final String prefix = namespaceUri.replaceAll("[0-9\\-]", "");
+        final String typeLocalName = UUID.randomUUID().toString();
+        final String typeQName = '{' + namespaceUri + '}' + typeLocalName;
+
+        final NodesV1 server1NodesAPI = this.createServerNodesAPI(client, baseUrlServer1);
+        final NodesV1 server2NodesAPI = this.createServerNodesAPI(client, baseUrlServer2);
+
+        final NodeResponseEntity server1SharedFolder = server1NodesAPI.getNode("-shared-");
+        final NodeResponseEntity server2SharedFolder = server2NodesAPI.getNode("-shared-");
+
+        final NodeCreationRequestEntity createNode = new NodeCreationRequestEntity();
+        createNode.setNodeType(typeQName);
+        createNode.setName(UUID.randomUUID().toString());
+
+        try
+        {
+            server1NodesAPI.createNode(server1SharedFolder.getId(), createNode);
+            Assert.fail("Node creation with dynamic type should not have succeeded on server 1 before dynamic model activation");
+        }
+        catch (final BadRequestException expected)
+        {
+            // NO-OP
+        }
+
+        try
+        {
+            server2NodesAPI.createNode(server2SharedFolder.getId(), createNode);
+            Assert.fail("Node creation with dynamic type should not have succeeded on server 2 before dynamic model activation");
+        }
+        catch (final BadRequestException expected)
+        {
+            // NO-OP
+        }
+
+        String dynamicModel = loadDynamicModelTemplate(namespaceUri, prefix);
+
+        final StringBuilder dynamicTypeBuilder = new StringBuilder(4096);
+        dynamicTypeBuilder.append("<type name=\"").append(prefix).append(':').append(typeLocalName).append("\">");
+        dynamicTypeBuilder.append("<parent>cm:folder</parent>");
+        dynamicTypeBuilder.append("</type>");
+
+        final String dynamicType = dynamicTypeBuilder.toString();
+        dynamicModel = dynamicModel.replace("<!-- %types% -->", dynamicType);
+
+        deployDynamicModel(server1NodesAPI, dynamicModel, "dynamicModelClusterPropagationTest-" + UUID.randomUUID().toString() + ".xml");
+
+        // don't need to validate created nodes much - just the fact that they can be created is sufficient verification
+
+        final NodeResponseEntity createdNode1 = server1NodesAPI.createNode(server1SharedFolder.getId(), createNode);
+        Assert.assertEquals(createNode.getName(), createdNode1.getName());
+
+        createNode.setName(UUID.randomUUID().toString());
+
+        final NodeResponseEntity createdNode2 = server2NodesAPI.createNode(server2SharedFolder.getId(), createNode);
+        Assert.assertEquals(createNode.getName(), createdNode2.getName());
+    }
+
+    private static String deployDynamicModel(final NodesV1 nodesAPI, final String dynamicModel, final String modelFileName) throws Exception
+    {
+        final NodeCreationRequestEntity createModelFile = new NodeCreationRequestEntity();
+        createModelFile.setRelativePath("Data Dictionary/Models");
+        createModelFile.setName(modelFileName);
+        createModelFile.setNodeType("cm:dictionaryModel");
+
+        final NodeResponseEntity modelFile = nodesAPI.createNode("-root-", createModelFile);
+        LOGGER.info("Created custom model file {} (UUID: {})", modelFile.getName(), modelFile.getId());
+
+        final String modelFileId = modelFile.getId();
+        nodesAPI.setContent(modelFileId, new ByteArrayInputStream(dynamicModel.getBytes(StandardCharsets.UTF_8)), "text/xml");
+        LOGGER.info("Uploaded custom model file content: {}", dynamicModel);
+
+        final CommonNodeEntity<PermissionsInfo> updates = new CommonNodeEntity<>();
+        updates.setProperty("cm:modelActive", Boolean.TRUE);
+        nodesAPI.updateNode(modelFileId, updates);
+        LOGGER.info("Activated custom model file {} (UUID: {})", modelFile.getName(), modelFile.getId());
+
+        return modelFileId;
+    }
+
+    private static String loadDynamicModelTemplate(final String namespaceUri, final String prefix) throws IOException
+    {
+        final StringBuilder dynamicModelBuilder = new StringBuilder(10240);
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(CacheConsistency.class.getClassLoader().getResourceAsStream("model/dynamicModelTemplate.xml"),
+                        StandardCharsets.UTF_8),
+                1024))
+        {
+            String line = null;
+            while ((line = br.readLine()) != null)
+            {
+                dynamicModelBuilder.append(line);
+            }
+        }
+
+        String dynamicModel = dynamicModelBuilder.toString();
+        dynamicModel = dynamicModel.replaceAll("%prefix%", prefix);
+        dynamicModel = dynamicModel.replaceAll("%namespaceUri%", namespaceUri);
+        return dynamicModel;
     }
 }

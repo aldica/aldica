@@ -14,6 +14,7 @@ import org.alfresco.util.ParameterCheck;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.slf4j.Logger;
@@ -28,8 +29,6 @@ import org.slf4j.LoggerFactory;
 public class SimpleIgniteBackedCache<K extends Serializable, V> implements SimpleCache<K, V>, CacheWithMetrics
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleIgniteBackedCache.class);
-
     // value copied from EntityLookupCache (not accessible there)
     private static final Serializable VALUE_NULL = "@@VALUE_NULL@@";
 
@@ -39,6 +38,8 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     private final Logger instanceLogger;
 
     protected final String gridName;
+
+    protected final boolean fullCache;
 
     protected final String cacheName;
 
@@ -54,43 +55,27 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
      *
      * @param gridName
      *            the name of the Ignite grid to use for communicating with other grid nodes
+     * @param fullCache
+     *            {@code true} if this cache should consider itself a "complete" cache (either a {@link CacheMode#LOCAL local} or
+     *            {@link CacheMode#REPLICATED replicated} cache), {@code false} otherwise
      * @param backingCache
      *            the low-level Ignite cache instance
      * @param allowSentinelsInBackingCache
      *            {@code true} if sentinels for dummy values (defined by {@link EntityLookupCache}) are allowed to be stored in the cache
      */
-    public SimpleIgniteBackedCache(final String gridName, final IgniteCache<K, V> backingCache,
+    public SimpleIgniteBackedCache(final String gridName, final boolean fullCache, final IgniteCache<K, V> backingCache,
             final boolean allowSentinelsInBackingCache)
     {
         ParameterCheck.mandatoryString("gridName", gridName);
         ParameterCheck.mandatory("backingCache", backingCache);
 
         this.gridName = gridName;
+        this.fullCache = fullCache;
         this.backingCache = backingCache;
         this.cacheName = backingCache.getName();
         this.allowSentinelsInBackingCache = allowSentinelsInBackingCache;
 
-        this.instanceLogger = LoggerFactory.getLogger(this.getClass().getPackage().getName() + ".SimpleCacheInstance." + this.cacheName);
-    }
-
-    /**
-     * Creates a simple Ignite-backed cache that should not interact with its corresponding instances on other grid nodes.
-     *
-     * @param backingCache
-     *            the low-level Ignite cache instance
-     * @param allowDummyValueSentinelsInBackingCache
-     *            {@code true} if sentinels for dummy values (defined by {@link EntityLookupCache}) are allowed to be stored in the cache
-     */
-    public SimpleIgniteBackedCache(final IgniteCache<K, V> backingCache, final boolean allowDummyValueSentinelsInBackingCache)
-    {
-        ParameterCheck.mandatory("backingCache", backingCache);
-
-        this.gridName = null;
-        this.backingCache = backingCache;
-        this.cacheName = backingCache.getName();
-        this.allowSentinelsInBackingCache = allowDummyValueSentinelsInBackingCache;
-
-        this.instanceLogger = LoggerFactory.getLogger(this.getClass().getPackage().getName() + ".SimpleCacheInstance." + this.cacheName);
+        this.instanceLogger = LoggerFactory.getLogger(this.getClass().getName() + "." + this.cacheName);
     }
 
     /**
@@ -100,12 +85,10 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public boolean contains(final K key)
     {
-        LOGGER.debug("Checking cache {} for containment of {}", this.cacheName, key);
         this.instanceLogger.debug("Checking for containment of {}", key);
 
         final boolean containsKey = this.backingCache.containsKey(key);
 
-        LOGGER.debug("Cache {} contains key {}: {}", this.cacheName, key, containsKey);
         this.instanceLogger.debug("Cache contains key {}: {}", key, containsKey);
 
         return containsKey;
@@ -118,12 +101,12 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public Collection<K> getKeys()
     {
-        LOGGER.debug("Retrieving all (local) keys from cache {}", this.cacheName);
         this.instanceLogger.debug("Retrieving all (local) keys");
 
         final Collection<K> keys = new LinkedHashSet<>();
-        if (this.gridName == null)
+        if (this.fullCache)
         {
+            // local lookup is sufficient for local / replicated cache
             this.backingCache.localEntries(CachePeekMode.ALL).forEach(entry -> {
                 final K key = entry.getKey();
                 keys.add(key);
@@ -131,6 +114,7 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         }
         else
         {
+            // partitioned cache collects all keys from all instances
             final Ignite ignite = Ignition.ignite(this.gridName);
             final ClusterGroup cacheNodes = ignite.cluster().forCacheNodes(this.cacheName);
 
@@ -147,21 +131,13 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
             allCacheKeys.forEach(singleCacheKeys -> keys.addAll(singleCacheKeys));
         }
 
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace("Retrieved (local) keys {} from cache {}", keys, this.cacheName);
-        }
-        else
-        {
-            LOGGER.debug("Retrieved {} (local) keys from cache {}", keys.size(), this.cacheName);
-        }
         if (this.instanceLogger.isTraceEnabled())
         {
-            this.instanceLogger.trace("Retrieved (local) keys {}", keys, this.cacheName);
+            this.instanceLogger.trace("Retrieved (local) keys {}", keys);
         }
         else
         {
-            this.instanceLogger.debug("Retrieved {} (local) keys", keys.size(), this.cacheName);
+            this.instanceLogger.debug("Retrieved {} (local) keys", keys.size());
         }
 
         return keys;
@@ -174,12 +150,10 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public V get(final K key)
     {
-        LOGGER.debug("Getting value for key {} from cache {}", key, this.cacheName);
         this.instanceLogger.debug("Getting value for key {}", key);
 
         final V value = this.backingCache.get(key);
 
-        LOGGER.debug("Retrieved value {} for key {} from cache {}", value, key, this.cacheName);
         this.instanceLogger.debug("Retrieved value {} for key {}", value, key);
 
         return value;
@@ -192,12 +166,11 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public void put(final K key, final V value)
     {
-        LOGGER.debug("Putting value {} into cache {} with key {}", value, this.cacheName, key);
         this.instanceLogger.debug("Putting value {} into cache with key {}", value, key);
 
         if (!this.informedUnserializableValueType && value != null && !(value instanceof Serializable))
         {
-            LOGGER.info("Value type {} is not implementing serializable (cache: {})", value.getClass(), this.cacheName, new Exception());
+            this.instanceLogger.info("Value type {} is not implementing serializable", value.getClass(), new Exception());
             this.informedUnserializableValueType = true;
         }
 
@@ -211,17 +184,12 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
 
         if (value == null)
         {
-            LOGGER.debug("Call to put with null-value for key {} instead of proper remove (cache: {})", key, this.cacheName);
             this.instanceLogger.debug("Call to put with null-value for key {} instead of proper remove", key);
 
             this.backingCache.remove(key);
         }
-        else if (!this.allowSentinelsInBackingCache
-                && (VALUE_NOT_FOUND.equals(effectiveValue) || VALUE_NULL.equals(effectiveValue)))
+        else if (!this.allowSentinelsInBackingCache && (VALUE_NOT_FOUND.equals(effectiveValue) || VALUE_NULL.equals(effectiveValue)))
         {
-            LOGGER.debug(
-                    "Call to put with sentinel-value for key {} will be treated as a remove as sentinel values are not allowed in backing cache (cache: {})",
-                    key, this.cacheName);
             this.instanceLogger.debug(
                     "Call to put with sentinel-value for key {} will be treated as a remove as sentinel values are not allowed in backing cache",
                     key);
@@ -241,7 +209,6 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public void remove(final K key)
     {
-        LOGGER.debug("Removing value for key {} from cache {}", key, this.cacheName);
         this.instanceLogger.debug("Removing value for key {}", key);
 
         this.backingCache.remove(key);
@@ -254,7 +221,6 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public void clear()
     {
-        LOGGER.debug("Clearing all data from cache {}", this.cacheName);
         this.instanceLogger.debug("Clearing all data");
 
         this.backingCache.clear();

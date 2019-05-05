@@ -269,7 +269,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                     cache = this.createLocalCache(grid, cacheName);
                     // note: allowValueSentinels is redundant in this case between local cache and facade, but of very low overhead only for
                     // (non-default) config value of "false"
-                    cache = new InvalidatingCacheFacade<>(cacheName, cache, grid, alwaysInvalidateOnPut, allowValueSentinels);
+                    final String effectiveCacheName = cacheName.startsWith("cache.") ? cacheName.substring(6) : cacheName;
+                    cache = new InvalidatingCacheFacade<>(effectiveCacheName, cache, grid, alwaysInvalidateOnPut, allowValueSentinels);
                     break;
                 case CACHE_TYPE_INVALIDATING_DEFAULT_SIMPLE:
                     cache = this.createLocalDefaultSimpleCache(cacheName);
@@ -368,7 +369,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                 .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
 
         final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(backingCache, allowValueSentinels);
+        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(this.instanceName, true, backingCache,
+                allowValueSentinels);
         return localCache;
     }
 
@@ -403,7 +405,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                 .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
 
         final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(this.instanceName, backingCache,
+        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(this.instanceName, false, backingCache,
                 allowValueSentinels);
         return localCache;
     }
@@ -427,7 +429,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                 .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
 
         final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(backingCache, allowValueSentinels);
+        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(this.instanceName, true, backingCache,
+                allowValueSentinels);
         return localCache;
     }
 

@@ -37,20 +37,14 @@
         <property name="systemWorkerBlockedTimeout" value="\${${moduleId}.core.systemWorkerBlockedTimeout}" />
         <property name="segmentationPolicy" value="NOOP" />
         <property name="includeEventTypes">
+            <!-- TODO: Have dynamic feature configurations to add / remove included event types -->
             <list>
-                <value>10</value>
-                <value>11</value>
-                <value>12</value>
-                <value>13</value>
-                <value>14</value>
-                <value>80</value>
-                <value>81</value>
-                <value>82</value>
-                <value>83</value>
-                <value>86</value>
-                <value>98</value>
-                <value>99</value>
-                <value>100</value>
+                <!-- discovery events -->
+                <value>10</value> <!-- node joined -->
+                <value>11</value> <!-- node left -->
+                <value>12</value> <!-- node failed -->
+                <value>13</value> <!-- node metrics updated -->
+                <value>14</value> <!-- node segmented -->
             </list>
         </property>
         <property name="pluginConfigurations">

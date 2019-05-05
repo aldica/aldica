@@ -137,7 +137,8 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
             });
 
             final IgniteCache<Serializable, ValueHolder<Serializable>> igniteCache = grid1.getOrCreateCache(cacheConfig);
-            final SimpleCache<Serializable, ValueHolder<Serializable>> simpleCache = new SimpleIgniteBackedCache<>(igniteCache, true);
+            final SimpleCache<Serializable, ValueHolder<Serializable>> simpleCache = new SimpleIgniteBackedCache<>(grid1.name(), false,
+                    igniteCache, true);
             final SimpleCache<Serializable, ValueHolder<Serializable>> invalidatingCache = new InvalidatingCacheFacade<>(
                     "cache.immutableEntitySharedCache", simpleCache, grid1, false, true);
 
@@ -250,13 +251,15 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
 
                 for (final QName qname : CONTENT_MODEL_QNAMES)
                 {
-                    entryPair = qnameCache.getByValue(qname);
+                    // since Alfresco always creates new instances when resolving from String we do too for added realism
+                    final QName effectiveQName = QName.createQName(qname.getNamespaceURI(), qname.getLocalName());
+                    entryPair = qnameCache.getByValue(effectiveQName);
 
                     if (mustNotExistQNames.contains(qname))
                     {
                         Assert.assertNull(entryPair);
 
-                        lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, qname);
+                        lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, effectiveQName);
                         lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
 
                         Assert.assertNotNull("Low-level cache should contain a sentinel value-key cache entry after a failed lookup",
@@ -272,7 +275,7 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
                             final double rndValue = Math.pow(rnJesus.nextDouble(), qnamesCreated + 1);
                             if (rndValue >= 0.99)
                             {
-                                entryPair = qnameCache.getOrCreateByValue(qname);
+                                entryPair = qnameCache.getOrCreateByValue(effectiveQName);
 
                                 Assert.assertNotNull(entryPair);
 
@@ -281,10 +284,10 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
 
                                 Assert.assertNotNull("Value creation should have added a cache entry", lowLevelCacheValue);
                                 Assert.assertEquals("Value creation should have added a cache entry",
-                                        new QNameValueHolder(qnameDAO.getNamespace(qname.getNamespaceURI()).getFirst(), qname),
+                                        new QNameValueHolder(qnameDAO.getNamespace(qname.getNamespaceURI()).getFirst().longValue(), qname),
                                         lowLevelCacheValue.getValue());
 
-                                lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, qname);
+                                lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, effectiveQName);
                                 lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
 
                                 Assert.assertNotNull("Value creation should have added a value-key cache entry", lowLevelCacheValue);
@@ -310,7 +313,7 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
                         final Long expectedKey = keysByMustExistQName.get(qname);
                         Assert.assertEquals(expectedKey, entryPair.getFirst());
 
-                        lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, qname);
+                        lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, effectiveQName);
                         lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
 
                         Assert.assertNotNull("Low-level cache should contain a proper value-key cache entry after a successfull lookup",
@@ -324,7 +327,7 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
                         Assert.assertNotNull("Low-level cache should contain a proper cache entry for value previously created",
                                 lowLevelCacheValue);
                         Assert.assertEquals("Low-level cache should contain a proper cache entry for value previously created",
-                                new QNameValueHolder(qnameDAO.getNamespace(qname.getNamespaceURI()).getFirst(), qname),
+                                new QNameValueHolder(qnameDAO.getNamespace(qname.getNamespaceURI()).getFirst().longValue(), qname),
                                 lowLevelCacheValue.getValue());
                     }
                 }
