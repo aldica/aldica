@@ -8,7 +8,7 @@
            http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
     <!-- included here to ensure order of lifecycle bean before others in bootstrap-context.xml (patchExecuter is minimal dependency to ensure schema is up-to-date) -->
-    <bean id="Lifecycle.${moduleId}.core" abstract="true" class="${common.artifactId}.lifecycle.SpringIgniteLifecycleBean" depends-on="patchExecuter">
+    <bean id="Lifecycle.${moduleId}.core" abstract="true" class="${aldica.ignite-common.basePackage}.lifecycle.SpringIgniteLifecycleBean" depends-on="patchExecuter">
         <property name="enabled" value="\${${moduleId}.core.enabled}" />
         <property name="configuration" ref="Configuration.${moduleId}.core" />
     </bean>

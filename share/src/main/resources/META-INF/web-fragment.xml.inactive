@@ -19,7 +19,7 @@
     <filter>
         <description>${project.longName} - Web Session Cache Filter</description>
         <filter-name>${project.longNameNoWs}WebSessionCacheFilter</filter-name>
-        <filter-class>${common.artifactId}.web.GlobalConfigAwareWebSessionFilter</filter-class>
+        <filter-class>${aldica.ignite-common.basePackage}.web.GlobalConfigAwareWebSessionFilter</filter-class>
     </filter>
 
     <filter-mapping>

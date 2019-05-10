@@ -33,7 +33,7 @@
         <dependencySet>
             <outputDirectory>lib</outputDirectory>
             <includes>
-                <include>de.acosix.alfresco.ignite:de.acosix.alfresco.ignite.common:*</include>
+                <include>${project.groupId}:${aldica.ignite-common.artifactId}:*</include>
                 <include>org.apache.ignite:*</include>
                 <include>org.jetbrains:annotations:*</include>
                 <include>javax.cache:cache-api:*</include>

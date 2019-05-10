@@ -15,6 +15,6 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="${project.artifactId}" level="DEBUG" />
+    <logger name="${project.basePackage}" level="DEBUG" />
 
 </configuration>

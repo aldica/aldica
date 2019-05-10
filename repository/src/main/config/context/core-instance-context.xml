@@ -85,7 +85,7 @@
     </bean>
 
     <bean id="Configuration.${moduleId}.core.storage.dataRegionBeanEmitter"
-        class="${project.artifactId}.spring.DataRegionBeanDefinitionEmitter">
+        class="${project.basePackage}.spring.DataRegionBeanDefinitionEmitter">
         <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
         <property name="propertyPrefix" value="${moduleId}.core.region." />
         <property name="storageBeanDefinitionName">
@@ -121,7 +121,7 @@
         <property name="maxSize" value="\${${moduleId}.webSessionCache.maxSize}" />
     </bean>
 
-    <bean id="DiscoverySPI.${moduleId}.core" abstract="true" class="${common.artifactId}.discovery.CredentialsAwareTcpDiscoverySpi">
+    <bean id="DiscoverySPI.${moduleId}.core" abstract="true" class="${aldica.ignite-common.basePackage}.discovery.CredentialsAwareTcpDiscoverySpi">
         <property name="ipFinder" ref="DiscoverySPI.${moduleId}.core.MemberFinder" />
         <property name="credentials" ref="DiscoverySPI.${moduleId}.core.credentials" />
 
@@ -134,7 +134,7 @@
     </bean>
 
     <bean id="DiscoverySPI.${moduleId}.core.MemberFinder" abstract="true"
-        class="${project.artifactId}.discovery.MemberTcpDiscoveryIpFinder">
+        class="${project.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
         <property name="transactionService" ref="TransactionService" />
         <property name="attributeService" ref="AttributeService" />
         <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
@@ -145,7 +145,7 @@
         <property name="password" value="\${${moduleId}.core.password}" />
     </bean>
 
-    <bean id="AddressResolver.${moduleId}.core" abstract="true" class="${common.artifactId}.discovery.GridAddressResolutionManager">
+    <bean id="AddressResolver.${moduleId}.core" abstract="true" class="${aldica.ignite-common.basePackage}.discovery.GridAddressResolutionManager">
         <property name="configuration" ref="Configuration.${moduleId}.core" />
         <property name="externalHost" value="\${${moduleId}.core.public.host}" />
         <property name="externalDiscoPortBase" value="\${${moduleId}.core.public.disco.port}" />
@@ -169,7 +169,7 @@
     <bean id="CollisionSPI.${moduleId}.core" abstract="true" class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi" />
 
     <bean id="PluginConfiguration.${moduleId}.core.security" abstract="true"
-        class="${common.artifactId}.plugin.SimpleSecurityPluginConfiguration">
+        class="${aldica.ignite-common.basePackage}.plugin.SimpleSecurityPluginConfiguration">
         <property name="enabled" value="true" />
         <property name="allowedNodeCredentials">
             <list>

@@ -8,7 +8,7 @@
            http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
     <!-- included here to ensure this is loaded as soon as possible before other lifecycle beans -->
-    <bean id="Lifecycle.${moduleId}.core.grid" abstract="true" class="${common.artifactId}.lifecycle.SpringIgniteLifecycleBean">
+    <bean id="Lifecycle.${moduleId}.core.grid" abstract="true" class="${aldica.ignite-common.basePackage}.lifecycle.SpringIgniteLifecycleBean">
         <property name="enabled" value="\${${moduleId}.core.enabled}" />
         <property name="configuration" ref="Configuration.${moduleId}.core" />
     </bean>

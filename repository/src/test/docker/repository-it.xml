@@ -47,7 +47,7 @@
                 <include>javax.cache:cache-api:*</include>
                 <include>org.jetbrains:annotations:*</include>
                 <include>org.apache.ignite:*</include>
-                <include>de.acosix.alfresco.ignite:de.acosix.alfresco.ignite.common:*</include>
+                <include>${project.groupId}:${aldica.ignite-common.artifactId}:*</include>
             </includes>
             <scope>compile</scope>
         </dependencySet>

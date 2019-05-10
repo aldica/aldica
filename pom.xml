@@ -12,14 +12,12 @@
         <version>1.1.0</version>
     </parent>
 
-    <!-- TODO Refactor Maven coordinates once available / stable name has been found -->
-    <!-- Note: com.github.acog was intended as potential name, but an account named "ACOG" already exists (https://github.com/ACOG) though apparently completely inactive -->
-    <groupId>de.acosix.alfresco.ignite</groupId>
-    <artifactId>de.acosix.alfresco.ignite.parent</artifactId>
+    <groupId>org.aldica</groupId>
+    <artifactId>aldica-parent</artifactId>
     <version>1.0.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Alfresco Community Open Grid - Parent</name>
+    <name>Alternative/Alfresco Distributed Cache - Parent</name>
     <description>Addon providing distributed caching and data grid capabilities to Alfresco Content Services and Share</description>
 
     <!-- temporary details pending completion of open sourcing process -->
@@ -58,16 +56,16 @@
     </developers>
 
     <properties>
-        <!-- TODO Refactor once available / stable name has been found -->
-        <messages.path>acog</messages.path>
-        <messages.packageId>acog</messages.packageId>
-        <moduleId>acog</moduleId>
+        <messages.path>aldica</messages.path>
+        <messages.packageId>aldica</messages.packageId>
+        <moduleId>aldica</moduleId>
         
-        <project.longName>Alfresco Community Open Grid</project.longName>
-        <project.longNameNoWs>AlfrescoCommunityOpenGrid</project.longNameNoWs>
+        <project.longName>Alternative/Alfresco Distributed Cache</project.longName>
+        <project.longNameNoWs>AlternativeAlfrescoDistributedCache</project.longNameNoWs>
+        <project.basePackage>org.aldica</project.basePackage>
 
-        <!-- TODO Refactor Maven coordinates once available / stable name has been found -->
-        <common.artifactId>de.acosix.alfresco.ignite.common</common.artifactId>
+        <aldica.ignite-common.artifactId>aldica-ignite-common</aldica.ignite-common.artifactId>
+        <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
 
         <acosix.utility.version>1.0.3.1</acosix.utility.version>
         <apache.ignite.version>2.7.0</apache.ignite.version>

@@ -7,16 +7,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>de.acosix.alfresco.ignite</groupId>
-        <artifactId>de.acosix.alfresco.ignite.parent</artifactId>
+        <groupId>org.aldica</groupId>
+        <artifactId>aldica-parent</artifactId>
         <version>1.0.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>de.acosix.alfresco.ignite.share</artifactId>
-    <name>Alfresco Ignite - Share Module</name>
+    <artifactId>aldica-ignite-share</artifactId>
+    <name>Alternative/Alfresco Distributed Cache - Share Ignite Module</name>
 
     <properties>
-
+        <project.basePackage>org.aldica.share.ignite</project.basePackage>
     </properties>
 
     <dependencyManagement>
@@ -26,14 +26,19 @@
                 <artifactId>spring-surf</artifactId>
                 <version>${surf.share.api.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>${aldica.ignite-common.artifactId}</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
         <dependency>
-            <groupId>de.acosix.alfresco.ignite</groupId>
-            <artifactId>de.acosix.alfresco.ignite.common</artifactId>
-            <version>${project.version}</version>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${aldica.ignite-common.artifactId}</artifactId>
         </dependency>
 
         <dependency>

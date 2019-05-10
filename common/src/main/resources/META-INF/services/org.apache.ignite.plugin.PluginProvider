@@ -1,1 +1,1 @@
-de.acosix.alfresco.ignite.common.plugin.SimpleSecurityPluginProvider
+${project.basePackage}.plugin.SimpleSecurityPluginProvider

@@ -27,13 +27,13 @@
         <property name="propertiesSource" ref="global-properties" />
     </bean>
 
-    <bean id="${moduleId}-immutableEntityCacheValueTransformer" class="${project.artifactId}.cache.ImmutableEntityTransformer" />
+    <bean id="${moduleId}-immutableEntityCacheValueTransformer" class="${project.basePackage}.cache.ImmutableEntityTransformer" />
 
-    <bean id="${moduleId}-nodeAspectsCacheValueTransformer" class="${project.artifactId}.cache.QNameSetTransformer">
+    <bean id="${moduleId}-nodeAspectsCacheValueTransformer" class="${project.basePackage}.cache.QNameSetTransformer">
         <property name="qnameDAO" ref="qnameDAO" />
     </bean>
 
-    <bean id="${moduleId}-nodePropertiesCacheValueTransformer" class="${project.artifactId}.cache.NodePropertiesTransformer">
+    <bean id="${moduleId}-nodePropertiesCacheValueTransformer" class="${project.basePackage}.cache.NodePropertiesTransformer">
         <property name="qnameDAO" ref="qnameDAO" />
         <property name="contentDataDAO" ref="contentDataDAO" />
         <property name="dictionaryService" ref="dictionaryService" />
