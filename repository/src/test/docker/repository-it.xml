@@ -44,10 +44,10 @@
         <dependencySet>
             <outputDirectory>WEB-INF/lib</outputDirectory>
             <includes>
-                <include>javax.cache:cache-api:*</include>
-                <include>org.jetbrains:annotations:*</include>
-                <include>org.apache.ignite:*</include>
                 <include>${project.groupId}:${aldica.ignite-common.artifactId}:*</include>
+                <include>org.apache.ignite:*</include>
+                <include>org.jetbrains:annotations:*</include>
+                <include>javax.cache:cache-api:*</include>
             </includes>
             <scope>compile</scope>
         </dependencySet>
