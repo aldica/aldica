@@ -34,7 +34,7 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
     @Override
     public String name()
     {
-        return "SimpleSecurityPlugin (org.aldica:aldica-ignite-common)";
+        return "SimpleSecurityPlugin (org.aldica:aldica-common-ignite)";
     }
 
     /**

@@ -12,7 +12,7 @@
         <version>1.0.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>aldica-ignite-repo</artifactId>
+    <artifactId>aldica-repo-ignite</artifactId>
     <name>Alternative/Alfresco Distributed Cache - Repository Ignite Module</name>
 
     <properties>

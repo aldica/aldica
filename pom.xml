@@ -64,7 +64,7 @@
         <project.longNameNoWs>AlternativeAlfrescoDistributedCache</project.longNameNoWs>
         <project.basePackage>org.aldica</project.basePackage>
 
-        <aldica.ignite-common.artifactId>aldica-ignite-common</aldica.ignite-common.artifactId>
+        <aldica.ignite-common.artifactId>aldica-common-ignite</aldica.ignite-common.artifactId>
         <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
 
         <acosix.utility.version>1.0.3.1</acosix.utility.version>
