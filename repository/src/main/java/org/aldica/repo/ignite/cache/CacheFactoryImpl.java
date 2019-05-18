@@ -259,17 +259,13 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
             switch (cacheType)
             {
                 case CACHE_TYPE_LOCAL:
-                    cache = this.createLocalCache(grid, cacheName);
+                    cache = this.createLocalCache(grid, cacheName, false, false);
                     break;
                 case CACHE_TYPE_LOCAL_DEFAULT_SIMPLE:
                     cache = this.createLocalDefaultSimpleCache(cacheName);
                     break;
                 case CACHE_TYPE_INVALIDATING:
-                    cache = this.createLocalCache(grid, cacheName);
-                    // note: allowValueSentinels is redundant in this case between local cache and facade, but of very low overhead only for
-                    // (non-default) config value of "false"
-                    final String effectiveCacheName = cacheName.startsWith("cache.") ? cacheName.substring(6) : cacheName;
-                    cache = new InvalidatingCacheFacade<>(effectiveCacheName, cache, grid, alwaysInvalidateOnPut, allowValueSentinels);
+                    cache = this.createLocalCache(grid, cacheName, true, alwaysInvalidateOnPut);
                     break;
                 case CACHE_TYPE_INVALIDATING_DEFAULT_SIMPLE:
                     cache = this.createLocalDefaultSimpleCache(cacheName);
@@ -351,7 +347,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         return cache;
     }
 
-    protected SimpleCache<K, V> createLocalCache(final Ignite grid, final String cacheName)
+    protected SimpleCache<K, V> createLocalCache(final Ignite grid, final String cacheName, final boolean invalidate,
+            final boolean alwaysInvalidateOnPut)
     {
         LOGGER.debug("Creating local cache {} in grid {}", cacheName, grid.name());
 
@@ -366,10 +363,13 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         final boolean allowValueSentinels = Boolean
                 .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
+        final boolean attemptCacheKeyHashWorkaround = Boolean
+                .parseBoolean(this.getProperty(cacheName, "ignite.cacheKeyHashWorkaround", "false"));
 
         final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(this.instanceName, true, backingCache,
-                allowValueSentinels);
+        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(grid,
+                SimpleIgniteBackedCache.Mode.getLocalCacheMode(invalidate, alwaysInvalidateOnPut), backingCache, allowValueSentinels,
+                attemptCacheKeyHashWorkaround);
         return localCache;
     }
 
@@ -402,10 +402,12 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         final boolean allowValueSentinels = Boolean
                 .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
+        final boolean attemptCacheKeyHashWorkaround = Boolean
+                .parseBoolean(this.getProperty(cacheName, "ignite.cacheKeyHashWorkaround", "false"));
 
         final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(this.instanceName, false, backingCache,
-                allowValueSentinels);
+        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(grid, SimpleIgniteBackedCache.Mode.PARTITIONED,
+                backingCache, allowValueSentinels, attemptCacheKeyHashWorkaround);
         return localCache;
     }
 
@@ -426,10 +428,12 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         final boolean allowValueSentinels = Boolean
                 .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
+        final boolean attemptCacheKeyHashWorkaround = Boolean
+                .parseBoolean(this.getProperty(cacheName, "ignite.cacheKeyHashWorkaround", "false"));
 
         final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(this.instanceName, true, backingCache,
-                allowValueSentinels);
+        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(grid, SimpleIgniteBackedCache.Mode.REPLICATED,
+                backingCache, allowValueSentinels, attemptCacheKeyHashWorkaround);
         return localCache;
     }
 

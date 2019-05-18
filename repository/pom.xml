@@ -207,7 +207,6 @@
                                     </assembly>
                                 </build>
                                 <run>
-                                    <!-- need to override skip as otherwise it could inherit from differen timage (position-based) from parent POM -->
                                     <skip>false</skip>
                                     <hostname>repository-1</hostname>
                                     <env>
@@ -272,11 +271,9 @@
                                 <name>${moduleId}-repository-test</name>
                                 <alias>repository-2</alias>
                                 <build>
-                                    <!-- no need to build -->
                                     <skip>true</skip>
                                 </build>
                                 <run>
-                                    <!-- need to override skip as otherwise it could inherit from different image (position-based) from parent POM -->
                                     <skip>false</skip>
                                     <hostname>repository-2</hostname>
                                     <env>
@@ -373,10 +370,14 @@
                 <artifactId>maven-toolchains-plugin</artifactId>
             </plugin>
 
+            <!-- Disabled for the time being as we need to use setAccessible -->
+            <!-- Use finer-grained rules to only allow setAccesible without disabling entire plugin -->
+            <!-- 
             <plugin>
                 <groupId>de.thetaphi</groupId>
                 <artifactId>forbiddenapis</artifactId>
             </plugin>
+             -->
 
             <plugin>
                 <groupId>de.acosix.maven</groupId>

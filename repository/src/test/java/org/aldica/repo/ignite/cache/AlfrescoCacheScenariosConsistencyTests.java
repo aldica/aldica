@@ -45,7 +45,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -90,7 +89,6 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
 
     @Category(ExpensiveTestCategory.class)
     @Test
-    @Ignore // we know this test fails - pending workaround
     public void qnameCacheBackedByImmutableEntityCache() throws Exception
     {
         // this essentially uses the default configuration and use case of the immutableEntityCache
@@ -142,10 +140,8 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
             });
 
             final IgniteCache<Serializable, ValueHolder<Serializable>> igniteCache = grid1.getOrCreateCache(cacheConfig);
-            final SimpleCache<Serializable, ValueHolder<Serializable>> simpleCache = new SimpleIgniteBackedCache<>(grid1.name(), false,
-                    igniteCache, true);
-            final SimpleCache<Serializable, ValueHolder<Serializable>> invalidatingCache = new InvalidatingCacheFacade<>(
-                    "cache.immutableEntitySharedCache", simpleCache, grid1, false, true);
+            final SimpleCache<Serializable, ValueHolder<Serializable>> simpleCache = new SimpleIgniteBackedCache<>(grid1,
+                    SimpleIgniteBackedCache.Mode.LOCAL_INVALIDATING_ON_CHANGE, igniteCache, true, true);
 
             final NamespacePrefixResolver nsPrefixResolver = new TestNamespacePrefixResolver();
             final QNameDAO qnameDAO = new TestQNameDAO();
@@ -155,7 +151,7 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
 
             // we are not using transactions in this test, but actually need this to properly test with the ValueHolder wrapper
             final ValueTransformingTransactionalCache<Serializable, Serializable> immutableEntityCache = new ValueTransformingTransactionalCache<>();
-            immutableEntityCache.setSharedCache(invalidatingCache);
+            immutableEntityCache.setSharedCache(simpleCache);
             // note: this was not active at the customer at the time of initial tests (bug in default config of the module version)
             immutableEntityCache.setValueTransformer(immutableEntityTransformer);
             immutableEntityCache.setName("org.alfresco.cache.immutableEntityTransactionalCache");
@@ -208,21 +204,18 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
                     "Failed lookup by regular QName should have added a sentinel value-key cache entry resolveable by regular QName",
                     VALUE_NOT_FOUND, lowLevelCacheValue.getValue());
 
-            lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, prefixedFolderQName);
-            lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
-
-            Assert.assertNotNull(
-                    "Failed lookup by regular QName should have added a sentinel value-key cache entry resolveable by prefixed QName",
-                    lowLevelCacheValue);
-            Assert.assertEquals(
-                    "Failed lookup by regular QName should have added a sentinel value-key cache entry resolveable by prefixed QName",
-                    VALUE_NOT_FOUND, lowLevelCacheValue.getValue());
-
             // lookup by prefixed QName (would typically done with QName provided e.g. in ReST request)
             entryPair = qnameCache.getByValue(prefixedFolderQName);
             Assert.assertNull(entryPair);
 
-            Assert.assertEquals("Failed lookup by regular QName should not have added another sentinel cache entry", 2, igniteCache.size());
+            Assert.assertEquals("Failed lookup by prefixed QName should not have added another sentinel cache entry", 2,
+                    igniteCache.size());
+
+            lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, prefixedFolderQName);
+            lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
+
+            Assert.assertNull("Failed lookup by prefixed QName should not have added a value-key cache entry resolveable by prefixed QName",
+                    lowLevelCacheValue);
 
             // create by prefixed QName - QName is identical according to hashCode + equals, but differs in actual internal state
             entryPair = qnameCache.getOrCreateByValue(prefixedFolderQName);
@@ -269,10 +262,8 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
             lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, prefixedFolderQName);
             lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
 
-            Assert.assertNotNull("Value creation should have added a value-key cache entry resolveable by prefixed QName",
+            Assert.assertNull("Value creation should not have added a value-key cache entry resolveable by prefixed QName",
                     lowLevelCacheValue);
-            Assert.assertEquals("Value creation should have added a value-key cache entry resolveable by prefixed QName", Long.valueOf(0),
-                    lowLevelCacheValue.getValue());
 
             Thread.sleep(100);
 
