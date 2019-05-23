@@ -283,11 +283,12 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public V get(final K key)
     {
-        this.instanceLogger.debug("Getting value for key {}", key);
+        final K sanitizedKey = this.sanitizeCacheKeyForIgniteHashIssues(key);
+        this.instanceLogger.debug("Getting value for key {}", sanitizedKey);
 
-        final V value = this.backingCache.get(key);
+        final V value = this.backingCache.get(sanitizedKey);
 
-        this.instanceLogger.debug("Retrieved value {} for key {}", value, key);
+        this.instanceLogger.debug("Retrieved value {} for key {}", value, sanitizedKey);
 
         return value;
     }
