@@ -39,4 +39,10 @@
         <property name="dictionaryService" ref="dictionaryService" />
     </bean>
 
+    <bean id="${moduleId}-globalAsynchronouslyRefreshedCacheEventHandler" class="${project.basePackage}.cache.AsynchronouslyRefreshedCacheEventHandler">
+        <property name="registry" ref="asynchronouslyRefreshedCacheRegistry" />
+        <property name="instanceName" value="\${${moduleId}.core.name}" />
+        <property name="topicName" value="globalAsynchronouslyRefreshedCacheEventHandler" />
+    </bean>
+
 </beans>
