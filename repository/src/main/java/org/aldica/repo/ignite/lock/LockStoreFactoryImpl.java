@@ -24,7 +24,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.slf4j.Logger;
@@ -156,10 +155,9 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     protected LockStore createIgniteLockStore()
     {
-        // TODO Consider replicated cache instead of partitioned one
         final CacheConfiguration<NodeRef, LockState> cacheConfig = new CacheConfiguration<>();
         cacheConfig.setName("lockStore");
-        cacheConfig.setCacheMode(this.enableRemoteSupport ? CacheMode.PARTITIONED : CacheMode.LOCAL);
+        cacheConfig.setCacheMode(this.enableRemoteSupport ? CacheMode.REPLICATED : CacheMode.LOCAL);
         cacheConfig.setStatisticsEnabled(true);
 
         // evict to off-heap after 975+25 entries
@@ -168,15 +166,10 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
         cacheConfig.setOnheapCacheEnabled(true);
         cacheConfig.setEvictionPolicyFactory(evictionPolicyFactory);
 
-        if (cacheConfig.getCacheMode() == CacheMode.PARTITIONED)
+        if (cacheConfig.getCacheMode() == CacheMode.REPLICATED)
         {
             cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
             cacheConfig.setRebalanceMode(CacheRebalanceMode.ASYNC);
-            cacheConfig.setBackups(1);
-            cacheConfig.setReadFromBackup(true);
-
-            final RendezvousAffinityFunction affinityFunction = new RendezvousAffinityFunction(false, this.partitionsCount);
-            cacheConfig.setAffinity(affinityFunction);
         }
 
         @SuppressWarnings("resource")
