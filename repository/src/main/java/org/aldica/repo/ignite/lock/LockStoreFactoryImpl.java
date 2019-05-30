@@ -32,6 +32,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
 /**
+ * This factory implementation for {@link LockStore lock store} handles the creation of Ignite-backed instances, either immediately or
+ * delayed (lazily) whenever the appropriate Ignite instance {@link IgniteInstanceLifecycleAware#afterInstanceStartup(String) has been
+ * started}.
+ *
  * @author Axel Faust
  */
 public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean, IgniteInstanceLifecycleAware
@@ -135,11 +139,12 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
         LockStore lockStore;
         if (this.gridStarted)
         {
+            LOGGER.debug("Creating Ignite-backed lock store");
             lockStore = this.createIgniteLockStore();
         }
         else
         {
-            LOGGER.debug("Creating proxy to lazily swap lcok store with real instance when grid has started");
+            LOGGER.debug("Creating proxy to lazily swap lock store with Ignite-backed instance when grid has started");
             final LockStoreImpl temporaryLockStore = new LockStoreImpl();
             lockStore = (LockStore) Proxy.newProxyInstance(LockStoreFactoryImpl.class.getClassLoader(),
                     new Class<?>[] { LockStore.class, IgniteInstanceLifecycleAware.class },
@@ -151,6 +156,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     protected LockStore createIgniteLockStore()
     {
+        // TODO Consider replicated cache instead of partitioned one
         final CacheConfiguration<NodeRef, LockState> cacheConfig = new CacheConfiguration<>();
         cacheConfig.setName("lockStore");
         cacheConfig.setCacheMode(this.enableRemoteSupport ? CacheMode.PARTITIONED : CacheMode.LOCAL);
@@ -159,6 +165,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
         // evict to off-heap after 975+25 entries
         final LruEvictionPolicyFactory<Object, Object> evictionPolicyFactory = new LruEvictionPolicyFactory<>(975);
         evictionPolicyFactory.setBatchSize(25);
+        cacheConfig.setOnheapCacheEnabled(true);
         cacheConfig.setEvictionPolicyFactory(evictionPolicyFactory);
 
         if (cacheConfig.getCacheMode() == CacheMode.PARTITIONED)
@@ -214,23 +221,29 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
         {
             Object result = null;
-            if (!this.swapped && "afterGridStartup".equals(method.getName()) && args.length == 1
-                    && EqualsHelper.nullSafeEquals(LockStoreFactoryImpl.this.instanceName, args[0]))
+
+            final String methodName = method.getName();
+            if (IgniteInstanceLifecycleAware.class.isAssignableFrom(method.getDeclaringClass())
+                    && (methodName.startsWith("beforeInstance") || methodName.startsWith("afterInstance")))
             {
-                LockStoreFactoryImpl.this.gridStarted = true;
+                if ("afterInstanceStartup".equals(methodName) && args.length == 1
+                        && EqualsHelper.nullSafeEquals(LockStoreFactoryImpl.this.instanceName, args[0]))
+                {
+                    LockStoreFactoryImpl.this.gridStarted = true;
 
-                final LockStore newLockStore = LockStoreFactoryImpl.this.createLockStore();
+                    final LockStore newLockStore = LockStoreFactoryImpl.this.createLockStore();
 
-                // transfer
-                this.lockStore.getNodes().forEach(node -> {
-                    final LockState lockState = this.lockStore.get(node);
-                    newLockStore.set(node, lockState);
-                });
+                    // transfer
+                    this.lockStore.getNodes().forEach(node -> {
+                        final LockState lockState = this.lockStore.get(node);
+                        newLockStore.set(node, lockState);
+                    });
 
-                this.lockStore = newLockStore;
-                this.swapped = true;
+                    this.lockStore = newLockStore;
+                    this.swapped = true;
 
-                LOGGER.debug("Lazily swapped temporary lock store with real instance");
+                    LOGGER.debug("Lazily swapped temporary lock store with Ignite-backed instance");
+                }
             }
 
             if (method.getDeclaringClass().isInstance(this.lockStore))

@@ -1,3 +1,6 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.repo.ignite.integration;
 
 import java.io.BufferedReader;
@@ -26,6 +29,7 @@ import org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -48,6 +52,8 @@ import de.acosix.alfresco.rest.client.model.nodes.PermissionsInfo;
 import de.acosix.alfresco.rest.client.resteasy.MultiValuedParamConverterProvider;
 
 /**
+ * Tests in this class check and verify that any actions in the grid that rely on regular or asynchronously refreshed caches in Alfresco
+ * result in a consistent state across all members of the grid.
  *
  * @author Axel Faust
  */
@@ -216,6 +222,8 @@ public class CacheConsistency
     }
 
     @Test
+    @Ignore // known to fail due to design problem with Alfresco asynchronously refreshed caches
+    // see issue #7
     public void dynamicModelActivation() throws Exception
     {
         final String namespaceUri = UUID.randomUUID().toString();
