@@ -19,7 +19,7 @@ import org.alfresco.util.ParameterCheck;
 public class NodePropertiesValueHolder implements Serializable
 {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -6273084156015809762L;
 
     protected final long[] qnameIds;
 
