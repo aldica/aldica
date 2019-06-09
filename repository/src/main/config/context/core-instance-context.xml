@@ -87,7 +87,7 @@
     <bean id="Configuration.${moduleId}.core.storage.dataRegionBeanEmitter"
         class="${project.basePackage}.spring.DataRegionBeanDefinitionEmitter">
         <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
-        <property name="propertyPrefix" value="${moduleId}.core.region." />
+        <property name="propertyPrefix" value="${moduleId}.core.storage.region." />
         <property name="storageBeanDefinitionName">
             <idref bean="Configuration.${moduleId}.core.storage" />
         </property>
