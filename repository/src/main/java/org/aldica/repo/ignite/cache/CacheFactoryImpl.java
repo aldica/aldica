@@ -89,6 +89,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     protected boolean enableRemoteSupport;
 
+    protected boolean ignoreDefaultEvictionConfiguration;
+
     /**
      * {@inheritDoc}
      */
@@ -175,6 +177,15 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     public void setEnableRemoteSupport(final boolean enableRemoteSupport)
     {
         this.enableRemoteSupport = enableRemoteSupport;
+    }
+
+    /**
+     * @param ignoreDefaultEvictionConfiguration
+     *            the ignoreDefaultEvictionConfiguration to set
+     */
+    public void setIgnoreDefaultEvictionConfiguration(final boolean ignoreDefaultEvictionConfiguration)
+    {
+        this.ignoreDefaultEvictionConfiguration = ignoreDefaultEvictionConfiguration;
     }
 
     /**
@@ -357,6 +368,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         cacheConfig.setName(cacheName.startsWith("cache.") ? cacheName.substring(6) : cacheName);
         cacheConfig.setCacheMode(CacheMode.LOCAL);
         cacheConfig.setStatisticsEnabled(true);
+        cacheConfig.setStoreKeepBinary(true);
 
         this.processMemoryConfig(cacheName, cacheConfig);
         this.processExpiryPolicy(cacheName, cacheConfig);
@@ -384,9 +396,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         cacheConfig.setStatisticsEnabled(true);
         cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
         cacheConfig.setRebalanceMode(CacheRebalanceMode.ASYNC);
+        cacheConfig.setStoreKeepBinary(true);
 
-        // BackupWorker currently causes a lot of illegal state exceptions during startup
-        // disabling backup doesn't do anything to avoid it
         final int backupCount = Integer.parseInt(this.getProperty(cacheName, "ignite.backup-count", "backup-count", "1"));
         cacheConfig.setBackups(backupCount);
         // reading from backup is more efficient than doing network calls - Alfresco defaults most caches to false though
@@ -420,8 +431,13 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         cacheConfig.setName(cacheName.startsWith("cache.") ? cacheName.substring(6) : cacheName);
         cacheConfig.setCacheMode(CacheMode.REPLICATED);
         cacheConfig.setStatisticsEnabled(true);
-        cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
         cacheConfig.setRebalanceMode(CacheRebalanceMode.ASYNC);
+        cacheConfig.setStoreKeepBinary(true);
+        cacheConfig.setReadFromBackup(true);
+
+        final RendezvousAffinityFunction affinityFunction = new RendezvousAffinityFunction(false, this.partitionsCount);
+        cacheConfig.setAffinity(affinityFunction);
 
         this.processMemoryConfig(cacheName, cacheConfig);
         this.processExpiryPolicy(cacheName, cacheConfig);
@@ -478,10 +494,14 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     protected void processEvictionPolicy(final String cacheName, final CacheConfiguration<K, V> cacheConfig)
     {
         final long maxMemory = Long.parseLong(this.getProperty(cacheName, "ignite.heap.maxMemory", "heap.maxMemory", "0"));
-        final int maxItems = Integer.parseInt(this.getProperty(cacheName, "ignite.heap.maxItems", "heap.maxItems", "maxItems", "0"));
+        final int maxItems = Integer.parseInt(
+                this.ignoreDefaultEvictionConfiguration ? this.getProperty(cacheName, "ignite.heap.maxItems", "heap.maxItems", "0")
+                        : this.getProperty(cacheName, "ignite.heap.maxItems", "heap.maxItems", "maxItems", "0"));
 
-        final String evictionPolicy = this.getProperty(cacheName, "ignite.heap.eviction-policy", "heap.eviction-policy", "eviction-policy",
-                EVICTION_POLICY_LRU);
+        final String evictionPolicy = this.ignoreDefaultEvictionConfiguration
+                ? this.getProperty(cacheName, "ignite.heap.eviction-policy", "heap.eviction-policy", "eviction-policy",
+                        EVICTION_POLICY_NONE)
+                : this.getProperty(cacheName, "ignite.heap.eviction-policy", "heap.eviction-policy", EVICTION_POLICY_NONE);
 
         if (!EVICTION_POLICY_NONE.equals(evictionPolicy) && (maxMemory > 0 || maxItems > 0))
         {
@@ -491,8 +511,10 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                     .parseInt(this.getProperty(cacheName, "ignite.heap.batchEvictionItems", "heap.batchEvictionItems", "0"));
             // eviction-percentage as an option is an artifact of pre 6.0 Alfresco default configuration
             // it was removed as part of https://issues.alfresco.com/jira/browse/REPO-3050
-            final int evictionPercentage = Integer.parseInt(
-                    this.getProperty(cacheName, "ignite.heap.eviction-percentage", "heap.eviction-percentage", "eviction-percentage", "0"));
+            final int evictionPercentage = Integer.parseInt(this.ignoreDefaultEvictionConfiguration
+                    ? this.getProperty(cacheName, "ignite.heap.eviction-percentage", "heap.eviction-percentage", "0")
+                    : this.getProperty(cacheName, "ignite.heap.eviction-percentage", "heap.eviction-percentage", "eviction-percentage",
+                            "0"));
 
             final AbstractEvictionPolicyFactory<? extends EvictionPolicy<K, V>> evictPolicyFactory = this.createEvictionPolicy(maxMemory,
                     maxItems, evictionPolicy, batchEvictionItems, evictionPercentage);
@@ -549,7 +571,9 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         final long nearMaxMemory = Long.parseLong(this.getProperty(cacheName, "ignite.near.maxMemory", "near.maxMemory",
                 cacheMaxMemory > 0 ? String.valueOf(cacheMaxMemory / 4) : "0"));
 
-        final int cacheMaxItems = Integer.parseInt(this.getProperty(cacheName, "ignite.heap.maxItems", "heap.maxItems", "maxItems", "0"));
+        final int cacheMaxItems = Integer.parseInt(
+                this.ignoreDefaultEvictionConfiguration ? this.getProperty(cacheName, "ignite.heap.maxItems", "heap.maxItems", "0")
+                        : this.getProperty(cacheName, "ignite.heap.maxItems", "heap.maxItems", "maxItems", "0"));
         final int nearMaxItems = Integer.parseInt(this.getProperty(cacheName, "ignite.near.maxItems", "near.maxItems",
                 cacheMaxItems > 0 ? String.valueOf(cacheMaxItems / 4) : "0"));
 
@@ -562,8 +586,9 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                     .parseInt(this.getProperty(cacheName, "ignite.heap.batchEvictionItems", "heap.batchEvictionItems", "0"));
             final int nearBatchEvictionItems = Integer.parseInt(this.getProperty(cacheName, "ignite.near.batchEvictionItems",
                     "near.batchEvictionItems", cacheBatchEvictionItems > 0 ? String.valueOf(cacheBatchEvictionItems) : "0"));
-            final int cacheBatchEvictionPercentage = Integer.parseInt(
-                    this.getProperty(cacheName, "heap.near.eviction-percentage", "heap.eviction-percentage", "eviction-percentage", "0"));
+            final int cacheBatchEvictionPercentage = Integer.parseInt(this.ignoreDefaultEvictionConfiguration
+                    ? this.getProperty(cacheName, "heap.near.eviction-percentage", "heap.eviction-percentage", "0")
+                    : this.getProperty(cacheName, "heap.near.eviction-percentage", "heap.eviction-percentage", "eviction-percentage", "0"));
             final int nearBatchEvictionPercentage = Integer.parseInt(this.getProperty(cacheName, "ignite.near.eviction-percentage",
                     "near.eviction-percentage", cacheBatchEvictionPercentage > 0 ? String.valueOf(cacheBatchEvictionPercentage) : "0"));
 

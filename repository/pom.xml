@@ -32,6 +32,14 @@
             </dependency>
 
             <dependency>
+                <groupId>de.acosix.alfresco.rest.client</groupId>
+                <artifactId>de.acosix.alfresco.rest.client</artifactId>
+                <version>${acosix.alfresco.client.version}</version>
+                <classifier>tests</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>${aldica.ignite-common.artifactId}</artifactId>
                 <version>${project.version}</version>
@@ -99,6 +107,12 @@
         <dependency>
             <groupId>de.acosix.alfresco.rest.client</groupId>
             <artifactId>de.acosix.alfresco.rest.client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.rest.client</groupId>
+            <artifactId>de.acosix.alfresco.rest.client</artifactId>
+            <classifier>tests</classifier>
         </dependency>
 
         <dependency>
@@ -222,7 +236,7 @@
                                             -Dsolr.base.url=${docker.tests.searchBaseUrl}
                                             -Dindex.subsystem.name=${docker.tests.searchSubsystem}
                                             -Dcsrf.filter.enabled=false
-                                            -D${moduleId}.core.caches.enableRemoteSupport=true
+                                            -D${moduleId}.caches.remoteSupport.enabled=true
                                             -D${moduleId}.webSessionCache.enabled=true
                                             -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
                                             -Devents.subsystem.autoStart=false
@@ -289,7 +303,7 @@
                                             -Dsolr.base.url=${docker.tests.searchBaseUrl}
                                             -Dindex.subsystem.name=${docker.tests.searchSubsystem}
                                             -Dcsrf.filter.enabled=false
-                                            -D${moduleId}.core.caches.enableRemoteSupport=true
+                                            -D${moduleId}.caches.remoteSupport.enabled=true
                                             -D${moduleId}.webSessionCache.enabled=true
                                             -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
                                             -Devents.subsystem.autoStart=false

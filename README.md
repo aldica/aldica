@@ -125,7 +125,7 @@ In a simple deployment scenario of multiple Alfresco Content Services instances 
 
 The following configuration parameters in alfresco-global.properties must be altered to ensure distributed caching is enabled:
 
-- *aldica.core.caches.enableRemoteSupport*: true/false configuration to control the activation of distributed caches - defaults to false
+- *aldica.caches.remoteSupport.enabled*: true/false configuration to control the activation of distributed caches - defaults to false
 
 THe following configuration parameters in alfresco-global.properties concern other key options, which should be considered: 
 
