@@ -7,16 +7,12 @@
            http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
-    <bean class="org.alfresco.i18n.ResourceBundleBootstrapComponent">
-        <property name="resourceBundles">
-            <list>
-                <value>alfresco.messages.${messages.packageId}.common</value>
-            </list>
-        </property>
+    <bean id="${moduleId}-DictionaryModelActivationChangePolicy" class="${project.basePackage}.policy.DictionaryModelActivationChange">
+        <property name="dictionaryDAO" ref="dictionaryDAO"/>
+        <property name="policyComponent" ref="policyComponent"/>
+        <property name="transactionService" ref="TransactionService"/>
+        <property name="tenantService" ref="tenantService"/>
+        <property name="instanceName" value="\${${moduleId}.core.name}" />
     </bean>
-
-    <import resource="classpath:alfresco/module/${moduleId}/context/core-instance-context.xml" />
-    <import resource="classpath:alfresco/module/${moduleId}/context/caches-context.xml" />
-    <import resource="classpath:alfresco/module/${moduleId}/context/behaviours-context.xml" />
 
 </beans>

@@ -29,7 +29,6 @@ import org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -222,8 +221,6 @@ public class CacheConsistency
     }
 
     @Test
-    @Ignore // known to fail due to design problem with Alfresco asynchronously refreshed caches
-    // see issue #7
     public void dynamicModelActivation() throws Exception
     {
         final String namespaceUri = UUID.randomUUID().toString();

@@ -181,7 +181,7 @@ public class AsynchronouslyRefreshedCacheEventHandler extends TransactionListene
             final ClusterGroup remotes = ignite.cluster().forRemotes().forServers();
             if (!remotes.nodes().isEmpty())
             {
-                queuedEvents.forEach(event -> ignite.message(remotes).send(this.toString(), event));
+                queuedEvents.forEach(event -> ignite.message(remotes).send(this.topicName, event));
             }
         }
     }
