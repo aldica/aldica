@@ -17,6 +17,7 @@
 
     <properties>
         <project.basePackage>org.aldica.share.ignite</project.basePackage>
+        <docker.tests.versionSpecificJavaOpts></docker.tests.versionSpecificJavaOpts>
     </properties>
 
     <dependencyManagement>
@@ -32,6 +33,14 @@
                 <artifactId>${aldica.ignite-common.artifactId}</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>${aldica.ignite-repo.artifactId}</artifactId>
+                <version>${project.version}</version>
+                <classifier>installable</classifier>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -43,7 +52,19 @@
 
         <dependency>
             <groupId>de.acosix.alfresco.utility</groupId>
+            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
+            <classifier>installable</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.utility</groupId>
             <artifactId>de.acosix.alfresco.utility.core.share</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.utility</groupId>
+            <artifactId>de.acosix.alfresco.utility.core.share</artifactId>
+            <classifier>installable</classifier>
         </dependency>
 
         <dependency>
@@ -55,6 +76,12 @@
         <dependency>
             <groupId>${surf.groupId}</groupId>
             <artifactId>spring-surf</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${aldica.ignite-repo.artifactId}</artifactId>
+            <classifier>installable</classifier>
         </dependency>
     </dependencies>
 
@@ -115,6 +142,289 @@
                 </excludes>
             </testResource>
         </testResources>
+
+        <pluginManagement>
+            <plugins>
+
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <configuration>
+                        <sourceDirectory>src/test/docker</sourceDirectory>
+                        <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
+                        <volumes>
+                            <volume>
+                                <name>${moduleId}-repository-test-contentstore</name>
+                                <driver>local</driver>
+                            </volume>
+                        </volumes>
+                        <images>
+                            <image>
+                                <name>postgres:10.1</name>
+                                <alias>postgres</alias>
+                                <run>
+                                    <hostname>postgres</hostname>
+                                    <cmd>postgres -c max_connections=300 -c log_min_messages=LOG</cmd>
+                                    <network>
+                                        <mode>custom</mode>
+                                        <name>${moduleId}-test</name>
+                                        <alias>postgres</alias>
+                                    </network>
+                                </run>
+                            </image>
+                            <image>
+                                <name>${moduleId}-repository-test</name>
+                                <alias>repository-1</alias>
+                                <build>
+                                    <from>${docker.tests.repositoryBaseImage}</from>
+                                    <skip>${docker.tests.skipRepositoryImageBuild}</skip>
+                                    <assembly>
+                                        <targetDir>${docker.tests.repositoryWebappPath}</targetDir>
+                                        <descriptorRef>${docker.tests.repositoryDescriptorRef}</descriptorRef>
+                                        <descriptor>${docker.tests.repositoryDescriptor}</descriptor>
+                                    </assembly>
+                                </build>
+                                <run>
+                                    <skip>false</skip>
+                                    <hostname>repository-1</hostname>
+                                    <env>
+                                        <JAVA_OPTS><![CDATA[
+                                            ${docker.tests.versionSpecificJavaOpts}
+                                            -Ddb.driver=org.postgresql.Driver
+                                            -Ddb.username=alfresco
+                                            -Ddb.password=alfresco
+                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                                            -Dsolr.host=search
+                                            -Dsolr.port=${docker.tests.searchPort}
+                                            -Dsolr.secureComms=none
+                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
+                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
+                                            -Dcsrf.filter.enabled=false
+                                            -D${moduleId}.caches.remoteSupport.enabled=true
+                                            -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
+                                            -Devents.subsystem.autoStart=false
+                                            -Dmessaging.subsystem.autoStart=false
+                                            -Xms2g -Xmx2g
+                                            -XX:+UseG1GC
+                                            -XX:+ParallelRefProcEnabled
+                                            -XX:+UseStringDeduplication
+                                            -XX:+ScavengeBeforeFullGC
+                                            -XX:+DisableExplicitGC
+                                            -XX:+AlwaysPreTouch
+                                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                                            -DIGNITE_QUIET=true
+                                            -DIGNITE_NO_ASCII=true
+                                            -DIGNITE_UPDATE_NOTIFIER=false
+                                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                                        ]]></JAVA_OPTS>
+                                    </env>
+                                    <ports>
+                                        <port>8180:8080</port>
+                                    </ports>
+                                    <network>
+                                        <mode>custom</mode>
+                                        <name>${moduleId}-test</name>
+                                        <alias>repository-1</alias>
+                                    </network>
+                                    <volumes>
+                                        <bind>
+                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
+                                        </bind>
+                                    </volumes>
+                                    <dependsOn>
+                                        <container>postgres</container>
+                                    </dependsOn>
+                                    <wait>
+                                        <http>
+                                            <url>http://localhost:8180/alfresco/favicon.ico</url>
+                                            <method>GET</method>
+                                            <status>200</status>
+                                        </http>
+                                        <time>${docker.tests.repositoryStartupWaitTime}</time>
+                                    </wait>
+                                </run>
+                            </image>
+                            <image>
+                                <name>${moduleId}-repository-test</name>
+                                <alias>repository-2</alias>
+                                <build>
+                                    <skip>true</skip>
+                                </build>
+                                <run>
+                                    <skip>false</skip>
+                                    <hostname>repository-2</hostname>
+                                    <env>
+                                        <JAVA_OPTS><![CDATA[
+                                            ${docker.tests.versionSpecificJavaOpts}
+                                            -Ddb.driver=org.postgresql.Driver
+                                            -Ddb.username=alfresco
+                                            -Ddb.password=alfresco
+                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                                            -Dsolr.host=search
+                                            -Dsolr.port=${docker.tests.searchPort}
+                                            -Dsolr.secureComms=none
+                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
+                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
+                                            -Dcsrf.filter.enabled=false
+                                            -D${moduleId}.caches.remoteSupport.enabled=true
+                                            -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
+                                            -Devents.subsystem.autoStart=false
+                                            -Dmessaging.subsystem.autoStart=false
+                                            -Xms2g -Xmx2g
+                                            -XX:+UseG1GC
+                                            -XX:+ParallelRefProcEnabled
+                                            -XX:+UseStringDeduplication
+                                            -XX:+ScavengeBeforeFullGC
+                                            -XX:+DisableExplicitGC
+                                            -XX:+AlwaysPreTouch
+                                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                                            -DIGNITE_QUIET=true
+                                            -DIGNITE_NO_ASCII=true
+                                            -DIGNITE_UPDATE_NOTIFIER=false
+                                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                                        ]]></JAVA_OPTS>
+                                    </env>
+                                    <ports>
+                                        <port>8280:8080</port>
+                                    </ports>
+                                    <network>
+                                        <mode>custom</mode>
+                                        <name>${moduleId}-test</name>
+                                        <alias>repository-2</alias>
+                                    </network>
+                                    <volumes>
+                                        <bind>
+                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
+                                        </bind>
+                                    </volumes>
+                                    <dependsOn>
+                                        <container>postgres</container>
+                                    </dependsOn>
+                                    <wait>
+                                        <http>
+                                            <url>http://localhost:8280/alfresco/favicon.ico</url>
+                                            <method>GET</method>
+                                            <status>200</status>
+                                        </http>
+                                        <time>${docker.tests.repositoryStartupWaitTime}</time>
+                                    </wait>
+                                </run>
+                            </image>
+                            <image>
+                                <name>${moduleId}-share-test</name>
+                                <alias>share-1</alias>
+                                <build>
+                                    <from>${docker.tests.shareBaseImage}</from>
+                                    <skip>${docker.tests.skipShareImageBuild}</skip>
+                                    <assembly>
+                                        <targetDir>${docker.tests.shareWebappPath}</targetDir>
+                                        <descriptorRef>${docker.tests.shareDescriptorRef}</descriptorRef>
+                                        <descriptor>${docker.tests.shareDescriptor}</descriptor>
+                                    </assembly>
+                                </build>
+                                <run>
+                                    <skip>false</skip>
+                                    <hostname>share-1</hostname>
+                                    <env>
+                                        <REPO_HOST>repository-1</REPO_HOST>
+                                        <REPO_PORT>8080</REPO_PORT>
+                                        <CATALINA_OPTS><![CDATA[
+                                            ${docker.tests.versionSpecificJavaOpts}
+                                            -D${moduleId}.core.local.id=share-1
+                                            -D${moduleId}.core.local.host=share-1
+                                            -D${moduleId}.core.initialMembers=share-2
+                                            -Xms512m -Xmx512m
+                                            -XX:+UseG1GC
+                                            -XX:+ParallelRefProcEnabled
+                                            -XX:+UseStringDeduplication
+                                            -XX:+ScavengeBeforeFullGC
+                                            -XX:+DisableExplicitGC
+                                            -XX:+AlwaysPreTouch
+                                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                                            -DIGNITE_QUIET=true
+                                            -DIGNITE_NO_ASCII=true
+                                            -DIGNITE_UPDATE_NOTIFIER=false
+                                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                                        ]]></CATALINA_OPTS>
+                                    </env>
+                                    <ports>
+                                        <port>8181:8080</port>
+                                    </ports>
+                                    <network>
+                                        <mode>custom</mode>
+                                        <name>${moduleId}-test</name>
+                                        <alias>share-1</alias>
+                                    </network>
+                                    <dependsOn>
+                                        <container>repository-1</container>
+                                    </dependsOn>
+                                    <wait>
+                                        <http>
+                                            <url>http://localhost:8181/share/res/favicon.ico</url>
+                                            <method>GET</method>
+                                            <status>200</status>
+                                        </http>
+                                        <time>${docker.tests.shareStartupWaitTime}</time>
+                                    </wait>
+                                </run>
+                            </image>
+                            <image>
+                                <name>${moduleId}-share-test</name>
+                                <alias>share-2</alias>
+                                <build>
+                                    <skip>true</skip>
+                                </build>
+                                <run>
+                                    <skip>false</skip>
+                                    <hostname>share-2</hostname>
+                                    <env>
+                                        <REPO_HOST>repository-2</REPO_HOST>
+                                        <REPO_PORT>8080</REPO_PORT>
+                                        <CATALINA_OPTS><![CDATA[
+                                            ${docker.tests.versionSpecificJavaOpts}
+                                            -D${moduleId}.core.local.id=share-2
+                                            -D${moduleId}.core.local.host=share-2
+                                            -D${moduleId}.core.initialMembers=share-1
+                                            -Xms512m -Xmx512m
+                                            -XX:+UseG1GC
+                                            -XX:+ParallelRefProcEnabled
+                                            -XX:+UseStringDeduplication
+                                            -XX:+ScavengeBeforeFullGC
+                                            -XX:+DisableExplicitGC
+                                            -XX:+AlwaysPreTouch
+                                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                                            -DIGNITE_QUIET=true
+                                            -DIGNITE_NO_ASCII=true
+                                            -DIGNITE_UPDATE_NOTIFIER=false
+                                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                                        ]]></CATALINA_OPTS>
+                                    </env>
+                                    <ports>
+                                        <port>8281:8080</port>
+                                    </ports>
+                                    <network>
+                                        <mode>custom</mode>
+                                        <name>${moduleId}-test</name>
+                                        <alias>share-2</alias>
+                                    </network>
+                                    <dependsOn>
+                                        <container>repository-2</container>
+                                    </dependsOn>
+                                    <wait>
+                                        <http>
+                                            <url>http://localhost:8281/share/res/favicon.ico</url>
+                                            <method>GET</method>
+                                            <status>200</status>
+                                        </http>
+                                        <time>${docker.tests.shareStartupWaitTime}</time>
+                                    </wait>
+                                </run>
+                            </image>
+                        </images>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
 
         <plugins>
 
@@ -183,5 +493,23 @@
         </plugins>
 
     </build>
+
+    <profiles>
+        <profile>
+            <id>alfresco-6.1-it</id>
+            <properties>
+                <docker.tests.repositoryBaseImage>alfresco/alfresco-content-repository-community:6.1.2-ga</docker.tests.repositoryBaseImage>
+                <docker.tests.shareBaseImage>alfresco/alfresco-share:6.1.0</docker.tests.shareBaseImage>
+                <docker.tests.versionSpecificJavaOpts><![CDATA[
+                    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+                    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+                    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                    --illegal-access=permit
+                ]]></docker.tests.versionSpecificJavaOpts>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

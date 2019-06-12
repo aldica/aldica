@@ -11,24 +11,6 @@
         <format>dir</format>
     </formats>
     <includeBaseDirectory>false</includeBaseDirectory>
-    <fileSets>
-        <fileSet>
-            <directory>${project.build.directory}</directory>
-            <outputDirectory>WEB-INF/lib</outputDirectory>
-            <includes>
-                <include>${project.artifactId}-${project.version}-installable.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${project.basedir}/src/test/resources</directory>
-            <outputDirectory>WEB-INF/classes</outputDirectory>
-            <includes>
-                <include>**/*.properties</include>
-            </includes>
-            <filtered>true</filtered>
-            <lineEnding>lf</lineEnding>
-        </fileSet>
-    </fileSets>
     <dependencySets>
         <dependencySet>
             <outputDirectory>WEB-INF/lib</outputDirectory>
@@ -45,6 +27,7 @@
             <includes>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.common:*</include>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo:jar:installable:*</include>
+                <include>${project.groupId}:${aldica.ignite-repo.artifactId}:jar:installable:*</include>
             </includes>
             <scope>test</scope>
         </dependencySet>

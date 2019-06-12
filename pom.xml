@@ -66,11 +66,17 @@
 
         <aldica.ignite-common.artifactId>aldica-common-ignite</aldica.ignite-common.artifactId>
         <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
+        <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
 
         <acosix.utility.version>1.0.3.1</acosix.utility.version>
         <apache.ignite.version>2.7.0</apache.ignite.version>
 
-        <fabric8io.docker.version>0.28-SNAPSHOT</fabric8io.docker.version>
+        <fabric8io.docker.version>0.30.0</fabric8io.docker.version>
+
+        <!-- these properties are not (yet) defined in Acosix Alfresco Maven 1.1.0 -->
+        <docker.tests.skipShareImageBuild>true</docker.tests.skipShareImageBuild>
+        <docker.tests.shareWebappPath>/usr/local/tomcat/webapps/share</docker.tests.shareWebappPath>
+        <docker.tests.shareStartupWaitTime>90000</docker.tests.shareStartupWaitTime>
     </properties>
 
     <repositories>
@@ -173,6 +179,52 @@
 
     <build>
     </build>
+
+    <!-- these profiles are not (yet) defined in Acosix Alfresco Maven 1.1.0 -->
+    <profiles>
+        <profile>
+            <id>shareDockerITDefaults</id>
+
+            <activation>
+                <file>
+                    <exists>src/test/docker/share-it.xml</exists>
+                </file>
+            </activation>
+
+            <properties>
+                <docker.tests.skipShareImageBuild>false</docker.tests.skipShareImageBuild>
+            </properties>
+
+        </profile>
+
+        <profile>
+            <id>HasNoSpecificShareDockerITAssembly</id>
+
+            <activation>
+                <file>
+                    <missing>src/test/docker/share-it.xml</missing>
+                </file>
+            </activation>
+
+            <properties>
+                <docker.tests.shareDescriptorRef>default-docker</docker.tests.shareDescriptorRef>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>HasSpecificShareDockerITAssembly</id>
+
+            <activation>
+                <file>
+                    <exists>src/test/docker/share-it.xml</exists>
+                </file>
+            </activation>
+
+            <properties>
+                <docker.tests.shareDescriptor>share-it.xml</docker.tests.shareDescriptor>
+            </properties>
+        </profile>
+    </profiles>
 
     <modules>
         <module>common</module>

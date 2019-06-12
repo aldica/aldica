@@ -217,7 +217,6 @@
                                         <targetDir>${docker.tests.repositoryWebappPath}</targetDir>
                                         <descriptorRef>${docker.tests.repositoryDescriptorRef}</descriptorRef>
                                         <descriptor>${docker.tests.repositoryDescriptor}</descriptor>
-                                        <escapeString>\</escapeString>
                                     </assembly>
                                 </build>
                                 <run>
@@ -237,7 +236,6 @@
                                             -Dindex.subsystem.name=${docker.tests.searchSubsystem}
                                             -Dcsrf.filter.enabled=false
                                             -D${moduleId}.caches.remoteSupport.enabled=true
-                                            -D${moduleId}.webSessionCache.enabled=true
                                             -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
                                             -Devents.subsystem.autoStart=false
                                             -Dmessaging.subsystem.autoStart=false
@@ -304,7 +302,6 @@
                                             -Dindex.subsystem.name=${docker.tests.searchSubsystem}
                                             -Dcsrf.filter.enabled=false
                                             -D${moduleId}.caches.remoteSupport.enabled=true
-                                            -D${moduleId}.webSessionCache.enabled=true
                                             -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
                                             -Devents.subsystem.autoStart=false
                                             -Dmessaging.subsystem.autoStart=false

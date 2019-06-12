@@ -6,7 +6,7 @@
     xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 http://maven.apache.org/xsd/assembly-1.1.3.xsd">
-    <id>repository-it-docker</id>
+    <id>share-it-docker</id>
     <formats>
         <format>dir</format>
     </formats>
@@ -44,7 +44,7 @@
             <outputDirectory>WEB-INF/lib</outputDirectory>
             <includes>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.common:*</include>
-                <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo:jar:installable:*</include>
+                <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.share:jar:installable:*</include>
             </includes>
             <scope>test</scope>
         </dependencySet>
