@@ -53,4 +53,4 @@ This will output any logging from the script on the console and print a summary 
 k6 run --out json=./results.json ./script.js
 ```
 
-The specific contents of the JSON output may vary as *script.js* evolves. The overal structure and some examples of processing it can be found in the K6 documentation on [result output](https://docs.k6.io/docs/results-output). 
+The specific contents of the JSON output may vary as *script.js* evolves. The overall structure and some examples of processing it can be found in the K6 documentation on [result output](https://docs.k6.io/docs/results-output). 
