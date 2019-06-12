@@ -98,7 +98,7 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter impl
      * {@inheritDoc}
      */
     @Override
-    public void beforeInstanceStartup(final String gridName)
+    public void beforeInstanceStartup(final String instanceName)
     {
         // NO-OP
     }
@@ -107,7 +107,7 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter impl
      * {@inheritDoc}
      */
     @Override
-    public void afterInstanceStartup(final String gridName)
+    public void afterInstanceStartup(final String instanceName)
     {
         // NO-OP
     }
@@ -117,11 +117,11 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter impl
      * {@inheritDoc}
      */
     @Override
-    public void beforeInstanceShutdown(final String gridName)
+    public void beforeInstanceShutdown(final String instanceName)
     {
-        if (this.instanceName != null && this.instanceName.equals(gridName))
+        if (this.instanceName != null && this.instanceName.equals(instanceName))
         {
-            LOGGER.info("Ignite instance {} is about to be shut down - removing local address(es) from database", gridName);
+            LOGGER.info("Ignite instance {} is about to be shut down - removing local address(es) from database", instanceName);
             try
             {
                 this.removeDiscoveryAddressesAttributes(this.effectiveRegistrationId);
@@ -140,7 +140,7 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter impl
      * {@inheritDoc}
      */
     @Override
-    public void afterInstanceShutdown(final String gridName)
+    public void afterInstanceShutdown(final String instanceName)
     {
         // NO-OP
     }

@@ -38,11 +38,11 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
 
     protected boolean enabled;
 
-    protected String gridName;
+    protected String instanceName;
 
     protected String topicName;
 
-    protected boolean gridStarted = false;
+    protected boolean instanceStarted = false;
 
     protected final Map<String, Pair<String, ClusterMessageAware>> messageTypeBeans = new HashMap<>();
 
@@ -54,7 +54,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
     @Override
     public void afterPropertiesSet() throws Exception
     {
-        PropertyCheck.mandatory(this, "gridName", this.gridName);
+        PropertyCheck.mandatory(this, "instanceName", this.instanceName);
         PropertyCheck.mandatory(this, "topicName", this.topicName);
 
         if (this.enabled)
@@ -111,12 +111,12 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
     }
 
     /**
-     * @param gridName
-     *            the gridName to set
+     * @param instanceName
+     *            the instanceName to set
      */
-    public void setGridName(final String gridName)
+    public void setInstanceName(final String instanceName)
     {
-        this.gridName = gridName;
+        this.instanceName = instanceName;
     }
 
     /**
@@ -152,11 +152,11 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
     @Override
     public void afterInstanceStartup(final String gridName)
     {
-        if (this.enabled && EqualsHelper.nullSafeEquals(this.gridName, gridName))
+        if (this.enabled && EqualsHelper.nullSafeEquals(this.instanceName, gridName))
         {
-            this.gridStarted = true;
+            this.instanceStarted = true;
 
-            Ignition.ignite(this.gridName).message().localListen(this.topicName, this::onMessage);
+            Ignition.ignite(this.instanceName).message().localListen(this.topicName, this::onMessage);
 
             LOGGER.info("Ignite-backed cluster service registered grid listener on topic {}", this.topicName);
         }
@@ -186,9 +186,9 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
     @Override
     public void publishClusterMessage(final String messageType, final Map<String, Serializable> payload)
     {
-        if (this.gridStarted)
+        if (this.instanceStarted)
         {
-            final Ignite ignite = Ignition.ignite(this.gridName);
+            final Ignite ignite = Ignition.ignite(this.instanceName);
 
             final ClusterMessage message = new ClusterMessage(messageType, payload);
             final ClusterGroup remotes = ignite.cluster().forRemotes();
@@ -228,6 +228,12 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
         return true;
     }
 
+    /**
+     * Instances of this data transport object class are sent via the messaging components of the Ignite data grid to inform other servers
+     * about specific events, typically cache invalidations.
+     *
+     * @author Axel Faust
+     */
     protected static class ClusterMessage implements Serializable
     {
 
