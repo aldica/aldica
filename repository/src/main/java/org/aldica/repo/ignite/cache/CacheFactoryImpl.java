@@ -499,9 +499,9 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                         : this.getProperty(cacheName, "ignite.heap.maxItems", "heap.maxItems", "maxItems", "0"));
 
         final String evictionPolicy = this.ignoreDefaultEvictionConfiguration
-                ? this.getProperty(cacheName, "ignite.heap.eviction-policy", "heap.eviction-policy", "eviction-policy",
-                        EVICTION_POLICY_NONE)
-                : this.getProperty(cacheName, "ignite.heap.eviction-policy", "heap.eviction-policy", EVICTION_POLICY_NONE);
+                ? this.getProperty(cacheName, "ignite.heap.eviction-policy", "heap.eviction-policy", EVICTION_POLICY_NONE)
+                : this.getProperty(cacheName, "ignite.heap.eviction-policy", "heap.eviction-policy", "eviction-policy",
+                        EVICTION_POLICY_NONE);
 
         if (!EVICTION_POLICY_NONE.equals(evictionPolicy) && (maxMemory > 0 || maxItems > 0))
         {
