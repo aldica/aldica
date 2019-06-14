@@ -33,15 +33,15 @@
                         <th title="${msg("ignite.caches.attr.type.alfresco.title")?xml}">${msg("ignite.caches.attr.type.alfresco.label")?html}</th>
                         <th title="${msg("ignite.caches.attr.type.ignite.title")?xml}">${msg("ignite.caches.attr.type.ignite.label")?html}</th>
 
-                        <th title="${msg("ignite.caches.attr.size.title")?xml}">${msg("ignite.caches.attr.size.label")?html}</th>
+                        <#-- <th title="${msg("ignite.caches.attr.size.title")?xml}">${msg("ignite.caches.attr.size.label")?html}</th> -->
+                        <th title="${msg("ignite.caches.attr.onHeapSize.title")?xml}">${msg("ignite.caches.attr.onHeapSize.label")?html}</th>
+                        <th title="${msg("ignite.caches.attr.offHeapSize.title")?xml}">${msg("ignite.caches.attr.offHeapSize.label")?html}</th>
                         <#-- memory metrics currently not provided by Ignite metrics (e.g. see IgniteCacheOffheapManagerImpl#offHeapAllocatedSize()) -->
                         <#-- TODO Need more efficient / better method to display onHeap vs offHeap details in available screen space -->
                         <#--
-                        <th title="${msg("ignite.caches.attr.onHeapSize.title")?xml}">${msg("ignite.caches.attr.onHeapSize.label")?html}</th>
                         <th title="${msg("ignite.caches.attr.onHeapMemory.title")?xml}">${msg("ignite.caches.attr.onHeapMemory.label")?html}</th>
                         <th title="${msg("ignite.caches.attr.onHeapSizeLimit.title")?xml}">${msg("ignite.caches.attr.onHeapSizeLimit.label")?html}</th>
                         <th title="${msg("ignite.caches.attr.onHeapMemoryLimit.title")?xml}">${msg("ignite.caches.attr.onHeapMemoryLimit.label")?html}</th>
-                        <th title="${msg("ignite.caches.attr.offHeapSize.title")?xml}">${msg("ignite.caches.attr.offHeapSize.label")?html}</th>
                         <th title="${msg("ignite.caches.attr.offHeapMemory.title")?xml}">${msg("ignite.caches.attr.offHeapMemory.label")?html}</th>
                         -->
                         <th title="${msg("ignite.caches.attr.cacheGets.title")?xml}">${msg("ignite.caches.attr.cacheGets.label")?html}</th>
@@ -65,15 +65,18 @@
                             <td>${cacheInfo.definedType?html}</td>
                             <td>${cacheInfo.type?html}</td>
 
-                            <td class="numericalCellValue">
+                            <#-- <td class="numericalCellValue">
                                 ${cacheInfo.metrics.cacheSize?c}
+                            </td> -->
+                            <td class="numericalCellValue">
+                                <#if cacheInfo.metrics.heapEntriesCount &gt; 0>${cacheInfo.metrics.heapEntriesCount?c}</#if>
+                            </td>
+                            <td class="numericalCellValue">
+                                <#if cacheInfo.metrics.offHeapEntriesCount &gt; 0>${cacheInfo.metrics.offHeapEntriesCount?c}</#if>
                             </td>
                             <#-- memory metrics currently not provided by Ignite metrics (e.g. see IgniteCacheOffheapManagerImpl#offHeapAllocatedSize()) -->
                             <#-- TODO Need more efficient / better method to display onHeap vs offHeap details in available screen space -->
                             <#--
-                            <td class="numericalCellValue">
-                                <#if cacheInfo.metrics.heapEntriesCount &gt; 0>${cacheInfo.metrics.heapEntriesCount?c}</#if>
-                            </td>
                             <td class="numericalCellValue">
                                 <#if cacheInfo.evictionPolicy?? && cacheInfo.evictionPolicy.currentMemorySize??>${formatSize(cacheInfo.evictionPolicy.currentMemorySize)?html}</#if>
                             </td>
@@ -82,9 +85,6 @@
                             </td>
                             <td class="numericalCellValue">
                                 <#if cacheInfo.evictionPolicy?? && cacheInfo.evictionPolicy.maxMemorySize?? && cacheInfo.evictionPolicy.maxMemorySize &gt; 0>${formatSize(cacheInfo.evictionPolicy.maxMemorySize)?html}</#if>
-                            </td>
-                            <td class="numericalCellValue">
-                                <#if cacheInfo.metrics.offHeapEntriesCount &gt; 0>${cacheInfo.metrics.offHeapEntriesCount?c}</#if>
                             </td>
                             <td class="numericalCellValue">
                                 <#if cacheInfo.metrics.offHeapAllocatedSize &gt; 0>${formatSize(cacheInfo.metrics.offHeapAllocatedSize)}</#if>
