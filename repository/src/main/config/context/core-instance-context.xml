@@ -18,6 +18,15 @@
         <property name="targetBeanNamePattern" value="^[A-Z][a-zA-Z]+\.${moduleId}\..+$" />
     </bean>
 
+    <bean id="Configuration.${moduleId}.jobs" abstract="true" class="org.springframework.scheduling.quartz.SchedulerAccessorBean">
+        <property name="scheduler" ref="schedulerFactory"/>
+        <property name="triggers">
+            <list>
+                <ref bean="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobTrigger"/>
+            </list>
+        </property>
+    </bean>
+
     <bean id="Configuration.${moduleId}.core" abstract="true" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="discoverySpi" ref="DiscoverySPI.${moduleId}.core" />
         <property name="addressResolver" ref="AddressResolver.${moduleId}.core" />
@@ -138,6 +147,21 @@
         <property name="transactionService" ref="TransactionService" />
         <property name="attributeService" ref="AttributeService" />
         <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
+    </bean>
+
+    <bean id="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobTrigger" abstract="true" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="cronExpression" value="\${${moduleId}.core.local.disco.registrationRefresh.cron}" />
+        <property name="startDelay" value="${system.cronJob.startDelayMilliseconds}"/>
+        <property name="jobDetail">
+            <bean id="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobDetail" class="de.acosix.alfresco.utility.repo.job.GenericJobDetailsFactoryBean">
+                <property name="jobClass" value="${project.basePackage}.job.MemberAddressRegistrationRefreshJob"/>
+                <property name="jobDataAsMap">
+                    <map>
+                        <entry key="memberAddressRegistrar"><ref bean="DiscoverySPI.${moduleId}.core.MemberFinder"/></entry>
+                    </map>
+                </property>
+            </bean>
+        </property>
     </bean>
 
     <bean id="DiscoverySPI.${moduleId}.core.credentials" abstract="true" class="org.apache.ignite.plugin.security.SecurityCredentials">

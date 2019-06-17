@@ -187,6 +187,17 @@ public final class ExternalContext
     }
 
     /**
+     * Checks if there is currently a context active on the current thread.
+     *
+     * @return {@code true} if a context is active, {@code false} otherwise
+     */
+    public static boolean hasActiveContext()
+    {
+        final List<Pair<List<IgniteContextOperationFailureHandler>, Map<String, Object>>> stack = CONTEXT_STACK.get();
+        return stack != null;
+    }
+
+    /**
      * Retrieves an attribute from the currently active, external Ignite context.
      *
      * @param key

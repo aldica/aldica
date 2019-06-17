@@ -3,13 +3,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.repo.ignite.integration;
 
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.UriBuilder;
 
-import org.apache.commons.codec.binary.Base64;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -18,6 +15,7 @@ import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -25,12 +23,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import de.acosix.alfresco.rest.client.api.AuthenticationV1;
 import de.acosix.alfresco.rest.client.api.NodesV1;
 import de.acosix.alfresco.rest.client.api.NodesV1.IncludeOption;
 import de.acosix.alfresco.rest.client.jackson.RestAPIBeanDeserializerModifier;
-import de.acosix.alfresco.rest.client.model.authentication.TicketEntity;
-import de.acosix.alfresco.rest.client.model.authentication.TicketRequest;
+import de.acosix.alfresco.rest.client.jaxrs.BasicAuthenticationClientRequestFilter;
 import de.acosix.alfresco.rest.client.model.common.MultiValuedParam;
 import de.acosix.alfresco.rest.client.model.nodes.NodeCreationRequestEntity;
 import de.acosix.alfresco.rest.client.model.nodes.NodeLockRequestEntity;
@@ -51,6 +47,14 @@ public class LockConsistency
     private static final String baseUrlServer2 = "http://localhost:8280/alfresco";
 
     private static ResteasyClient client;
+
+    private final BasicAuthenticationClientRequestFilter server1AuthFilter = new BasicAuthenticationClientRequestFilter();
+
+    private final BasicAuthenticationClientRequestFilter server2AuthFilter = new BasicAuthenticationClientRequestFilter();
+
+    private NodesV1 server1NodesAPI;
+
+    private NodesV1 server2NodesAPI;
 
     @BeforeClass
     public static void setup()
@@ -73,43 +77,38 @@ public class LockConsistency
         client = new ResteasyClientBuilder().providerFactory(resteasyProviderFactory).build();
     }
 
-    private NodesV1 createServerNodesAPI(final ResteasyClient client, final String baseUrl, final String user, final String password)
+    @Before
+    public void setupTest()
     {
-        final ResteasyWebTarget targetServer = client.target(UriBuilder.fromPath(baseUrl));
+        final ResteasyWebTarget targetServer1 = client.target(UriBuilder.fromPath(baseUrlServer1));
+        targetServer1.register(this.server1AuthFilter);
+        this.server1NodesAPI = targetServer1.proxy(NodesV1.class);
 
-        final TicketRequest rq = new TicketRequest();
-        rq.setUserId(user);
-        rq.setPassword(password);
+        this.server1AuthFilter.setUserName("admin");
+        this.server1AuthFilter.setAuthentication("admin");
 
-        final AuthenticationV1 authenticationAPI = targetServer.proxy(AuthenticationV1.class);
-        final TicketEntity ticket = authenticationAPI.createTicket(rq);
+        final ResteasyWebTarget targetServer2 = client.target(UriBuilder.fromPath(baseUrlServer2));
+        targetServer2.register(this.server2AuthFilter);
+        this.server2NodesAPI = targetServer2.proxy(NodesV1.class);
 
-        final ClientRequestFilter rqAuthFilter = (requestContext) -> {
-            final String base64Token = Base64.encodeBase64String(ticket.getId().getBytes(StandardCharsets.UTF_8));
-            requestContext.getHeaders().add("Authorization", "Basic " + base64Token);
-        };
-        targetServer.register(rqAuthFilter);
-
-        return targetServer.proxy(NodesV1.class);
+        this.server2AuthFilter.setUserName("admin");
+        this.server2AuthFilter.setAuthentication("admin");
     }
 
     @Test
     public void defaultLockPropagation()
     {
-        final NodesV1 server1NodesAPI = this.createServerNodesAPI(client, baseUrlServer1, "admin", "admin");
-        final NodesV1 server2NodesAPI = this.createServerNodesAPI(client, baseUrlServer2, "admin", "admin");
-
         final NodeCreationRequestEntity nodeToCreate = new NodeCreationRequestEntity();
         nodeToCreate.setNodeType("cm:content");
         final String name = "lockContent-" + UUID.randomUUID().toString();
         nodeToCreate.setName(name);
 
-        final NodeResponseEntity createdNode = server1NodesAPI.createNode("-shared-", nodeToCreate);
+        final NodeResponseEntity createdNode = this.server1NodesAPI.createNode("-shared-", nodeToCreate);
 
         final NodeLockRequestEntity lockToSet = new NodeLockRequestEntity();
-        server1NodesAPI.lockNode(createdNode.getId(), lockToSet);
+        this.server1NodesAPI.lockNode(createdNode.getId(), lockToSet);
 
-        final NodeResponseEntity nodeDetail = server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
+        final NodeResponseEntity nodeDetail = this.server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
                 new MultiValuedParam<>());
 
         Assert.assertEquals(Boolean.TRUE, nodeDetail.getIsLocked());
@@ -118,35 +117,32 @@ public class LockConsistency
     @Test
     public void persistentLockPropagation() throws Exception
     {
-        final NodesV1 server1NodesAPI = this.createServerNodesAPI(client, baseUrlServer1, "admin", "admin");
-        final NodesV1 server2NodesAPI = this.createServerNodesAPI(client, baseUrlServer2, "admin", "admin");
-
         final NodeCreationRequestEntity nodeToCreate = new NodeCreationRequestEntity();
         nodeToCreate.setNodeType("cm:content");
         final String name = "lockContent-" + UUID.randomUUID().toString();
         nodeToCreate.setName(name);
 
-        final NodeResponseEntity createdNode = server1NodesAPI.createNode("-shared-", nodeToCreate);
+        final NodeResponseEntity createdNode = this.server1NodesAPI.createNode("-shared-", nodeToCreate);
 
         final NodeLockRequestEntity lockToSet = new NodeLockRequestEntity();
         lockToSet.setLifetime(LockLifetime.PERSISTENT);
         lockToSet.setTimeToExpire(5);
 
-        server1NodesAPI.lockNode(createdNode.getId(), lockToSet);
+        this.server1NodesAPI.lockNode(createdNode.getId(), lockToSet);
 
-        NodeResponseEntity nodeDetail = server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
+        NodeResponseEntity nodeDetail = this.server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
                 new MultiValuedParam<>());
 
         Assert.assertEquals(Boolean.TRUE, nodeDetail.getIsLocked());
 
         Thread.sleep(5500);
 
-        nodeDetail = server1NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
+        nodeDetail = this.server1NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
                 new MultiValuedParam<>());
 
         Assert.assertEquals(Boolean.FALSE, nodeDetail.getIsLocked());
 
-        nodeDetail = server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
+        nodeDetail = this.server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
                 new MultiValuedParam<>());
 
         Assert.assertEquals(Boolean.FALSE, nodeDetail.getIsLocked());
@@ -155,35 +151,32 @@ public class LockConsistency
     @Test
     public void ephemeralLockPropagation() throws Exception
     {
-        final NodesV1 server1NodesAPI = this.createServerNodesAPI(client, baseUrlServer1, "admin", "admin");
-        final NodesV1 server2NodesAPI = this.createServerNodesAPI(client, baseUrlServer2, "admin", "admin");
-
         final NodeCreationRequestEntity nodeToCreate = new NodeCreationRequestEntity();
         nodeToCreate.setNodeType("cm:content");
         final String name = "lockContent-" + UUID.randomUUID().toString();
         nodeToCreate.setName(name);
 
-        final NodeResponseEntity createdNode = server1NodesAPI.createNode("-shared-", nodeToCreate);
+        final NodeResponseEntity createdNode = this.server1NodesAPI.createNode("-shared-", nodeToCreate);
 
         final NodeLockRequestEntity lockToSet = new NodeLockRequestEntity();
         lockToSet.setLifetime(LockLifetime.EPHEMERAL);
         lockToSet.setTimeToExpire(5);
 
-        server1NodesAPI.lockNode(createdNode.getId(), lockToSet);
+        this.server1NodesAPI.lockNode(createdNode.getId(), lockToSet);
 
-        NodeResponseEntity nodeDetail = server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
+        NodeResponseEntity nodeDetail = this.server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
                 new MultiValuedParam<>());
 
         Assert.assertEquals(Boolean.TRUE, nodeDetail.getIsLocked());
 
         Thread.sleep(5500);
 
-        nodeDetail = server1NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
+        nodeDetail = this.server1NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
                 new MultiValuedParam<>());
 
         Assert.assertEquals(Boolean.FALSE, nodeDetail.getIsLocked());
 
-        nodeDetail = server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
+        nodeDetail = this.server2NodesAPI.getNode(createdNode.getId(), new MultiValuedParam<>(IncludeOption.IS_LOCKED),
                 new MultiValuedParam<>());
 
         Assert.assertEquals(Boolean.FALSE, nodeDetail.getIsLocked());
