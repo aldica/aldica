@@ -431,7 +431,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         cacheConfig.setName(cacheName.startsWith("cache.") ? cacheName.substring(6) : cacheName);
         cacheConfig.setCacheMode(CacheMode.REPLICATED);
         cacheConfig.setStatisticsEnabled(true);
-        cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
+        cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
         cacheConfig.setRebalanceMode(CacheRebalanceMode.ASYNC);
         cacheConfig.setStoreKeepBinary(true);
         cacheConfig.setReadFromBackup(true);
