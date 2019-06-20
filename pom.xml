@@ -68,7 +68,7 @@
         <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
         <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
 
-        <acosix.utility.version>1.0.5.0-SNAPSHOT</acosix.utility.version>
+        <acosix.utility.version>1.0.5.0</acosix.utility.version>
         <apache.ignite.version>2.7.5</apache.ignite.version>
 
         <fabric8io.docker.version>0.30.0</fabric8io.docker.version>

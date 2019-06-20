@@ -58,6 +58,14 @@ public class SimpleSecurityPluginTest extends GridTestsBase
 
             Ignition.start(conf1);
 
+
+            // for Ignite 2.8 onwards
+            // with existing node missing any security configuration, additional nodes cannot joint since the security processor differs
+            /*
+            this.thrown.expect(IgniteException.class);
+            this.thrown.expectMessage(StringStartsWith.startsWith("Failed to start manager:"));
+            */
+
             // with existing node missing any security configuration, additional nodes can always join
             Ignition.start(conf2);
             Ignition.start(conf3);

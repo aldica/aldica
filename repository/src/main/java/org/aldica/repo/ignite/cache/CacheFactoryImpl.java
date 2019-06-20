@@ -91,6 +91,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     protected boolean ignoreDefaultEvictionConfiguration;
 
+    protected boolean disableAllStatistics;
+
     /**
      * {@inheritDoc}
      */
@@ -186,6 +188,15 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     public void setIgnoreDefaultEvictionConfiguration(final boolean ignoreDefaultEvictionConfiguration)
     {
         this.ignoreDefaultEvictionConfiguration = ignoreDefaultEvictionConfiguration;
+    }
+
+    /**
+     * @param disableAllStatistics
+     *            the disableAllStatistics to set
+     */
+    public void setDisableAllStatistics(final boolean disableAllStatistics)
+    {
+        this.disableAllStatistics = disableAllStatistics;
     }
 
     /**
@@ -367,7 +378,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         cacheConfig.setName(cacheName.startsWith("cache.") ? cacheName.substring(6) : cacheName);
         cacheConfig.setCacheMode(CacheMode.LOCAL);
-        cacheConfig.setStatisticsEnabled(true);
+        cacheConfig.setStatisticsEnabled(!this.disableAllStatistics);
         cacheConfig.setStoreKeepBinary(true);
 
         this.processMemoryConfig(cacheName, cacheConfig);
@@ -393,7 +404,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         cacheConfig.setName(cacheName.startsWith("cache.") ? cacheName.substring(6) : cacheName);
         cacheConfig.setCacheMode(CacheMode.PARTITIONED);
-        cacheConfig.setStatisticsEnabled(true);
+        cacheConfig.setStatisticsEnabled(!this.disableAllStatistics);
         cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
         cacheConfig.setRebalanceMode(CacheRebalanceMode.ASYNC);
         cacheConfig.setStoreKeepBinary(true);
@@ -430,7 +441,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         cacheConfig.setName(cacheName.startsWith("cache.") ? cacheName.substring(6) : cacheName);
         cacheConfig.setCacheMode(CacheMode.REPLICATED);
-        cacheConfig.setStatisticsEnabled(true);
+        cacheConfig.setStatisticsEnabled(!this.disableAllStatistics);
         cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
         cacheConfig.setRebalanceMode(CacheRebalanceMode.ASYNC);
         cacheConfig.setStoreKeepBinary(true);
