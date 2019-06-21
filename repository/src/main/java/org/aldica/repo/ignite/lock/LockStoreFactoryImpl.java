@@ -169,12 +169,12 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
         final CacheConfiguration<NodeRef, LockState> cacheConfig = new CacheConfiguration<>();
         cacheConfig.setName("lockStore");
         cacheConfig.setCacheMode(this.enableRemoteSupport ? CacheMode.REPLICATED : CacheMode.LOCAL);
-        cacheConfig.setStatisticsEnabled(true);
+        cacheConfig.setStatisticsEnabled(!this.disableAllStatistics);
 
         // evict to off-heap after 975+25 entries
         final LruEvictionPolicyFactory<Object, Object> evictionPolicyFactory = new LruEvictionPolicyFactory<>(975);
         evictionPolicyFactory.setBatchSize(25);
-        cacheConfig.setOnheapCacheEnabled(!this.disableAllStatistics);
+        cacheConfig.setOnheapCacheEnabled(true);
         cacheConfig.setEvictionPolicyFactory(evictionPolicyFactory);
 
         if (cacheConfig.getCacheMode() == CacheMode.REPLICATED)
