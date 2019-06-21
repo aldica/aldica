@@ -235,18 +235,21 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
                 {
                     LockStoreFactoryImpl.this.gridStarted = true;
 
-                    final LockStore newLockStore = LockStoreFactoryImpl.this.createLockStore();
+                    if (!this.swapped)
+                    {
+                        final LockStore newLockStore = LockStoreFactoryImpl.this.createLockStore();
 
-                    // transfer
-                    this.lockStore.getNodes().forEach(node -> {
-                        final LockState lockState = this.lockStore.get(node);
-                        newLockStore.set(node, lockState);
-                    });
+                        // transfer
+                        this.lockStore.getNodes().forEach(node -> {
+                            final LockState lockState = this.lockStore.get(node);
+                            newLockStore.set(node, lockState);
+                        });
 
-                    this.lockStore = newLockStore;
-                    this.swapped = true;
+                        this.lockStore = newLockStore;
+                        this.swapped = true;
 
-                    LOGGER.debug("Lazily swapped temporary lock store with Ignite-backed instance");
+                        LOGGER.debug("Lazily swapped temporary lock store with Ignite-backed instance");
+                    }
                 }
             }
 
