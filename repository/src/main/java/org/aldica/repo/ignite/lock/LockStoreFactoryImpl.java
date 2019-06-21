@@ -50,6 +50,8 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     protected boolean enableRemoteSupport;
 
+    protected boolean disableAllStatistics;
+
     /**
      *
      * {@inheritDoc}
@@ -130,6 +132,15 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
     }
 
     /**
+     * @param disableAllStatistics
+     *            the disableAllStatistics to set
+     */
+    public void setDisableAllStatistics(final boolean disableAllStatistics)
+    {
+        this.disableAllStatistics = disableAllStatistics;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -163,7 +174,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
         // evict to off-heap after 975+25 entries
         final LruEvictionPolicyFactory<Object, Object> evictionPolicyFactory = new LruEvictionPolicyFactory<>(975);
         evictionPolicyFactory.setBatchSize(25);
-        cacheConfig.setOnheapCacheEnabled(true);
+        cacheConfig.setOnheapCacheEnabled(!this.disableAllStatistics);
         cacheConfig.setEvictionPolicyFactory(evictionPolicyFactory);
 
         if (cacheConfig.getCacheMode() == CacheMode.REPLICATED)
