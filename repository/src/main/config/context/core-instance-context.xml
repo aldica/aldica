@@ -82,7 +82,31 @@
                 <ref bean="Configuration.${moduleId}.core.webSessionCache" />
             </list>
         </property>
+        <property name="binaryConfiguration" ref="Configuration.${moduleId}.core.binary" />
         <property name="dataStorageConfiguration" ref="Configuration.${moduleId}.core.storage" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary" abstract="true" class="org.apache.ignite.configuration.BinaryConfiguration" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.configurableRelevantFields" abstract="true" class="${aldica.ignite-common.basePackage}.binary.SelectivelyReflectiveBinarySerializer">
+        <property name="relevantFieldsProvider">
+            <bean class="${aldica.ignite-common.basePackage}.binary.ConfigurableSerializationRelevantFieldsProvider">
+                <property name="basePropertyKey" value="${moduleId}.core.binary.relevantFields" />
+                <property name="propertiesSource" ref="global-properties" />
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.binaryTypeConfigurationBeanEmitter"
+        class="${aldica.ignite-common.basePackage}.spring.BinaryTypeConfigurationBeanDefinitionEmitter">
+        <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
+        <property name="propertyPrefix" value="${moduleId}.core.binary.type." />
+        <property name="binaryConfigurationBeanDefinitionName">
+            <idref bean="Configuration.${moduleId}.core.binary" />
+        </property>
+        <property name="binaryTypeConfigurationBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.binary.type." />
+        <property name="instanceNameProperty" value="${moduleId}.core.name" />
+        <property name="propertiesSource" ref="global-properties" />
     </bean>
 
     <bean id="Configuration.${moduleId}.core.storage" abstract="true" class="org.apache.ignite.configuration.DataStorageConfiguration">
@@ -94,7 +118,7 @@
     </bean>
 
     <bean id="Configuration.${moduleId}.core.storage.dataRegionBeanEmitter"
-        class="${project.basePackage}.spring.DataRegionBeanDefinitionEmitter">
+        class="${aldica.ignite-common.basePackage}.spring.DataRegionBeanDefinitionEmitter">
         <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
         <property name="propertyPrefix" value="${moduleId}.core.storage.region." />
         <property name="storageBeanDefinitionName">

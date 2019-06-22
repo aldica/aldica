@@ -1,14 +1,13 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-package org.aldica.repo.ignite.spring;
+package org.aldica.common.ignite.spring;
 
 import java.util.List;
 import java.util.Properties;
 
 import org.alfresco.util.PropertyCheck;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -26,23 +25,25 @@ import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.util.PropertyPlaceholderHelper;
 
 /**
+ * Instances of this class dynamically emit {@link BinaryTypeConfiguration} bean definitions based on global configuration properties to
+ * allow for easy extensibility of Ignite serialisation / binary handling configuration without requiring complex XML configuration.
  *
  * @author Axel Faust
  */
-public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPostProcessor, InitializingBean
+public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinitionRegistryPostProcessor, InitializingBean
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DataRegionBeanDefinitionEmitter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BinaryTypeConfigurationBeanDefinitionEmitter.class);
 
-    private static final String DATA_REGION_CONFIGURATIONS_PROPERTY_NAME = "dataRegionConfigurations";
+    private static final String TYPE_CONFIGURATIONS_PROPERTY_NAME = "typeConfigurations";
 
     protected String enabledPropertyKey;
 
     protected String propertyPrefix;
 
-    protected String storageBeanDefinitionName;
+    protected String binaryConfigurationBeanDefinitionName;
 
-    protected String dataRegionBeanDefinitionNamePrefix;
+    protected String binaryTypeConfigurationBeanDefinitionNamePrefix;
 
     protected String instanceNameProperty;
 
@@ -64,8 +65,8 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
     public void afterPropertiesSet()
     {
         PropertyCheck.mandatory(this, "propertyPrefix", this.propertyPrefix);
-        PropertyCheck.mandatory(this, "storageBeanDefinitionName", this.storageBeanDefinitionName);
-        PropertyCheck.mandatory(this, "dataRegionBeanDefinitionNamePrefix", this.dataRegionBeanDefinitionNamePrefix);
+        PropertyCheck.mandatory(this, "binaryConfigurationBeanDefinitionName", this.binaryConfigurationBeanDefinitionName);
+        PropertyCheck.mandatory(this, "binaryTypeDefinitionBeanDefinitionNamePrefix", this.binaryTypeConfigurationBeanDefinitionNamePrefix);
         PropertyCheck.mandatory(this, "instanceNameProperty", this.instanceNameProperty);
         PropertyCheck.mandatory(this, "propertiesSource", this.propertiesSource);
         PropertyCheck.mandatory(this, "placeholderPrefix", this.placeholderPrefix);
@@ -94,21 +95,21 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
     }
 
     /**
-     * @param storageBeanDefinitionName
-     *            the storageBeanDefinitionName to set
+     * @param binaryConfigurationBeanDefinitionName
+     *            the binaryConfigurationBeanDefinitionName to set
      */
-    public void setStorageBeanDefinitionName(final String storageBeanDefinitionName)
+    public void setBinaryConfigurationBeanDefinitionName(final String binaryConfigurationBeanDefinitionName)
     {
-        this.storageBeanDefinitionName = storageBeanDefinitionName;
+        this.binaryConfigurationBeanDefinitionName = binaryConfigurationBeanDefinitionName;
     }
 
     /**
-     * @param dataRegionBeanDefinitionNamePrefix
-     *            the dataRegionBeanDefinitionNamePrefix to set
+     * @param binaryTypeConfigurationBeanDefinitionNamePrefix
+     *            the binaryTypeConfigurationBeanDefinitionNamePrefix to set
      */
-    public void setDataRegionBeanDefinitionNamePrefix(final String dataRegionBeanDefinitionNamePrefix)
+    public void setBinaryTypeConfigurationBeanDefinitionNamePrefix(final String binaryTypeConfigurationBeanDefinitionNamePrefix)
     {
-        this.dataRegionBeanDefinitionNamePrefix = dataRegionBeanDefinitionNamePrefix;
+        this.binaryTypeConfigurationBeanDefinitionNamePrefix = binaryTypeConfigurationBeanDefinitionNamePrefix;
     }
 
     /**
@@ -180,57 +181,57 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
         if (enabled)
         {
-            if (registry.containsBeanDefinition(this.storageBeanDefinitionName))
+            if (registry.containsBeanDefinition(this.binaryConfigurationBeanDefinitionName))
             {
-                final List<Object> values = this.lookupOrInitDataRegionsPropertyValue(registry);
-                this.emitAndLinkDataRegions(registry, values);
+                final List<Object> values = this.lookupOrInitTypeConfigurationsPropertyValue(registry);
+                this.emitAndTypeConfigurations(registry, values);
             }
             else
             {
                 LOGGER.warn("Bean registry does not contain a bean by name {} - unable to emit data region bean definitions",
-                        this.storageBeanDefinitionName);
+                        this.binaryConfigurationBeanDefinitionName);
             }
         }
     }
 
     @SuppressWarnings("unchecked")
-    protected List<Object> lookupOrInitDataRegionsPropertyValue(final BeanDefinitionRegistry registry)
+    protected List<Object> lookupOrInitTypeConfigurationsPropertyValue(final BeanDefinitionRegistry registry)
     {
         List<Object> values;
-        final BeanDefinition storageBeanDefinition = registry.getBeanDefinition(this.storageBeanDefinitionName);
-        final MutablePropertyValues storageBeanProperties = storageBeanDefinition.getPropertyValues();
-        PropertyValue regionConfigurationsValue = storageBeanProperties.getPropertyValue(DATA_REGION_CONFIGURATIONS_PROPERTY_NAME);
-        if (regionConfigurationsValue == null)
+        final BeanDefinition binaryConfigurationBeanDefinition = registry.getBeanDefinition(this.binaryConfigurationBeanDefinitionName);
+        final MutablePropertyValues binaryConfigurationBeanProperties = binaryConfigurationBeanDefinition.getPropertyValues();
+        PropertyValue typeConfigurationsValue = binaryConfigurationBeanProperties.getPropertyValue(TYPE_CONFIGURATIONS_PROPERTY_NAME);
+        if (typeConfigurationsValue == null)
         {
-            LOGGER.debug("No data regions on {} have been configured statically - initialising new property",
-                    this.storageBeanDefinitionName);
+            LOGGER.debug("No binary type configurations on {} have been configured statically - initialising new property",
+                    this.binaryConfigurationBeanDefinitionName);
             values = new ManagedList<>();
-            regionConfigurationsValue = new PropertyValue(DATA_REGION_CONFIGURATIONS_PROPERTY_NAME, values);
-            storageBeanProperties.addPropertyValue(regionConfigurationsValue);
+            typeConfigurationsValue = new PropertyValue(TYPE_CONFIGURATIONS_PROPERTY_NAME, values);
+            binaryConfigurationBeanProperties.addPropertyValue(typeConfigurationsValue);
         }
         else
         {
-            final Object value = regionConfigurationsValue.getValue();
+            final Object value = typeConfigurationsValue.getValue();
             if (value instanceof List<?>)
             {
-                LOGGER.debug("A list of data regions has been configured statically on {} - going to add to the list",
-                        this.storageBeanDefinitionName);
+                LOGGER.debug("A list of binary type configurations has been configured statically on {} - going to add to the list",
+                        this.binaryConfigurationBeanDefinitionName);
                 values = (List<Object>) value;
             }
             else
             {
                 LOGGER.warn(
                         "THe property {} on {} has been configured with an unexpected / incompatible value - overriding with new property",
-                        DATA_REGION_CONFIGURATIONS_PROPERTY_NAME, this.storageBeanDefinitionName);
+                        TYPE_CONFIGURATIONS_PROPERTY_NAME, this.binaryConfigurationBeanDefinitionName);
                 values = new ManagedList<>();
-                regionConfigurationsValue = new PropertyValue(DATA_REGION_CONFIGURATIONS_PROPERTY_NAME, values);
-                storageBeanProperties.addPropertyValue(regionConfigurationsValue);
+                typeConfigurationsValue = new PropertyValue(TYPE_CONFIGURATIONS_PROPERTY_NAME, values);
+                binaryConfigurationBeanProperties.addPropertyValue(typeConfigurationsValue);
             }
         }
         return values;
     }
 
-    protected void emitAndLinkDataRegions(final BeanDefinitionRegistry registry, final List<Object> storageDataRegions)
+    protected void emitAndTypeConfigurations(final BeanDefinitionRegistry registry, final List<Object> binaryTypeConfigurations)
     {
         final String instanceName = this.placeholderHelper.replacePlaceholders(this.propertiesSource.getProperty(this.instanceNameProperty),
                 this.propertiesSource);
@@ -239,52 +240,48 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
             if (propertyName.startsWith(this.propertyPrefix))
             {
                 final String effPropertyName = propertyName.substring(this.propertyPrefix.length());
-                if (effPropertyName.matches("^[a-zA-Z0-9]+\\.(initialSize|maxSize|swapPath)$"))
+                if (effPropertyName.matches("^([^\\.]+(\\.[^\\\\.]+)*)\\.(serializer|idMapper|nameMapper)$"))
                 {
-                    final int sepIdx = effPropertyName.indexOf('.');
-                    final String dataRegionName = effPropertyName.substring(0, sepIdx);
-                    final String dataRegionPropertyName = effPropertyName.substring(sepIdx + 1);
+                    final int sepIdx = effPropertyName.lastIndexOf('.');
+                    final String typeName = effPropertyName.substring(0, sepIdx);
+                    final String typeConfigurationPropertyName = effPropertyName.substring(sepIdx + 1);
 
-                    final BeanDefinition dataRegionBeanDefinition = this.lookupOrCreateDataRegionBeanDefinition(registry,
-                            storageDataRegions, instanceName, dataRegionName);
+                    final BeanDefinition binaryTypeConfigurationBeanDefinition = this.lookupOrCreateBinaryTypeConfigurationBeanDefinition(
+                            registry, binaryTypeConfigurations, instanceName, typeName);
 
-                    final String configValue = this.placeholderHelper.replacePlaceholders(this.propertiesSource.getProperty(propertyName),
+                    final String beanName = this.placeholderHelper.replacePlaceholders(this.propertiesSource.getProperty(propertyName),
                             this.propertiesSource);
-                    LOGGER.debug("Setting data region property {} to {} on {} for instance {}", dataRegionPropertyName, configValue,
-                            dataRegionName, instanceName);
+                    LOGGER.debug("Setting binary type configuration property {} to reference bean {} on {} for instance {}",
+                            typeConfigurationPropertyName, beanName, typeName, instanceName);
 
-                    dataRegionBeanDefinition.getPropertyValues().add(dataRegionPropertyName, configValue);
+                    binaryTypeConfigurationBeanDefinition.getPropertyValues().add(typeConfigurationPropertyName,
+                            new RuntimeBeanReference(beanName));
                 }
             }
         });
     }
 
-    protected BeanDefinition lookupOrCreateDataRegionBeanDefinition(final BeanDefinitionRegistry registry,
-            final List<Object> storageDataRegions, final String instanceName, final String dataRegionName)
+    protected BeanDefinition lookupOrCreateBinaryTypeConfigurationBeanDefinition(final BeanDefinitionRegistry registry,
+            final List<Object> typeConfigurations, final String instanceName, final String typeName)
     {
-        final String expectedBeanDefinitionName = this.dataRegionBeanDefinitionNamePrefix + dataRegionName;
-        BeanDefinition regionBeanDefinition;
+        final String expectedBeanDefinitionName = this.binaryTypeConfigurationBeanDefinitionNamePrefix + typeName;
+        BeanDefinition binaryTypeConfigurationBeanDefinition;
         if (registry.containsBeanDefinition(expectedBeanDefinitionName))
         {
-            regionBeanDefinition = registry.getBeanDefinition(expectedBeanDefinitionName);
+            binaryTypeConfigurationBeanDefinition = registry.getBeanDefinition(expectedBeanDefinitionName);
         }
         else
         {
-            LOGGER.info("Emitting bean definition for data region {} in instance {}", dataRegionName, instanceName);
-            regionBeanDefinition = new GenericBeanDefinition();
-            registry.registerBeanDefinition(expectedBeanDefinitionName, regionBeanDefinition);
+            LOGGER.info("Emitting bean definition for binary type configuration affecting type {} in instance {}", typeName, instanceName);
+            binaryTypeConfigurationBeanDefinition = new GenericBeanDefinition();
+            registry.registerBeanDefinition(expectedBeanDefinitionName, binaryTypeConfigurationBeanDefinition);
 
             // set static defaults
-            regionBeanDefinition.setBeanClassName(DataRegionConfiguration.class.getName());
-            final MutablePropertyValues propertyValues = regionBeanDefinition.getPropertyValues();
-            final String effectiveDataRegionName = instanceName + ".region." + dataRegionName;
-            propertyValues.add("name", effectiveDataRegionName);
-            propertyValues.add("metricsEnabled", Boolean.TRUE);
-            propertyValues.add("pageEvictionMode", DataPageEvictionMode.RANDOM_2_LRU);
-
-            storageDataRegions.add(new RuntimeBeanReference(expectedBeanDefinitionName));
+            binaryTypeConfigurationBeanDefinition.setBeanClassName(BinaryTypeConfiguration.class.getName());
+            binaryTypeConfigurationBeanDefinition.getPropertyValues().add("typeName", typeName);
+            typeConfigurations.add(new RuntimeBeanReference(expectedBeanDefinitionName));
         }
 
-        return regionBeanDefinition;
+        return binaryTypeConfigurationBeanDefinition;
     }
 }

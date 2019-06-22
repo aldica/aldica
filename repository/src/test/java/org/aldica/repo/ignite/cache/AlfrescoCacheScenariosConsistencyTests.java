@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.aldica.common.ignite.GridTestsBase;
+import org.aldica.common.ignite.binary.SelectivelyReflectiveBinarySerializer;
 import org.aldica.repo.ignite.ExpensiveTestCategory;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.cache.SimpleCache;
@@ -38,8 +39,10 @@ import org.alfresco.util.TempFileProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -103,6 +106,19 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
             final IgniteConfiguration conf1 = createConfiguration(1, false, null);
             final IgniteConfiguration conf2 = createConfiguration(2, true, null);
 
+            final SelectivelyReflectiveBinarySerializer serializer = new SelectivelyReflectiveBinarySerializer();
+            serializer.setRelevantFieldsProvider(
+                    cls -> cls.equals(QName.class) ? Arrays.asList("namespaceURI", "localName") : Collections.emptyList());
+
+            final BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
+            final BinaryTypeConfiguration binaryTypeConfigurationForKeyClass = new BinaryTypeConfiguration();
+            binaryTypeConfigurationForKeyClass.setTypeName(QName.class.getName());
+            binaryTypeConfigurationForKeyClass.setSerializer(serializer);
+            binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForKeyClass));
+
+            conf1.setBinaryConfiguration(binaryConfiguration);
+            conf2.setBinaryConfiguration(binaryConfiguration);
+
             final CacheConfiguration<Serializable, ValueHolder<Serializable>> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("cache.immutableEntitySharedCache");
             cacheConfig.setCacheMode(CacheMode.LOCAL);
@@ -141,7 +157,7 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
 
             final IgniteCache<Serializable, ValueHolder<Serializable>> igniteCache = grid1.getOrCreateCache(cacheConfig);
             final SimpleCache<Serializable, ValueHolder<Serializable>> simpleCache = new SimpleIgniteBackedCache<>(grid1,
-                    SimpleIgniteBackedCache.Mode.LOCAL_INVALIDATING_ON_CHANGE, igniteCache, true, true);
+                    SimpleIgniteBackedCache.Mode.LOCAL_INVALIDATING_ON_CHANGE, igniteCache, true);
 
             final NamespacePrefixResolver nsPrefixResolver = new TestNamespacePrefixResolver();
             final QNameDAO qnameDAO = new TestQNameDAO();
@@ -204,18 +220,22 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
                     "Failed lookup by regular QName should have added a sentinel value-key cache entry resolveable by regular QName",
                     VALUE_NOT_FOUND, lowLevelCacheValue.getValue());
 
-            // lookup by prefixed QName (would typically done with QName provided e.g. in ReST request)
+            lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, prefixedFolderQName);
+            lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
+
+            Assert.assertNotNull(
+                    "Failed lookup by regular QName should have added a sentinel value-key cache entry resolveable by prefixed QName",
+                    lowLevelCacheValue);
+            Assert.assertEquals(
+                    "Failed lookup by regular QName should have added a sentinel value-key cache entry resolveable by prefixed QName",
+                    VALUE_NOT_FOUND, lowLevelCacheValue.getValue());
+
+            // lookup by prefixed QName (would typically be done with QName provided e.g. in ReST request)
             entryPair = qnameCache.getByValue(prefixedFolderQName);
             Assert.assertNull(entryPair);
 
             Assert.assertEquals("Failed lookup by prefixed QName should not have added another sentinel cache entry", 2,
                     igniteCache.size());
-
-            lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, prefixedFolderQName);
-            lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
-
-            Assert.assertNull("Failed lookup by prefixed QName should not have added a value-key cache entry resolveable by prefixed QName",
-                    lowLevelCacheValue);
 
             // create by prefixed QName - QName is identical according to hashCode + equals, but differs in actual internal state
             entryPair = qnameCache.getOrCreateByValue(prefixedFolderQName);
@@ -223,7 +243,8 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
             Assert.assertEquals(Long.valueOf(0), entryPair.getFirst());
             Assert.assertEquals(folderQName, entryPair.getSecond());
 
-            Assert.assertEquals("Creation should have replaced the sentinel cache entries", 2, igniteCache.size());
+            Assert.assertEquals("Creation should not have added new entries, instead replaced sentinel cache entries", 2,
+                    igniteCache.size());
 
             // lookup by regular QName
             entryPair = qnameCache.getByValue(folderQName);
@@ -262,8 +283,10 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
             lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, prefixedFolderQName);
             lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
 
-            Assert.assertNull("Value creation should not have added a value-key cache entry resolveable by prefixed QName",
+            Assert.assertNotNull("Value creation should have added a value-key cache entry resolveable by prefixed QName",
                     lowLevelCacheValue);
+            Assert.assertEquals("Value creation should have added a value-key cache entry resolveable by prefixed QName", Long.valueOf(0),
+                    lowLevelCacheValue.getValue());
 
             Thread.sleep(100);
 

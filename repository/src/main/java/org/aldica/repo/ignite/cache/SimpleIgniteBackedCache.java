@@ -4,16 +4,12 @@
 package org.aldica.repo.ignite.cache;
 
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.repo.cache.SimpleCache;
 import org.alfresco.repo.cache.TransactionalCache.ValueHolder;
-import org.alfresco.repo.cache.lookup.CacheRegionValueKey;
 import org.alfresco.repo.cache.lookup.EntityLookupCache;
-import org.alfresco.service.namespace.QName;
 import org.alfresco.util.EqualsHelper;
 import org.alfresco.util.ParameterCheck;
 import org.apache.ignite.Ignite;
@@ -109,25 +105,6 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     // value copied from EntityLookupCache (not accessible there)
     private static final Serializable VALUE_NOT_FOUND = "@@VALUE_NOT_FOUND@@";
 
-    private static final Field cacheRegionValueKeyCacheRegion;
-
-    private static final Field cacheRegionValueKeyCacheValueKey;
-
-    static
-    {
-        try
-        {
-            cacheRegionValueKeyCacheRegion = CacheRegionValueKey.class.getDeclaredField("cacheRegion");
-            cacheRegionValueKeyCacheRegion.setAccessible(true);
-            cacheRegionValueKeyCacheValueKey = CacheRegionValueKey.class.getDeclaredField("cacheValueKey");
-            cacheRegionValueKeyCacheValueKey.setAccessible(true);
-        }
-        catch (NoSuchFieldException | SecurityException e)
-        {
-            throw new AlfrescoRuntimeException("Failed to initialise reflective access to CacheRegionValueKey members", e);
-        }
-    }
-
     private final Logger instanceLogger;
 
     protected final Ignite grid;
@@ -139,8 +116,6 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     protected final IgniteCache<K, V> backingCache;
 
     protected final boolean allowSentinelsInBackingCache;
-
-    protected final boolean attemptCacheKeyHashWorkaround;
 
     protected volatile boolean informedUnserializableValueType = false;
 
@@ -160,12 +135,9 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
      *            the low-level Ignite cache instance
      * @param allowSentinelsInBackingCache
      *            {@code true} if sentinels for dummy values (defined by {@link EntityLookupCache}) are allowed to be stored in the cache
-     * @param attemptCacheKeyHashWorkaround
-     *            {@code true} if the cache should attempt to workaround known issues with key hash misses in low level Ignite caches,
-     *            {@code false} (recommended) otherwise
      */
     public SimpleIgniteBackedCache(final Ignite grid, final Mode cacheMode, final IgniteCache<K, V> backingCache,
-            final boolean allowSentinelsInBackingCache, final boolean attemptCacheKeyHashWorkaround)
+            final boolean allowSentinelsInBackingCache)
     {
         ParameterCheck.mandatory("grid", grid);
         ParameterCheck.mandatory("cacheMode", cacheMode);
@@ -178,8 +150,6 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         this.allowSentinelsInBackingCache = allowSentinelsInBackingCache;
         this.invalidationTopic = this.cacheName + "-invalidate";
         this.bulkInvalidationTopic = this.cacheName + "-bulkInvalidate";
-
-        this.attemptCacheKeyHashWorkaround = attemptCacheKeyHashWorkaround;
 
         this.instanceLogger = LoggerFactory.getLogger(this.getClass().getName() + "." + this.cacheName);
 
@@ -218,12 +188,11 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public boolean contains(final K key)
     {
-        final K sanitizedKey = this.sanitizeCacheKeyForIgniteHashIssues(key);
-        this.instanceLogger.debug("Checking for containment of {}", sanitizedKey);
+        this.instanceLogger.debug("Checking for containment of {}", key);
 
-        final boolean containsKey = this.backingCache.containsKey(sanitizedKey);
+        final boolean containsKey = this.backingCache.containsKey(key);
 
-        this.instanceLogger.debug("Cache contains key {}: {}", sanitizedKey, containsKey);
+        this.instanceLogger.debug("Cache contains key {}: {}", key, containsKey);
 
         return containsKey;
     }
@@ -283,12 +252,11 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public V get(final K key)
     {
-        final K sanitizedKey = this.sanitizeCacheKeyForIgniteHashIssues(key);
-        this.instanceLogger.debug("Getting value for key {}", sanitizedKey);
+        this.instanceLogger.debug("Getting value for key {}", key);
 
-        final V value = this.backingCache.get(sanitizedKey);
+        final V value = this.backingCache.get(key);
 
-        this.instanceLogger.debug("Retrieved value {} for key {}", value, sanitizedKey);
+        this.instanceLogger.debug("Retrieved value {} for key {}", value, key);
 
         return value;
     }
@@ -300,8 +268,7 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public void put(final K key, final V value)
     {
-        final K sanitizedKey = this.sanitizeCacheKeyForIgniteHashIssues(key);
-        this.instanceLogger.debug("Putting value {} into cache with key {}", value, sanitizedKey);
+        this.instanceLogger.debug("Putting value {} into cache with key {}", value, key);
 
         if (!this.informedUnserializableValueType && value != null && !(value instanceof Serializable))
         {
@@ -320,28 +287,28 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         boolean invalidate = this.cacheMode.isAlwaysInvalidateOnPut();
         if (value == null)
         {
-            this.instanceLogger.debug("Call to put with null-value for key {} instead of proper remove", sanitizedKey);
+            this.instanceLogger.debug("Call to put with null-value for key {} instead of proper remove", key);
 
-            invalidate = this.backingCache.remove(sanitizedKey) || invalidate;
+            invalidate = this.backingCache.remove(key) || invalidate;
         }
         else if (!this.allowSentinelsInBackingCache && (VALUE_NOT_FOUND.equals(effectiveValue) || VALUE_NULL.equals(effectiveValue)))
         {
             this.instanceLogger.debug(
                     "Call to put with sentinel-value for key {} will be treated as a remove as sentinel values are not allowed in backing cache",
-                    sanitizedKey);
+                    key);
 
-            invalidate = this.backingCache.remove(sanitizedKey) || invalidate;
+            invalidate = this.backingCache.remove(key) || invalidate;
         }
         else
         {
-            final V oldValue = this.backingCache.getAndPut(sanitizedKey, value);
+            final V oldValue = this.backingCache.getAndPut(key, value);
             invalidate = invalidate
                     || (this.cacheMode.isHandleInvalidations() && oldValue != null && !EqualsHelper.nullSafeEquals(oldValue, value));
         }
 
         if (this.cacheMode.isHandleInvalidations() && invalidate)
         {
-            this.sendInvalidationMessage(this.invalidationTopic, sanitizedKey);
+            this.sendInvalidationMessage(this.invalidationTopic, key);
         }
     }
 
@@ -352,10 +319,9 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     @Override
     public void remove(final K key)
     {
-        final K sanitizedKey = this.sanitizeCacheKeyForIgniteHashIssues(key);
-        this.instanceLogger.debug("Removing value for key {}", sanitizedKey);
+        this.instanceLogger.debug("Removing value for key {}", key);
 
-        this.backingCache.remove(sanitizedKey);
+        this.backingCache.remove(key);
     }
 
     /**
@@ -414,35 +380,5 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         {
             this.instanceLogger.debug("Not sending remote message on topic {} for {} as there are no remote nodes", topic, msgLogLabel);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    protected K sanitizeCacheKeyForIgniteHashIssues(final K key)
-    {
-        K result = key;
-        if (this.attemptCacheKeyHashWorkaround)
-        {
-            if (key instanceof CacheRegionValueKey)
-            {
-                try
-                {
-                    final Object cacheValueKey = cacheRegionValueKeyCacheValueKey.get(key);
-                    if (cacheValueKey instanceof QName)
-                    {
-                        // need to make sure QName is uniform (only namespace + local name)
-                        final Object cacheRegion = cacheRegionValueKeyCacheRegion.get(key);
-                        final QName newQName = QName.createQName(((QName) cacheValueKey).getNamespaceURI(),
-                                ((QName) cacheValueKey).getLocalName());
-                        final CacheRegionValueKey newKey = new CacheRegionValueKey(String.valueOf(cacheRegion), newQName);
-                        result = (K) newKey;
-                    }
-                }
-                catch (final IllegalAccessException ignore)
-                {
-                    this.instanceLogger.debug("Failed to sanitize cache key {} for Ignite hash issues: {}", key, ignore.getMessage());
-                }
-            }
-        }
-        return result;
     }
 }

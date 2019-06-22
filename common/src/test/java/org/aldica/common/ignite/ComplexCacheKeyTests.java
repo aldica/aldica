@@ -4,16 +4,20 @@
 package org.aldica.common.ignite;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
 
+import org.aldica.common.ignite.binary.SelectivelyReflectiveBinarySerializer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -385,12 +389,85 @@ public class ComplexCacheKeyTests extends GridTestsBase
     }
 
     @Test
-    @Ignore // we know this test fails - pending inquiry / issue to Apache Ignite project
     public void complexKeyWithNonRelevantFieldsOnHeap()
     {
         try
         {
             final IgniteConfiguration conf = createConfiguration(1, false, null);
+
+            final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
+            cacheConfig.setName("testCache");
+            cacheConfig.setCacheMode(CacheMode.LOCAL);
+
+            final LruEvictionPolicyFactory<CacheKeyWithNonHashRelevantFields, String> evictionPolicyFactory = new LruEvictionPolicyFactory<>(
+                    1000);
+            cacheConfig.setOnheapCacheEnabled(true);
+            cacheConfig.setEvictionPolicyFactory(evictionPolicyFactory);
+
+            final Ignite grid = Ignition.start(conf);
+
+            final IgniteCache<CacheKeyWithNonHashRelevantFields, String> cache = grid.getOrCreateCache(cacheConfig);
+
+            final CacheKeyWithNonHashRelevantFields baseKey = new CacheKeyWithNonHashRelevantFields("keyPart1", "keyPart2");
+            final String baseValue = "value1";
+
+            cache.put(baseKey, baseValue);
+
+            CacheKeyWithNonHashRelevantFields key = baseKey;
+            String value = cache.get(key);
+
+            Assert.assertEquals(baseValue, value);
+
+            // force new instance
+            key = new CacheKeyWithNonHashRelevantFields(baseKey.getHashRelevant(), baseKey.getNonHashRelevant());
+            value = cache.get(key);
+
+            Assert.assertEquals(baseValue, value);
+
+            // force new instance with different non-hash relevant component
+            key = new CacheKeyWithNonHashRelevantFields(baseKey.getHashRelevant(), "keyPartX");
+            value = cache.get(key);
+
+            // default Ignite binary identity resolver considers non-hash relevant component as relevant
+            // so cache miss is expected
+            Assert.assertNotEquals(baseValue, value);
+            Assert.assertNull(value);
+
+            // force new instance with non-hash relevant component set to no specific value
+            key = new CacheKeyWithNonHashRelevantFields(baseKey.getHashRelevant(), null);
+            value = cache.get(key);
+
+            Assert.assertNotEquals(baseValue, value);
+            Assert.assertNull(value);
+
+            key = new CacheKeyWithNonHashRelevantFields("keyPartX", baseKey.getNonHashRelevant());
+            value = cache.get(key);
+
+            Assert.assertNotEquals(baseValue, value);
+            Assert.assertNull(value);
+        }
+        finally
+        {
+            Ignition.stopAll(true);
+        }
+    }
+
+    @Test
+    public void complexKeyWithNonRelevantFieldsCustomSerialiserOnHeap()
+    {
+        try
+        {
+            final SelectivelyReflectiveBinarySerializer serializer = new SelectivelyReflectiveBinarySerializer();
+            serializer.setRelevantFieldsProvider(
+                    cls -> cls.equals(CacheKeyWithNonHashRelevantFields.class) ? Arrays.asList("hashRelevant") : Collections.emptyList());
+
+            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
+            final BinaryTypeConfiguration binaryTypeConfigurationForKeyClass = new BinaryTypeConfiguration();
+            binaryTypeConfigurationForKeyClass.setTypeName(CacheKeyWithNonHashRelevantFields.class.getName());
+            binaryTypeConfigurationForKeyClass.setSerializer(serializer);
+            binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForKeyClass));
+            conf.setBinaryConfiguration(binaryConfiguration);
 
             final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -446,12 +523,80 @@ public class ComplexCacheKeyTests extends GridTestsBase
     }
 
     @Test
-    @Ignore // we know this test fails - pending inquiry / issue to Apache Ignite project
     public void complexKeyWithNonRelevantFieldsOffHeap()
     {
         try
         {
             final IgniteConfiguration conf = createConfiguration(1, false, null);
+
+            final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
+            cacheConfig.setName("testCache");
+            cacheConfig.setCacheMode(CacheMode.LOCAL);
+
+            final Ignite grid = Ignition.start(conf);
+
+            final IgniteCache<CacheKeyWithNonHashRelevantFields, String> cache = grid.getOrCreateCache(cacheConfig);
+
+            final CacheKeyWithNonHashRelevantFields baseKey = new CacheKeyWithNonHashRelevantFields("keyPart1", "keyPart2");
+            final String baseValue = "value1";
+
+            cache.put(baseKey, baseValue);
+
+            CacheKeyWithNonHashRelevantFields key = baseKey;
+            String value = cache.get(key);
+
+            Assert.assertEquals(baseValue, value);
+
+            // force new instance
+            key = new CacheKeyWithNonHashRelevantFields(baseKey.getHashRelevant(), baseKey.getNonHashRelevant());
+            value = cache.get(key);
+
+            Assert.assertEquals(baseValue, value);
+
+            // force new instance with different non-hash relevant component
+            key = new CacheKeyWithNonHashRelevantFields(baseKey.getHashRelevant(), "keyPartX");
+            value = cache.get(key);
+
+            // default Ignite binary identity resolver considers non-hash relevant component as relevant
+            // so cache miss is expected
+            Assert.assertNotEquals(baseValue, value);
+            Assert.assertNull(value);
+
+            // force new instance with non-hash relevant component set to no specific value
+            key = new CacheKeyWithNonHashRelevantFields(baseKey.getHashRelevant(), null);
+            value = cache.get(key);
+
+            Assert.assertNotEquals(baseValue, value);
+            Assert.assertNull(value);
+
+            key = new CacheKeyWithNonHashRelevantFields("keyPartX", baseKey.getNonHashRelevant());
+            value = cache.get(key);
+
+            Assert.assertNotEquals(baseValue, value);
+            Assert.assertNull(value);
+        }
+        finally
+        {
+            Ignition.stopAll(true);
+        }
+    }
+
+    @Test
+    public void complexKeyWithNonRelevantFieldsCustomSerialiserOffHeap()
+    {
+        try
+        {
+            final SelectivelyReflectiveBinarySerializer serializer = new SelectivelyReflectiveBinarySerializer();
+            serializer.setRelevantFieldsProvider(
+                    cls -> cls.equals(CacheKeyWithNonHashRelevantFields.class) ? Arrays.asList("hashRelevant") : Collections.emptyList());
+
+            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
+            final BinaryTypeConfiguration binaryTypeConfigurationForKeyClass = new BinaryTypeConfiguration();
+            binaryTypeConfigurationForKeyClass.setTypeName(CacheKeyWithNonHashRelevantFields.class.getName());
+            binaryTypeConfigurationForKeyClass.setSerializer(serializer);
+            binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForKeyClass));
+            conf.setBinaryConfiguration(binaryConfiguration);
 
             final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
