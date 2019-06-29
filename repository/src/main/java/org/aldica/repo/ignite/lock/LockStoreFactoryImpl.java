@@ -46,7 +46,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     protected int partitionsCount = 32;
 
-    protected boolean gridStarted = false;
+    protected boolean instanceStarted = false;
 
     protected boolean enableRemoteSupport;
 
@@ -59,14 +59,14 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
     @Override
     public void afterPropertiesSet()
     {
-        PropertyCheck.mandatory(this, "gridName", this.instanceName);
+        PropertyCheck.mandatory(this, "instanceName", this.instanceName);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void beforeInstanceStartup(final String gridName)
+    public void beforeInstanceStartup(final String instanceName)
     {
         // NO-OP
     }
@@ -75,11 +75,11 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
      * {@inheritDoc}
      */
     @Override
-    public void afterInstanceStartup(final String gridName)
+    public void afterInstanceStartup(final String instanceName)
     {
-        if (EqualsHelper.nullSafeEquals(this.instanceName, gridName))
+        if (EqualsHelper.nullSafeEquals(this.instanceName, instanceName))
         {
-            this.gridStarted = true;
+            this.instanceStarted = true;
         }
     }
 
@@ -87,11 +87,11 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
      * {@inheritDoc}
      */
     @Override
-    public void beforeInstanceShutdown(final String gridName)
+    public void beforeInstanceShutdown(final String instanceName)
     {
-        if (EqualsHelper.nullSafeEquals(this.instanceName, gridName))
+        if (EqualsHelper.nullSafeEquals(this.instanceName, instanceName))
         {
-            this.gridStarted = false;
+            this.instanceStarted = false;
         }
     }
 
@@ -99,7 +99,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
      * {@inheritDoc}
      */
     @Override
-    public void afterInstanceShutdown(final String gridName)
+    public void afterInstanceShutdown(final String instanceName)
     {
         // NO-OP
     }
@@ -147,7 +147,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
     public LockStore createLockStore()
     {
         LockStore lockStore;
-        if (this.gridStarted)
+        if (this.instanceStarted)
         {
             LOGGER.debug("Creating Ignite-backed lock store");
             lockStore = this.createIgniteLockStore();
@@ -233,7 +233,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
                 if ("afterInstanceStartup".equals(methodName) && args.length == 1
                         && EqualsHelper.nullSafeEquals(LockStoreFactoryImpl.this.instanceName, args[0]))
                 {
-                    LockStoreFactoryImpl.this.gridStarted = true;
+                    LockStoreFactoryImpl.this.instanceStarted = true;
 
                     if (!this.swapped)
                     {

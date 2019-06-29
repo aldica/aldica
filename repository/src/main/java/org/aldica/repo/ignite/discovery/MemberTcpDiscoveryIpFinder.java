@@ -224,7 +224,7 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
 
         if (!this.discoveryClientMode())
         {
-            // we are in startup so gridName should be available in context
+            // we are in startup so instanceName should be available in context
             final Object instanceName = ExternalContext.getExternalContextAttribute(ExternalContext.KEY_IGNITE_INSTANCE_NAME);
             this.instanceName = instanceName instanceof String ? (String) instanceName : null;
 

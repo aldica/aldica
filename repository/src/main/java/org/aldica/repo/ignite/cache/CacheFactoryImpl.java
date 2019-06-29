@@ -85,7 +85,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     protected int partitionsCount = 32;
 
-    protected boolean gridStarted = false;
+    protected boolean instanceStarted = false;
 
     protected boolean enableRemoteSupport;
 
@@ -109,14 +109,14 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     @Override
     public void afterPropertiesSet()
     {
-        PropertyCheck.mandatory(this, "gridName", this.instanceName);
+        PropertyCheck.mandatory(this, "instanceName", this.instanceName);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void beforeInstanceStartup(final String gridName)
+    public void beforeInstanceStartup(final String instanceName)
     {
         // NO-OP
     }
@@ -125,11 +125,11 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
      * {@inheritDoc}
      */
     @Override
-    public void afterInstanceStartup(final String gridName)
+    public void afterInstanceStartup(final String instanceName)
     {
-        if (EqualsHelper.nullSafeEquals(this.instanceName, gridName))
+        if (EqualsHelper.nullSafeEquals(this.instanceName, instanceName))
         {
-            this.gridStarted = true;
+            this.instanceStarted = true;
         }
     }
 
@@ -137,11 +137,11 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
      * {@inheritDoc}
      */
     @Override
-    public void beforeInstanceShutdown(final String gridName)
+    public void beforeInstanceShutdown(final String instanceName)
     {
-        if (EqualsHelper.nullSafeEquals(this.instanceName, gridName))
+        if (EqualsHelper.nullSafeEquals(this.instanceName, instanceName))
         {
-            this.gridStarted = false;
+            this.instanceStarted = false;
         }
     }
 
@@ -149,7 +149,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
      * {@inheritDoc}
      */
     @Override
-    public void afterInstanceShutdown(final String gridName)
+    public void afterInstanceShutdown(final String instanceName)
     {
         // NO-OP
     }
@@ -269,7 +269,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         SimpleCache<K, V> cache;
 
-        if (this.gridStarted)
+        if (this.instanceStarted)
         {
             final Ignite grid = this.instanceName != null ? Ignition.ignite(this.instanceName) : Ignition.ignite();
             // old behaviour was to always invalidate on put - keep as long as no override has been configured
@@ -311,7 +311,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         if (withProxy)
         {
-            if (!this.gridStarted && requiresIgnite)
+            if (!this.instanceStarted && requiresIgnite)
             {
                 cache = this.createLazySwapProxy(cacheName, cache);
             }
