@@ -591,8 +591,9 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
             final int nearBatchEvictionItems = Integer.parseInt(this.getProperty(cacheName, "ignite.near.batchEvictionItems",
                     "near.batchEvictionItems", cacheBatchEvictionItems > 0 ? String.valueOf(cacheBatchEvictionItems) : "0"));
             final int cacheBatchEvictionPercentage = Integer.parseInt(this.ignoreDefaultEvictionConfiguration
-                    ? this.getProperty(cacheName, "heap.near.eviction-percentage", "heap.eviction-percentage", "0")
-                    : this.getProperty(cacheName, "heap.near.eviction-percentage", "heap.eviction-percentage", "eviction-percentage", "0"));
+                    ? this.getProperty(cacheName, "ignite.heap.eviction-percentage", "heap.eviction-percentage", "0")
+                    : this.getProperty(cacheName, "ignite.heap.eviction-percentage", "heap.eviction-percentage", "eviction-percentage",
+                            "0"));
             final int nearBatchEvictionPercentage = Integer.parseInt(this.getProperty(cacheName, "ignite.near.eviction-percentage",
                     "near.eviction-percentage", cacheBatchEvictionPercentage > 0 ? String.valueOf(cacheBatchEvictionPercentage) : "0"));
 

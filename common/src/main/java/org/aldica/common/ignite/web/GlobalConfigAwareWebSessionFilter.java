@@ -136,6 +136,7 @@ public class GlobalConfigAwareWebSessionFilter extends WebSessionFilter
                             return parameterValue;
                         }
 
+                        @SuppressWarnings("unchecked")
                         @Override
                         public Enumeration<String> getInitParameterNames()
                         {
