@@ -23,7 +23,7 @@ The [cache factory](../blob/master/repository/src/main/java/org/aldica/repo/igni
 - Not Ignite-backed
     - *localDefaultSimple*: the default, non-distributed type of caches created by default Alfresco, relevant for use cases where cache keys/values or their pattern of use do not support a distributed type of use and storage in serialised form
 - Mixed Ignite / non-Ignite
-    - *invalidatingDefaultSimple: an enhanced variant of the default Alfresco cache type, where messages concerning update / removal operations on cache keys are distributed to other servers in a data grid for invalidation of locally held data in their corresponding caches
+    - *invalidatingDefaultSimple*: an enhanced variant of the default Alfresco cache type, where messages concerning update / removal operations on cache keys are distributed to other servers in a data grid for invalidation of locally held data in their corresponding caches
 
 Unless the full data grid mode has been enabled in the configuration of the aldica module, all caches provided by the module will be limited to the *local* / *localDefaultSimple* cache types.
 
