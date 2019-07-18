@@ -147,6 +147,28 @@
             <plugins>
 
                 <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>prepareIntegrationTest-createMountStructures</id>
+                            <phase>pre-integration-test</phase>
+                            <goals>
+                                <goal>copy-resources</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/docker</outputDirectory>
+                                <resources>
+                                    <resource>
+                                        <directory>src/test/docker</directory>
+                                        <filtering>true</filtering>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
                     <groupId>io.fabric8</groupId>
                     <artifactId>docker-maven-plugin</artifactId>
                     <configuration>
@@ -229,6 +251,8 @@
                                     <volumes>
                                         <bind>
                                             <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
+                                            <volume>${project.build.directory}/docker/repository-1-logs:/usr/local/tomcat/logs</volume>
+                                            <volume>${project.build.directory}/docker/repository-log4j.properties:/usr/local/tomcat/shared/classes/alfresco/extension/dev-log4j.properties</volume>
                                         </bind>
                                     </volumes>
                                     <dependsOn>
@@ -295,6 +319,8 @@
                                     <volumes>
                                         <bind>
                                             <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
+                                            <volume>${project.build.directory}/docker/repository-2-logs:/usr/local/tomcat/logs</volume>
+                                            <volume>${project.build.directory}/docker/repository-log4j.properties:/usr/local/tomcat/shared/classes/alfresco/extension/dev-log4j.properties</volume>
                                         </bind>
                                     </volumes>
                                     <dependsOn>
@@ -355,6 +381,12 @@
                                         <name>${moduleId}-test</name>
                                         <alias>share-1</alias>
                                     </network>
+                                    <volumes>
+                                        <bind>
+                                            <volume>${project.build.directory}/docker/share-1-logs:/usr/local/tomcat/logs</volume>
+                                            <volume>${project.build.directory}/docker/share-log4j.properties:/usr/local/tomcat/webapps/share/WEB-INF/classes/log4j.properties</volume>
+                                        </bind>
+                                    </volumes>
                                     <dependsOn>
                                         <container>repository-1</container>
                                     </dependsOn>
@@ -407,6 +439,12 @@
                                         <name>${moduleId}-test</name>
                                         <alias>share-2</alias>
                                     </network>
+                                    <volumes>
+                                        <bind>
+                                            <volume>${project.build.directory}/docker/share-2-logs:/usr/local/tomcat/logs</volume>
+                                            <volume>${project.build.directory}/docker/share-log4j.properties:/usr/local/tomcat/webapps/share/WEB-INF/classes/log4j.properties</volume>
+                                        </bind>
+                                    </volumes>
                                     <dependsOn>
                                         <container>repository-2</container>
                                     </dependsOn>
