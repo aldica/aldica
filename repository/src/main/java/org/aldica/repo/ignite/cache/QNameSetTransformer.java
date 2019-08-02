@@ -21,7 +21,7 @@ import org.springframework.beans.factory.InitializingBean;
  *
  * @author Axel Faust
  */
-public class QNameSetTransformer implements CacheValueTransformer<Serializable, QNameSetValueHolder>, InitializingBean
+public class QNameSetTransformer implements CacheValueTransformer<Serializable, Serializable>, InitializingBean
 {
 
     protected QNameDAO qnameDAO;
@@ -50,15 +50,15 @@ public class QNameSetTransformer implements CacheValueTransformer<Serializable, 
      * {@inheritDoc}
      */
     @Override
-    public Serializable transformToExternalValue(final QNameSetValueHolder cacheValue)
+    public Serializable transformToExternalValue(final Serializable cacheValue)
     {
         Set<QName> qnames = null;
-        if (cacheValue != null)
+        if (cacheValue instanceof QNameSetValueHolder)
         {
-            qnames = cacheValue.getQnames();
+            qnames = ((QNameSetValueHolder) cacheValue).getQnames();
             if (qnames == null)
             {
-                final long[] qnameIds = cacheValue.getQnameIds();
+                final long[] qnameIds = ((QNameSetValueHolder) cacheValue).getQnameIds();
                 qnames = new HashSet<>();
                 for (final long qnameId : qnameIds)
                 {
@@ -67,7 +67,7 @@ public class QNameSetTransformer implements CacheValueTransformer<Serializable, 
                 }
 
                 // store for re-use
-                cacheValue.setQnames(qnames);
+                ((QNameSetValueHolder) cacheValue).setQnames(qnames);
             }
 
             // shallow copy - avoid modification
@@ -83,24 +83,36 @@ public class QNameSetTransformer implements CacheValueTransformer<Serializable, 
      * {@inheritDoc}
      */
     @Override
-    public QNameSetValueHolder transformToCacheValue(final Serializable externalValue)
+    public Serializable transformToCacheValue(final Serializable externalValue)
     {
-        QNameSetValueHolder cacheValue = null;
+        Serializable cacheValue = externalValue;
         if (externalValue instanceof Set<?>)
         {
             @SuppressWarnings("unchecked")
             final Set<QName> qnamesEx = (Set<QName>) externalValue;
             final long[] qnameIds = new long[qnamesEx.size()];
+
             int idx = 0;
+            boolean allQNamesExistInDatabase = true;
+
             final List<QName> sorted = new ArrayList<>(qnamesEx);
             Collections.sort(sorted);
+
             for (final QName qname : sorted)
             {
                 final Pair<Long, QName> qNamePair = this.qnameDAO.getQName(qname);
-                qnameIds[idx++] = qNamePair.getFirst().longValue();
+
+                // technically this should never happen as DbNodeServiceImpl should only put QNames in node.aspectsCache which have already
+                // been persisted to the database
+                // but tests for a pilot use have shown the potential of this to still occur, so we need to safeguard
+                allQNamesExistInDatabase = allQNamesExistInDatabase && qNamePair != null;
+                qnameIds[idx++] = qNamePair != null ? qNamePair.getFirst().longValue() : -1;
             }
 
-            cacheValue = new QNameSetValueHolder(qnameIds, qnamesEx);
+            if (allQNamesExistInDatabase)
+            {
+                cacheValue = new QNameSetValueHolder(qnameIds, qnamesEx);
+            }
         }
         return cacheValue;
     }
