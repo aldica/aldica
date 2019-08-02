@@ -217,7 +217,7 @@
                         </volumes>
                         <images>
                             <image>
-                                <name>postgres:10.1</name>
+                                <name>postgres:11.4</name>
                                 <alias>postgres</alias>
                                 <run>
                                     <hostname>postgres</hostname>
@@ -240,6 +240,7 @@
                                         <descriptorRef>${docker.tests.repositoryDescriptorRef}</descriptorRef>
                                         <descriptor>${docker.tests.repositoryDescriptor}</descriptor>
                                     </assembly>
+                                    <dockerFile>Repository-Dockerfile</dockerFile>
                                 </build>
                                 <run>
                                     <skip>false</skip>

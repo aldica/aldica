@@ -205,6 +205,7 @@
                                         <descriptorRef>${docker.tests.repositoryDescriptorRef}</descriptorRef>
                                         <descriptor>${docker.tests.repositoryDescriptor}</descriptor>
                                     </assembly>
+                                    <dockerFile>Repository-Dockerfile</dockerFile>
                                 </build>
                                 <run>
                                     <skip>false</skip>
@@ -347,6 +348,7 @@
                                         <descriptorRef>${docker.tests.shareDescriptorRef}</descriptorRef>
                                         <descriptor>${docker.tests.shareDescriptor}</descriptor>
                                     </assembly>
+                                    <dockerFile>Share-Dockerfile</dockerFile>
                                 </build>
                                 <run>
                                     <skip>false</skip>
