@@ -11,6 +11,8 @@ This folder contains detailed documentation sections concerning the alternative/
     - [Java Virtual Machine (JVM) Properties](./Configuration-JVMProperties.md)
     - [Repository Configuration Reference](./Configuration-RepoReference.md)
     - [Share Configuration Reference](./Configuration-ShareReference.md)
+- Cluster setup
+    - [Getting started with Tomcat](./GettingStarted-Tomcat.md)
 - Verification / Tests
     - [K6 Benchmark](./Test-K6.md)
     - [JMeter Benchmark](./Test-JMeter.md)
