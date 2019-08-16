@@ -145,7 +145,13 @@
         <property name="evictionPolicyFactory" ref="Configuration.${moduleId}.core.webSessionCache.evictionPolicyFactory" />
         <property name="name" value="\${${moduleId}.webSessionCache.cacheName}" />
         <property name="cacheMode" value="\${${moduleId}.webSessionCache.cacheMode}" />
-        <property name="backups" value="\${${moduleId}.webSessionCache.backups}" />
+        <property name="affinity">
+            <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                <property name="excludeNeighbors" value="false" />
+                <property name="partitions" value="\${${moduleId}.caches.partitionsCount}" />
+            </bean>
+        </property>
+        <property name="readFromBackup" value="true" />
         <property name="onheapCacheEnabled" value="true" />
     </bean>
 

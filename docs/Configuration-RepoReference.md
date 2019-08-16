@@ -140,7 +140,35 @@ The following listing of all supported properties only includes the name of the 
 | near.batchEvictionItems |   | Number of on-heap cache entries in a near cache (for a partitioned cache) to evict in a batch when eviction of on-heap data is triggered by exceeding the _near.maxItems_ limit - defaults to the effective value of _heap.batchEvictionItems_ |
 | near.eviction-percentage |   | Percentage of on-heap cache entries in a near cache (for a partitioned cache) to evict in a batch when eviction of on-heap data is triggered by exceeding the _near.maxItems_ limit - defaults to the effective value of _heap.eviction-percentage_ |
 
-
 ## Web Session Cache
 
-TBD
+The configuration of the web session cache requires a change to the default Alfresco Repository _web.xml_ file in addition to setting one or more properties in _alfresco-global.properties_. Due to limitations in the Java Servlet specification, it is not possible to provide this feature in a way that does not require this change by the administrator / developer / end-user who wish to use this feature.
+
+### Configuration Properties
+
+| Property | Default Value | Description |
+| --- | ---: | --- |
+| aldica.webSessionCache.enabled | ``false``  | Central enablement flag for the Ignite web session cache - if set to ``false`` the cache will be inactive regardless of the configuration change made to _web.xml_ |
+| aldica.webSessionCache.instanceName | ``${aldica.core.name}`` | The name of the data grid to use for instantiating the Ignite cache |
+| aldica.webSessionCache.cacheName | ``servlet.webSessionCache`` | The name of the Ignite cache to instaniate for the feature |
+| aldica.webSessionCache.retriesOnFailure | ``2`` | The number of retries that should be attempted when a cache operation affecting a session failed |
+| aldica.webSessionCache.retriesTimeout | ``5000`` | The number of milliseconds before a retry cache operation affecting a session will timeout |
+| aldica.webSessionCache.keepBinary | ``true`` | Technical flag to specify whether the Ignite backed cache should keep the internal binary representation on all internal layers - should never need to be changed |
+| aldica.webSessionCache.cacheMode | ``REPLICATED`` | The mode in which the Ignite cache should operate - no other cache mode makes sense for the use case of a distributed web session cache, so this should never need to be changed |
+| aldica.webSessionCache.maxSize | ``10000`` | The limit of session objects to hold in the on-heap cache |
+
+### _web.xml_ Changes
+
+The web session cache requires an additional web filter to be defined and registered on a global level before any of the default filters defined by Alfresco. This configuration change is not possible via a Web Fragment, and so requires explicit change of the _web.xml_ file. The following configuration snippets need to be added to the file - it is important that the &lt;filter-mapping&gt; section be added before any similar sections of the default file.
+
+```xml
+<filter>
+    <filter-name>WebSessionCacheFilter</filter-name>
+    <filter-class>org.aldica.common.ignite.web.GlobalConfigAwareWebSessionFilter</filter-class>
+</filter>
+
+<filter-mapping>
+    <filter-name>WebSessionCacheFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+</filter-mapping>
+```

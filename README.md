@@ -48,7 +48,7 @@ In a default build using ```mvn clean install```, this project will build the ex
 mvn clean install -P run-integration-tests -Ddocker.tests.enabled=true
 ```
 
-The profile (-P) enables running integration tests in general, and the system property (-D) enables the Docker deployment support (the Acosix ALfresco Maven project includes provisions for more than one deployment variant). Both are required to be set.
+The profile (-P) enables running integration tests in general, and the system property (-D) enables the Docker deployment support (the Acosix Alfresco Maven project includes provisions for more than one deployment variant). Both are required to be set.
 
 ## K6 benchmark / load tests
 

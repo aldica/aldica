@@ -141,7 +141,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
      * {@inheritDoc}
      */
     @Override
-    public void beforeInstanceStartup(final String gridName)
+    public void beforeInstanceStartup(final String instanceName)
     {
         // NO-OP
     }
@@ -150,9 +150,9 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
      * {@inheritDoc}
      */
     @Override
-    public void afterInstanceStartup(final String gridName)
+    public void afterInstanceStartup(final String instanceName)
     {
-        if (this.enabled && EqualsHelper.nullSafeEquals(this.instanceName, gridName))
+        if (this.enabled && EqualsHelper.nullSafeEquals(this.instanceName, instanceName))
         {
             this.instanceStarted = true;
 
@@ -166,7 +166,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
      * {@inheritDoc}
      */
     @Override
-    public void beforeInstanceShutdown(final String gridName)
+    public void beforeInstanceShutdown(final String instanceName)
     {
         // NO-OP
     }
@@ -175,7 +175,7 @@ public class ClusterServiceImpl implements ClusterService, InitializingBean, Ign
      * {@inheritDoc}
      */
     @Override
-    public void afterInstanceShutdown(final String gridName)
+    public void afterInstanceShutdown(final String instanceName)
     {
         // NO-OP
     }
