@@ -45,10 +45,10 @@ In order to build the project it is necessary to provide a basic toolchain confi
 In a default build using ```mvn clean install```, this project will build the extensions for Alfresco Content Services and Share, executing regular unit-tests, without running integration tests. The integration tests of this project are based on Docker and require a Docker engine to run the necessary components (PostgreSQL database as well as Alfresco Content Services / Share). Since a Docker engine may not be available in all environments of interested community members / collaborators, the integration tests have been made optional. A full build, including integration tests, can be run by executing
 
 ```
-mvn clean install -P run-integration-tests -Ddocker.tests.enabled=true
+mvn clean install -Ddocker.tests.enabled=true
 ```
 
-The profile (-P) enables running integration tests in general, and the system property (-D) enables the Docker deployment support (the Acosix Alfresco Maven project includes provisions for more than one deployment variant). Both are required to be set.
+The system property (-D) enables the Docker deployment support and triggers the integration tests to be run against the Docker-deployed instances of Alfresco Repository / Share.
 
 ## K6 benchmark / load tests
 

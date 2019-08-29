@@ -18,8 +18,9 @@
     <properties>
         <project.basePackage>org.aldica.repo.ignite</project.basePackage>
 
-        <docker.tests.versionSpecificJavaOpts></docker.tests.versionSpecificJavaOpts>
-        <acosix.alfresco.client.version>0.1.0-SNAPSHOT</acosix.alfresco.client.version>
+        <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
+
+
     </properties>
 
     <dependencyManagement>
@@ -60,9 +61,24 @@
             <groupId>org.alfresco</groupId>
             <artifactId>alfresco-repository</artifactId>
             <exclusions>
+                <!-- xmlfactory and cxf mess with resteasy / JAX-RS in integration tests -->
+                <!-- opencmis exclusion excludes various transitive cxf inclusions -->
+                <!-- none of these are needed for this specific addon -->
                 <exclusion>
                     <groupId>org.alfresco</groupId>
                     <artifactId>alfresco-xmlfactory</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.chemistry.opencmis</groupId>
+                    <artifactId>chemistry-opencmis-client-impl</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.chemistry.opencmis</groupId>
+                    <artifactId>chemistry-opencmis-server-bindings</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.cxf</groupId>
+                    <artifactId>cxf-rt-rs-client</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -127,225 +143,66 @@
     </dependencies>
 
     <build>
-
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <excludes>
-                    <exclude>.gitkeep</exclude>
-                </excludes>
-            </resource>
-            <!-- the following are only for mapping source folders in Eclipse -->
-            <resource>
-                <directory>src/main/config</directory>
-                <excludes>
-                    <exclude>**/*</exclude>
-                </excludes>
-            </resource>
-            <resource>
-                <directory>src/main/globalConfig</directory>
-                <excludes>
-                    <exclude>**/*</exclude>
-                </excludes>
-            </resource>
-            <resource>
-                <directory>src/main/messages</directory>
-                <excludes>
-                    <exclude>**/*</exclude>
-                </excludes>
-            </resource>
-            <resource>
-                <directory>src/main/webscripts</directory>
-                <excludes>
-                    <exclude>**/*</exclude>
-                </excludes>
-            </resource>
-            <resource>
-                <directory>src/main/webapp</directory>
-                <excludes>
-                    <exclude>**/*</exclude>
-                </excludes>
-            </resource>
-        </resources>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-                <filtering>true</filtering>
-                <excludes>
-                    <exclude>.gitkeep</exclude>
-                </excludes>
-            </testResource>
-        </testResources>
-
         <pluginManagement>
             <plugins>
 
-                <plugin>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>prepareIntegrationTest-createMountStructures</id>
-                            <phase>pre-integration-test</phase>
-                            <goals>
-                                <goal>copy-resources</goal>
-                            </goals>
-                            <configuration>
-                                <outputDirectory>${project.build.directory}/docker</outputDirectory>
-                                <resources>
-                                    <resource>
-                                        <directory>src/test/docker</directory>
-                                        <filtering>true</filtering>
-                                    </resource>
-                                </resources>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-
+                <!-- some image customisations -->
+                <!-- Maven + docker-maven-plugin result in somewhat weird inheritance handling -->
+                <!-- (relying on positional order of images for overrides) -->
                 <plugin>
                     <groupId>io.fabric8</groupId>
                     <artifactId>docker-maven-plugin</artifactId>
                     <configuration>
                         <sourceDirectory>src/test/docker</sourceDirectory>
                         <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
-                        <volumes>
-                            <volume>
-                                <name>${moduleId}-repository-test-contentstore</name>
-                                <driver>local</driver>
-                            </volume>
-                        </volumes>
                         <images>
                             <image>
-                                <name>postgres:11.4</name>
-                                <alias>postgres</alias>
-                                <run>
-                                    <hostname>postgres</hostname>
-                                    <cmd>postgres -c max_connections=300 -c log_min_messages=LOG</cmd>
-                                    <network>
-                                        <mode>custom</mode>
-                                        <name>${moduleId}-test</name>
-                                        <alias>postgres</alias>
-                                    </network>
-                                </run>
+                                <!-- no change to postgres image (first image in parent POM) -->
                             </image>
                             <image>
-                                <name>${moduleId}-repository-test</name>
-                                <alias>repository-1</alias>
-                                <build>
-                                    <from>${docker.tests.repositoryBaseImage}</from>
-                                    <skip>${docker.tests.skipRepositoryImageBuild}</skip>
-                                    <assembly>
-                                        <targetDir>${docker.tests.repositoryWebappPath}</targetDir>
-                                        <descriptorRef>${docker.tests.repositoryDescriptorRef}</descriptorRef>
-                                        <descriptor>${docker.tests.repositoryDescriptor}</descriptor>
-                                    </assembly>
-                                    <dockerFile>Repository-Dockerfile</dockerFile>
-                                </build>
                                 <run>
-                                    <skip>false</skip>
-                                    <hostname>repository-1</hostname>
+                                    <!-- override JAVA_OPTS -->
                                     <env>
                                         <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.versionSpecificJavaOpts}
-                                            -Ddb.driver=org.postgresql.Driver
-                                            -Ddb.username=alfresco
-                                            -Ddb.password=alfresco
-                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
-                                            -Dsolr.host=search
-                                            -Dsolr.port=${docker.tests.searchPort}
-                                            -Dsolr.secureComms=none
-                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
-                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
-                                            -Dcsrf.filter.enabled=false
-                                            -D${moduleId}.caches.remoteSupport.enabled=true
-                                            -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
-                                            -Devents.subsystem.autoStart=false
-                                            -Dmessaging.subsystem.autoStart=false
-                                            -Xms2g -Xmx2g
-                                            -XX:+UseG1GC
-                                            -XX:+ParallelRefProcEnabled
-                                            -XX:+UseStringDeduplication
-                                            -XX:+ScavengeBeforeFullGC
-                                            -XX:+DisableExplicitGC
-                                            -XX:+AlwaysPreTouch
-                                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
-                                            -DIGNITE_QUIET=true
-                                            -DIGNITE_NO_ASCII=true
-                                            -DIGNITE_UPDATE_NOTIFIER=false
-                                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                                            ${docker.tests.repositoryCommonJavaOpts}
                                         ]]></JAVA_OPTS>
                                     </env>
-                                    <ports>
-                                        <port>8180:8080</port>
-                                    </ports>
-                                    <network>
-                                        <mode>custom</mode>
-                                        <name>${moduleId}-test</name>
-                                        <alias>repository-1</alias>
-                                    </network>
+                                    <!-- add log directory mount to just the contentstore -->
+                                    <!-- (cannot be done in parent POM due to hard requirement on specific project structure -->
                                     <volumes>
                                         <bind>
                                             <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
                                             <volume>${project.build.directory}/docker/repository-1-logs:/usr/local/tomcat/logs</volume>
-                                            <volume>${project.build.directory}/docker/repository-log4j.properties:/usr/local/tomcat/shared/classes/alfresco/extension/dev-log4j.properties</volume>
                                         </bind>
                                     </volumes>
-                                    <dependsOn>
-                                        <container>postgres</container>
-                                    </dependsOn>
-                                    <wait>
-                                        <http>
-                                            <url>http://localhost:8180/alfresco/favicon.ico</url>
-                                            <method>GET</method>
-                                            <status>200</status>
-                                        </http>
-                                        <time>${docker.tests.repositoryStartupWaitTime}</time>
-                                    </wait>
                                 </run>
                             </image>
                             <image>
-                                <name>${moduleId}-repository-test</name>
+                                <!-- no customisation to Share image (3rd image in parent POM) -->
+                                <!-- we don't use Share in this sub-module -->
+                            </image>
+                            <image>
+                                <!-- no customisation to SOLR image (4th image in parent POM) -->
+                                <!-- we don't use SOLR in this sub-module -->
+                            </image>
+                            <image>
+                                <!-- add another Repository image -->
+                                <name>maven-repository-test</name>
                                 <alias>repository-2</alias>
                                 <build>
                                     <skip>true</skip>
                                 </build>
                                 <run>
-                                    <skip>false</skip>
+                                    <skip>${docker.tests.skipRepositoryImage}</skip>
                                     <hostname>repository-2</hostname>
                                     <env>
                                         <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.versionSpecificJavaOpts}
-                                            -Ddb.driver=org.postgresql.Driver
-                                            -Ddb.username=alfresco
-                                            -Ddb.password=alfresco
-                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
-                                            -Dsolr.host=search
-                                            -Dsolr.port=${docker.tests.searchPort}
-                                            -Dsolr.secureComms=none
-                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
-                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
-                                            -Dcsrf.filter.enabled=false
-                                            -D${moduleId}.caches.remoteSupport.enabled=true
-                                            -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
-                                            -Devents.subsystem.autoStart=false
-                                            -Dmessaging.subsystem.autoStart=false
-                                            -Xms2g -Xmx2g
-                                            -XX:+UseG1GC
-                                            -XX:+ParallelRefProcEnabled
-                                            -XX:+UseStringDeduplication
-                                            -XX:+ScavengeBeforeFullGC
-                                            -XX:+DisableExplicitGC
-                                            -XX:+AlwaysPreTouch
-                                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
-                                            -DIGNITE_QUIET=true
-                                            -DIGNITE_NO_ASCII=true
-                                            -DIGNITE_UPDATE_NOTIFIER=false
-                                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                                            ${docker.tests.repositoryCommonJavaOpts}
                                         ]]></JAVA_OPTS>
                                     </env>
                                     <ports>
-                                        <port>8280:8080</port>
+                                        <port>${docker.tests.repositoryPort2}:8080</port>
+                                        <port>${docker.tests.repositoryDebugPort2}:${docker.tests.repositoryDebugPort}</port>
                                     </ports>
                                     <network>
                                         <mode>custom</mode>
@@ -356,7 +213,6 @@
                                         <bind>
                                             <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
                                             <volume>${project.build.directory}/docker/repository-2-logs:/usr/local/tomcat/logs</volume>
-                                            <volume>${project.build.directory}/docker/repository-log4j.properties:/usr/local/tomcat/shared/classes/alfresco/extension/dev-log4j.properties</volume>
                                         </bind>
                                     </volumes>
                                     <dependsOn>
@@ -364,7 +220,7 @@
                                     </dependsOn>
                                     <wait>
                                         <http>
-                                            <url>http://localhost:8280/alfresco/favicon.ico</url>
+                                            <url>http://localhost:${docker.tests.repositoryPort2}/alfresco/favicon.ico</url>
                                             <method>GET</method>
                                             <status>200</status>
                                         </http>
@@ -379,81 +235,12 @@
         </pluginManagement>
 
         <plugins>
-
-            <plugin>
-                <artifactId>maven-enforcer-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-toolchains-plugin</artifactId>
-            </plugin>
-
-            <!-- Disabled for the time being as we need to use setAccessible -->
-            <!-- Use finer-grained rules to only allow setAccesible without disabling entire plugin -->
-            <!-- 
-            <plugin>
-                <groupId>de.thetaphi</groupId>
-                <artifactId>forbiddenapis</artifactId>
-            </plugin>
-             -->
-
-            <plugin>
-                <groupId>de.acosix.maven</groupId>
-                <artifactId>i18n-resources-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.alfresco.maven.plugin</groupId>
-                <artifactId>alfresco-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>de.acosix.maven</groupId>
-                <artifactId>jshint-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-            </plugin>
-
+            <!-- Explicitly enable Docker use (can't be done in Acosix parent POM without enabling it for all POMs,
+                even if Docker use is not relevant, e.g. in intermediate parent POMs) -->
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
             </plugin>
-
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-            </plugin>
-
         </plugins>
 
     </build>
@@ -477,20 +264,6 @@
                     </plugins>
                 </pluginManagement>
             </build>
-        </profile>
-        <profile>
-            <id>alfresco-6.1-it</id>
-            <properties>
-                <docker.tests.repositoryBaseImage>alfresco/alfresco-content-repository-community:6.1.2-ga</docker.tests.repositoryBaseImage>
-                <docker.tests.versionSpecificJavaOpts><![CDATA[
-                    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
-                    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-                    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-                    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-                    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-                    --illegal-access=permit
-                ]]></docker.tests.versionSpecificJavaOpts>
-            </properties>
         </profile>
     </profiles>
 

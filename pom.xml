@@ -8,8 +8,8 @@
 
     <parent>
         <groupId>de.acosix.alfresco.maven</groupId>
-        <artifactId>de.acosix.alfresco.maven.module.parent-6.0.7</artifactId>
-        <version>1.1.0</version>
+        <artifactId>de.acosix.alfresco.maven.project.parent-6.1.2</artifactId>
+        <version>1.2.1-SNAPSHOT</version>
     </parent>
 
     <groupId>org.aldica</groupId>
@@ -22,7 +22,7 @@
 
     <!-- temporary details pending completion of open sourcing process -->
     <url>https://github.com/AFaust/alfresco-community-open-grid</url>
-    
+
     <licenses>
         <license>
             <name>Mozilla Public License, Version 2.0</name>
@@ -59,7 +59,7 @@
         <messages.path>aldica</messages.path>
         <messages.packageId>aldica</messages.packageId>
         <moduleId>aldica</moduleId>
-        
+
         <project.longName>Alternative/Alfresco Distributed Cache</project.longName>
         <project.longNameNoWs>AlternativeAlfrescoDistributedCache</project.longNameNoWs>
         <project.basePackage>org.aldica</project.basePackage>
@@ -71,12 +71,58 @@
         <acosix.utility.version>1.0.5.0</acosix.utility.version>
         <apache.ignite.version>2.7.5</apache.ignite.version>
 
-        <fabric8io.docker.version>0.30.0</fabric8io.docker.version>
+        <docker.tests.igniteCommonJavaOpts><![CDATA[
+            --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+            --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+            --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+            --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+            --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+            --illegal-access=permit
+            -XX:+UseG1GC
+            -XX:+ParallelRefProcEnabled
+            -XX:+UseStringDeduplication
+            -XX:+ScavengeBeforeFullGC
+            -XX:+DisableExplicitGC
+            -XX:+AlwaysPreTouch
+            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+            -DIGNITE_QUIET=true
+            -DIGNITE_NO_ASCII=true
+            -DIGNITE_UPDATE_NOTIFIER=false
+            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+        ]]></docker.tests.igniteCommonJavaOpts>
+        <docker.tests.repositoryCommonJavaOpts><![CDATA[
+            ${docker.tests.igniteCommonJavaOpts}
+            -Dmessaging.broker.url=vm://localhost?broker.persistent=false
+            -Ddb.driver=org.postgresql.Driver
+            -Ddb.username=alfresco
+            -Ddb.password=alfresco
+            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+            -Dsolr.host=search
+            -Dsolr.port=${docker.tests.internalSearchPort}
+            -Dsolr.secureComms=none
+            -Dsolr.base.url=${docker.tests.searchBaseUrl}
+            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
+            -Dcsrf.filter.enabled=false
+            -D${moduleId}.caches.remoteSupport.enabled=true
+            -D${moduleId}.core.storage.defaultStorageRegion.initialSize=268935456
+            -D${moduleId}.core.storage.defaultStorageRegion.maxSize=536870912
+            -Xms2g -Xmx2g
+        ]]></docker.tests.repositoryCommonJavaOpts>
+        <docker.tests.shareCommonJavaOpts><![CDATA[
+            ${docker.tests.igniteCommonJavaOpts}
+            -Xms512m -Xmx512m
+        ]]></docker.tests.shareCommonJavaOpts>
+        
+        <!-- override the inherited default ports to align with ports we previously used -->
+        <docker.tests.repositoryPort>8180</docker.tests.repositoryPort>
+        <docker.tests.repositoryDebugPort>8185</docker.tests.repositoryDebugPort>
+        <docker.tests.repositoryPort2>8280</docker.tests.repositoryPort2>
+        <docker.tests.repositoryDebugPort2>8285</docker.tests.repositoryDebugPort2>
 
-        <!-- these properties are not (yet) defined in Acosix Alfresco Maven 1.1.0 -->
-        <docker.tests.skipShareImageBuild>true</docker.tests.skipShareImageBuild>
-        <docker.tests.shareWebappPath>/usr/local/tomcat/webapps/share</docker.tests.shareWebappPath>
-        <docker.tests.shareStartupWaitTime>90000</docker.tests.shareStartupWaitTime>
+        <docker.tests.sharePort>8181</docker.tests.sharePort>
+        <docker.tests.shareDebugPort>8186</docker.tests.shareDebugPort>
+        <docker.tests.sharePort2>8281</docker.tests.sharePort2>
+        <docker.tests.shareDebugPort2>8286</docker.tests.shareDebugPort2>
     </properties>
 
     <repositories>
@@ -178,53 +224,33 @@
     </dependencyManagement>
 
     <build>
+        <pluginManagement>
+            <plugins>
+
+                <plugin>
+                    <groupId>de.thetaphi</groupId>
+                    <artifactId>forbiddenapis</artifactId>
+                    <configuration>
+                        <failOnUnsupportedJava>false</failOnUnsupportedJava>
+                        <failOnMissingClasses>false</failOnMissingClasses>
+                        <failOnUnresolvableSignatures>false</failOnUnresolvableSignatures>
+                        <bundledSignatures>
+                            <bundledSignature>jdk-unsafe</bundledSignature>
+                            <bundledSignature>jdk-deprecated</bundledSignature>
+                            <bundledSignature>jdk-internal</bundledSignature>
+                            <bundledSignature>jdk-system-out</bundledSignature>
+                            <!-- disabled (compared to inherited default) as we can't avoid setAccessible -->
+                            <!-- 
+                            <bundledSignature>jdk-non-portable</bundledSignature>
+                             -->
+                            <bundledSignature>jdk-reflection</bundledSignature>
+                        </bundledSignatures>
+                    </configuration>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
     </build>
-
-    <!-- these profiles are not (yet) defined in Acosix Alfresco Maven 1.1.0 -->
-    <profiles>
-        <profile>
-            <id>shareDockerITDefaults</id>
-
-            <activation>
-                <file>
-                    <exists>src/test/docker/share-it.xml</exists>
-                </file>
-            </activation>
-
-            <properties>
-                <docker.tests.skipShareImageBuild>false</docker.tests.skipShareImageBuild>
-            </properties>
-
-        </profile>
-
-        <profile>
-            <id>HasNoSpecificShareDockerITAssembly</id>
-
-            <activation>
-                <file>
-                    <missing>src/test/docker/share-it.xml</missing>
-                </file>
-            </activation>
-
-            <properties>
-                <docker.tests.shareDescriptorRef>default-docker</docker.tests.shareDescriptorRef>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>HasSpecificShareDockerITAssembly</id>
-
-            <activation>
-                <file>
-                    <exists>src/test/docker/share-it.xml</exists>
-                </file>
-            </activation>
-
-            <properties>
-                <docker.tests.shareDescriptor>share-it.xml</docker.tests.shareDescriptor>
-            </properties>
-        </profile>
-    </profiles>
 
     <modules>
         <module>common</module>

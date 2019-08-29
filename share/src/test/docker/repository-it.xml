@@ -11,6 +11,38 @@
         <format>dir</format>
     </formats>
     <includeBaseDirectory>false</includeBaseDirectory>
+    <fileSets>
+        <fileSet>
+            <directory>${project.basedir}/src/test/docker/alfresco</directory>
+            <outputDirectory>WEB-INF/classes/alfresco</outputDirectory>
+            <includes>
+                <include>*</include>
+                <include>**/*</include>
+            </includes>
+            <excludes>
+                <exclude>*.js</exclude>
+                <exclude>**/*.js</exclude>
+                <exclude>*.ftl</exclude>
+                <exclude>**/*.ftl</exclude>
+                <exclude>*.keystore</exclude>
+                <exclude>**/*.keystore</exclude>
+            </excludes>
+            <filtered>true</filtered>
+            <lineEnding>lf</lineEnding>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/test/docker/alfresco</directory>
+            <outputDirectory>WEB-INF/classes/alfresco</outputDirectory>
+            <includes>
+                <include>*.js</include>
+                <include>**/*.js</include>
+                <include>*.ftl</include>
+                <include>**/*.ftl</include>
+                <include>*.keystore</include>
+                <include>**/*.keystore</include>
+            </includes>
+        </fileSet>
+    </fileSets>
     <dependencySets>
         <dependencySet>
             <outputDirectory>WEB-INF/lib</outputDirectory>
