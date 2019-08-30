@@ -209,6 +209,79 @@ The NFS-server can be installed with:
 $ sudo apt install nfs-kernel-server
 ```
 
-Next, a folder for storing the Alfresco content must be provided. 
+Next, a folder for storing the Alfresco content must be provided. In this 
+example, the folder `/var/nfs/alf_data` will be used:
+```
+$ sudo mkdir -p /var/nfs/alf_data
+```
+
+Set the following permissions on the folder:
+```
+$ sudo chown nobody:nogroup /var/nfs/alf_data
+$ sudo chmod 755 /var/nfs/alf_data
+```
+
+The folder above now needs to be exported, so the repository servers can 
+mount it. This is done in `/etc/exports`. Add the following lines to this 
+file:
+```
+/var/nfs/alf_data <alfresco repo1 hostname>(rw,sync,no_subtree_check)
+/var/nfs/alf_data <alfresco repo2 hostname>(rw,sync,no_subtree_check)
+```
+
+Finally, restart the NFS server:
+```
+$ sudo systemctl restart nfs-kernel-server
+```
+
+### Setting up NFS on the clients
+
+In order for the repositories to use the NFS server, the NFS client 
+software needs to be installed and the remote filesystem has to be 
+mounted. Install the following package in both of the repository 
+servers:
+```
+$ sudo apt install nfs-common
+```
+
+Create a folder which can serve as the target for mounting the remote 
+folder and set the permissions on this folder (you will probably 
+need to adjust these according to your security requirements):
+```
+$ sudo mkdir -p /mnt/nfs/alf_data
+$ sudo chmod 777 /mnt/nfs/alf_data
+```
+
+Then mount the remote filesystem. This can be done either by mounting 
+from the command line or by adding a mount point to the `/etc/fstab`.
+
+#### Mounting from the command line
+
+Use the following command to mount the remote folder locally:
+```
+$ sudo mount -t nfs <NFS server hostname>:/var/nfs/alf_data /mnt/nfs/alf_data
+```
+
+Perform the above mount from both of the repository servers. 
+
+#### Mounting via the filesystem table
+
+Another option is to add the mount point to the `/etc/fstab`. Do this 
+by adding this line to the file on both repositories
+```
+<NFS server IP>:/var/nfs/alf_data /mnt/nfs/alf_data nfs defaults 0 2
+```
+
+The remote filesystem can then be mounted with
+```
+$ sudo mount -a
+```
+
+### Test NFS
+
+Now is a good 
+time to test that the filesystem has been mounted correctly, e.g. 
+try adding a file to `/mnt/nfs/ald_data` from repository 1 and check if 
+the file can be deleted again in the same folder from repository 2.
 
 TO BE CONTINUED...
