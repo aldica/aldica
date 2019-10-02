@@ -291,21 +291,32 @@ try adding a file to `/mnt/nfs/ald_data` from repository 1 and check if
 the file can be deleted again in the same folder from repository 2.
 
 
+## Java
+
+Before proceeding, make sure that Java is installed on the servers:
+```
+$ sudo apt install openjdk-8-jre
+```
+
+_Note: If Java 11 is used, a number of extra flags are needed when 
+configuring the JVM. Please see [this](Configuration-JVMProperties.md) 
+for more details._
+
+
 ## Tomcat
 
 The final step missing in the cluster setup is the installation of the 
 repository servers with the aldica module installed and configured. In 
 this guide we will set up Tomcat containers to serve the Alfresco 
-application along with the aldica module. First, add a tomcat user and 
+application along with the aldica module.
+
+### Installing Tomcat
+
+First, add a tomcat user and 
 group on both of the repository servers:
 
 ```
 $ sudo adduser --system --disabled-login --disabled-password --group tomcat
-```
-
-Then, make sure that Java is installed on the servers:
-```
-$ sudo apt install openjdk-8-jre
 ```
 
 Next, download Tomcat from the [Apache Tomcat website](https://tomcat.apache.org/) 
@@ -352,7 +363,12 @@ Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
 Environment=CATALINA_HOME=/opt/tomcat
 Environment=CATALINA_BASE=/opt/tomcat
 Environment='CATALINA_OPTS=-Xms512M -Xmx6G -server'
-Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom \
+-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication \
+-XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+AlwaysPreTouch \
+-DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true -DIGNITE_QUIET=true \
+-DIGNITE_NO_ASCII=true -DIGNITE_UPDATE_NOTIFIER=false \
+-DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true'
 
 ExecStart=/opt/tomcat/bin/startup.sh
 ExecStop=/bin/kill -15 $MAINPID
@@ -367,8 +383,14 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-Make sure to change the environment variables in the above file as needed. Reload the systemd 
-configuration with:
+The `JAVA_OPTS` line contains a number of extra options which are needed by aldica.
+
+_Note: If Java 11 is used, a number of extra flags are needed when 
+configuring the JVM. Please see [this](Configuration-JVMProperties.md) 
+for more details._
+
+Make sure to change the environment variables (e.g. the `-Xmx` setting) in the above 
+file as needed. Reload the systemd configuration with:
 ```
 $ sudo systemctl daemon-reload
 ```
@@ -381,3 +403,154 @@ $ sudo systemctl stop tomcat
 ```
 
 Start Tomcat and check that it is running on e.g. `http://<alfresco repo1 hostname>:8080`.
+
+### Configuring Tomcat to Use Alfresco and aldica
+
+Tomcat must be prepared for the Alfresco and aldica specific files that are required for 
+the system to run. First, create the folders `/opt/tomcat/shared/classes` and 
+`/opt/tomcat/shared/lib` and set the right permissions and ownerships on these:
+```
+$ sudo mkdir -p /opt/tomcat/shared/classes /opt/tomcat/shared/lib
+$ sudo chown -R tomcat. /opt/tomcat/shared
+$ sudo chmod -R 755 /opt/tomcat/shared
+```
+
+Set the `shared.loader` property in the file `/opt/tomcat/conf/catalina.properties` to:
+```
+shared.loader=${catalina.base}/shared/classes
+```
+
+A few changes are also required in the `/opt/tomcat/conf/server.xml`. Find the 
+`<Connector>` elements with the attributes `port=8080` and `port=8009`, respectively, 
+and add the attribute `URIEncoding="UTF-8"` to these two elements. Set the permissions 
+of the file to 640:
+```
+$ sudo chmod 640 /opt/tomcat/conf/server.xml
+```
+
+### Downloading and installing the Alfresco files
+
+Download the Alfresco distribution-zip, extract it and set permissions to the 
+tomcat user and group:
+```
+$ cd /opt
+$ sudo wget https://download.alfresco.com/cloudfront/release/community/201901-GA-build-205/alfresco-content-services-community-distribution-6.1.2-ga.zip
+$ sudo unzip alfresco-content-services-community-distribution-6.1.2-ga.zip
+($ sudo chown -R tomcat. alfresco-content-services-community-distribution-6.1.2-ga)
+```
+
+For convenience, make a symlink to the newly extracted Alfresco folder:
+```
+$ sudo ln -s /opt/alfresco-content-services-community-distribution-6.1.2-ga /opt/alfresco
+```
+
+Stop the Tomcat service, if it is running. Delete the content of the folder 
+`/opt/tomcat/webapps`:
+```
+$ sudo rm -rf /opt/tomcat/webapps/*
+```
+
+Copy the `alfresco.war`, the`ROOT.war` and the `_vti_.war` files 
+to `/opt/tomcat/webapps` and set ownership and permissions:
+```
+$ sudo cp /opt/alfresco/web-server/webapps/alfresco.war /opt/tomcat/webapps
+$ sudo cp /opt/alfresco/web-server/ROOT.war /opt/tomcat/webapps
+$ sudo cp /opt/alfresco/web-server/_vti_.war /opt/tomcat/webapps
+
+(this should already be set)
+$ sudo chown tomcat. /opt/tomcat/webapps/*
+
+$ sudo chmod 644 /opt/tomcat/webapps/*
+```
+
+Copy the contents of `/opt/alfresco/web-server/lib` to `/opt/tomcat/lib`:
+```
+$ sudo cp /opt/alfresco/web-server/lib/* /opt/tomcat/lib
+```
+
+Currently, the `lib` folder only contains the JDBC driver for PostgreSQL, so if 
+MySQL or MariaDB is used instead, a driver for these also have to be placed in 
+the folder.
+
+Copy the `alfresco.xml` to `/opt/tomcat/conf`:
+```
+$ sudo cp /opt/alfresco/web-server/conf/Catalina/localhost/alfresco.xml /opt/tomcat/conf/alfresco.xml
+```
+
+Copy the folder `/opt/alfresco/alf_data/keystore` to `/opt/tomcat`:
+```
+$ sudo cp -a /opt/alfresco/alf_data/keystore /opt/tomcat
+$ sudo chmod 640 /opt/tomcat/keystore/*
+$ sudo chmod 750 /opt/tomcat/keystore
+```
+
+Finally, create the `alfresco-global.properties` file in 
+`/opt/tomcat/shared/classes` with content similar to this (adjust as needed):
+```
+###############################
+## Common Alfresco Properties #
+###############################
+
+#
+# Custom content and index data location
+#
+dir.root=/mnt/nfs/alf_data
+dir.keystore=/opt/tomcat/keystore
+
+#
+# Database connection properties
+#
+db.username=<db_username>
+db.password=<db_password>
+db.schema.update=true
+db.driver=org.postgresql.Driver
+db.url=jdbc:postgresql://<db hostname>:5432/alfresco
+
+#
+# URL Generation Parameters (The ${localname} token is replaced by the local server name)
+#
+alfresco.context=alfresco
+alfresco.host=${localname}
+alfresco.port=8080
+alfresco.protocol=http
+
+# Default value of alfresco.rmi.services.host is 0.0.0.0 which means 'listen on all adapters'.
+# This allows connections to JMX both remotely and locally.
+#
+alfresco.rmi.services.host=0.0.0.0
+
+#
+# Smart Folders Config Properties
+#
+smart.folders.enabled=false
+smart.folders.model=alfresco/model/smartfolder-model.xml
+smart.folders.model.labels=alfresco/messages/smartfolder-model
+
+#
+# Message broker config
+#
+messaging.subsystem.autoStart=false
+
+#
+# Clustering
+#
+aldica.core.enabled=true
+aldica.caches.enabled=true
+aldica.caches.remoteSupport.enabled=true
+#aldica.core.name=
+#aldica.core.login=
+#aldica.core.password=
+aldica.core.local.id=<alfresco repo hostname>
+aldica.core.local.host=<alfresco repo hostname>
+aldica.core.public.host=<alfresco repo ip>
+```
+
+Set the ownership and permissions of the `alfresco-global.properties`:
+```
+$ sudo chown tomcat. /opt/tomcat/shared/classes/alfresco-global.properties
+$ sudo chmod 640 /opt/tomcat/shared/classes/alfresco-global.properties
+```
+
+### Installing the aldica AMP
+
+TO BE CONTINUED...
