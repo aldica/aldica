@@ -5,6 +5,11 @@ using Tomcat containers. The infomation provided here can be considered only as
 a "getting started guide" and should not be considered as a complete 
 reference describing all the steps required for setting up a cluster solution ready for production use.
 
+_Note: this also means that appropriate security precautions need to be taken before 
+trying this in production._ For production use, it is probably more convenient to use 
+the Docker setup found [elsewhere](link to docker docs) in the aldica documentation.
+
+
 The Alfresco Community cluster setup will consist of the following components:
 
 * A simple Apache load balancer
@@ -20,6 +25,7 @@ Ubuntu 18.04 (or similar), but other Linux distributions can of course be used  
 with appropriate changes to the distribution specific commands outlined below. 
 Make sure that the servers used have a sufficient amount of resources in 
 terms of CPUs, memory, harddisk space/speed and bandwidth.
+
 
 ## Load balancing
 
@@ -277,11 +283,101 @@ The remote filesystem can then be mounted with
 $ sudo mount -a
 ```
 
-### Test NFS
+### Testing NFS
 
 Now is a good 
 time to test that the filesystem has been mounted correctly, e.g. 
 try adding a file to `/mnt/nfs/ald_data` from repository 1 and check if 
 the file can be deleted again in the same folder from repository 2.
 
-TO BE CONTINUED...
+
+## Tomcat
+
+The final step missing in the cluster setup is the installation of the 
+repository servers with the aldica module installed and configured. In 
+this guide we will set up Tomcat containers to serve the Alfresco 
+application along with the aldica module. First, add a tomcat user and 
+group on both of the repository servers:
+
+```
+$ sudo adduser --system --disabled-login --disabled-password --group tomcat
+```
+
+Then, make sure that Java is installed on the servers:
+```
+$ sudo apt install openjdk-8-jre
+```
+
+Next, download Tomcat from the [Apache Tomcat website](https://tomcat.apache.org/) 
+and extract into the `/opt` folder. In this guide, Tomcat version 8.5.34 is used:
+```
+$ cd /opt
+$ sudo wget http://mirrors.dotsrc.org/apache/tomcat/tomcat-8/v8.5.46/bin/apache-tomcat-8.5.46.tar.gz
+$ sudo tar xvzf /path/to/apache-tomcat-8.5.34.tar.gz
+```
+
+This will result in the folder `/opt/apache-tomcat-8.5.34` containing the Tomcat 
+container required to serve Alfresco. For convenience, create a symlink to the tomcat 
+folder:
+```
+$ sudo ln -s /opt/apache-tomcat-8.5.34 tomcat
+```
+
+A couple of permissions need to be set on the Tomcat folders:
+```
+$ sudo chgrp -R tomcat /opt/apache-tomcat-8.5.34
+$ sudo chmod -R g=r /opt/apache-tomcat-8.5.34/conf
+$ sudo chmod g=rx /opt/apache-tomcat-8.5.34/conf
+$ sudo chown -R tomcat /opt/apache-tomcat-8.5.34/webapps
+$ sudo chown -R tomcat /opt/apache-tomcat-8.5.34/work
+$ sudo chown -R tomcat /opt/apache-tomcat-8.5.34/temp
+$ sudo chown -R tomcat /opt/apache-tomcat-8.5.34/logs
+```
+
+Finally, a configuration file for systemd should be added for easing the starting and 
+stopping of the Tomcat service. Add the file `/etc/systemd/system/tomcat.service` with 
+the content below to the repository servers:
+
+```
+# Systemd unit file for tomcat
+
+[Unit]
+Description=Apache Tomcat Web Application Container
+After=syslog.target network.target
+
+[Service]
+Type=forking
+
+Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+Environment=CATALINA_HOME=/opt/tomcat
+Environment=CATALINA_BASE=/opt/tomcat
+Environment='CATALINA_OPTS=-Xms512M -Xmx6G -server'
+Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+
+ExecStart=/opt/tomcat/bin/startup.sh
+ExecStop=/bin/kill -15 $MAINPID
+
+User=tomcat
+Group=tomcat
+UMask=0007
+RestartSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Make sure to change the environment variables in the above file as needed. Reload the systemd 
+configuration with:
+```
+$ sudo systemctl daemon-reload
+```
+
+It should now be possible to start and stop (and enable) the Tomcat service with the commands:
+```
+$ sudo systemctl enable tomcat
+$ sudo systemctl start tomcat
+$ sudo systemctl stop tomcat
+```
+
+Start Tomcat and check that it is running on e.g. `http://<alfresco repo1 hostname>:8080`.
