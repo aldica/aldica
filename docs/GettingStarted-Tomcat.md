@@ -551,6 +551,98 @@ $ sudo chown tomcat. /opt/tomcat/shared/classes/alfresco-global.properties
 $ sudo chmod 640 /opt/tomcat/shared/classes/alfresco-global.properties
 ```
 
-### Installing the aldica AMP
+### Installing aldica
 
-TO BE CONTINUED...
+The final step in setting up the cluster concerns the installation of the aldica 
+AMP along with the supporting Acosix Alfresco Utility AMP.
+
+#### Building the Acosix Alfresco Utility AMP
+
+The GitHub page for the Acosix Alfresco Utility project can be found 
+[here](https://github.com/Acosix/alfresco-utility).  In order to 
+build the AMP, a toolchain configuration needs to 
+be provided. The instructions for setting this up can be found in the 
+[build](https://github.com/Acosix/alfresco-utility#build) section of the project 
+documentation. Once the toolchain has been setup, the AMP(s) can be build with
+```
+$ mvn clean package
+```
+
+run from the root of the project. If the build was successful a message like
+```
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for Acosix Alfresco Utility - Parent 1.0.7.0:
+[INFO]
+[INFO] Acosix Alfresco Utility - Parent ................... SUCCESS [  0.865 s]
+[INFO] Acosix Alfresco Utility - Core Parent .............. SUCCESS [  0.008 s]
+[INFO] Acosix Alfresco Utility - Core Common Library ...... SUCCESS [  6.986 s]
+[INFO] Acosix Alfresco Utility - Core Repository Quartz 1.x Library SUCCESS [  4.541 s]
+[INFO] Acosix Alfresco Utility - Core Repository Quartz 2.x Library SUCCESS [  1.256 s]
+[INFO] Acosix Alfresco Utility - Core Repository Module ... SUCCESS [ 43.227 s]
+[INFO] Acosix Alfresco Utility - Core Share Module ........ SUCCESS [ 14.789 s]
+[INFO] Acosix Alfresco Utility - Full Parent .............. SUCCESS [  0.004 s]
+[INFO] Acosix Alfresco Utility - Full Repository Module ... SUCCESS [  6.080 s]
+[INFO] Acosix Alfresco Utility - Full Share Module ........ SUCCESS [  4.459 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:22 min
+[INFO] Finished at: 2019-10-03T09:34:38+02:00
+[INFO] ------------------------------------------------------------------------
+```
+
+should appear in the terminal. The AMP required by aldica is the file found 
+here `repository/target/de.acosix.alfresco.utility.repo-1.0.3.0-SNAPSHOT.amp`.
+
+#### Building the aldica AMP
+
+As for the Acosix Alfresco Utility AMP, a toolchain configuration is required 
+(see the section above or the documentation found 
+[elsewhere](../README.md) in this project. Once this has been setup, the AMP(s) 
+can be build with
+```
+$ mvn clean package -DskipTests
+```
+
+and the resulting aldica AMP can be found here 
+`repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp`.
+
+#### Deploying the AMPs
+
+The AMPs above must be added to the `alfresco.war` file found in 
+`/opt/tomcat/webapps`. For convenience, copy the AMPs to a folder 
+within the `tomcat` folder:
+```
+$ sudo -u tomcat mkdir /opt/tomcat/amps
+$ sudo cp /path/to/alfresco-utility/repository/target/de.acosix.alfresco.utility.repo-1.0.3.0-SNAPSHOT.amp /opt/tomcat/amps
+$ sudo cp /path/to/aldica/repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp /opt/tomcat/amps
+$ sudo chown tomcat. /opt/tomcat/amps/*
+```
+
+The AMPs can now be installed into the `alfresco.war` file:
+```
+$ sudo -u tomcat java -jar /opt/alfresco/bin/alfresco-mmt.jar install /opt/tomcat/amps/de.acosix.alfresco.utility.repo-1.0.3.0-SNAPSHOT.amp /opt/tomcat/webapps/alfresco.war
+$ sudo -u tomcat java -jar /opt/alfresco/bin/alfresco-mmt.jar install /opt/tomcat/amps/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp /opt/tomcat/webapps/alfresco.war
+
+```
+
+## Start Tomcat and testing
+
+That's it! The cluster should be ready to start up. Run the following command on each 
+of the repository servers one at a time:
+```
+$ sudo systemctl start tomcat
+```
+
+Follow along in the log file `/opt/tomcat/logs/catalina.out` while Tomcat is starting up 
+and verify that log entities like these appear:
+```
+[14:44:04] Ignite node started OK (id=f4bcee41, instance name=repositoryGrid)
+[14:44:04] Topology snapshot [ver=1, locNode=f4bcee41, servers=1, clients=0, state=ACTIVE, CPUs=8, offheap=16.0GB, heap=4.0GB]
+2019-08-21 14:44:04,742  INFO  [managers.discovery.GridDiscoveryManager] [localhost-startStop-1] Topology snapshot [ver=1, locNode=f4bcee41, servers=1, clients=0, state=ACTIVE, CPUs=8, offheap=16.0GB, heap=4.0GB]
+ 2019-08-21 14:44:04,742  INFO  [ignite.lifecycle.SpringIgniteLifecycleBean] [localhost-startStop-1] Ignite instance repositoryGrid currently has 1 active nodes on addresses [172.30.0.54]
+ 201
+```
+
+When both repositories have been started up, it can be verified that the clustering 
+mechanism is working as described [here](Test-Manual.md).
