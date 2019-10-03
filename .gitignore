@@ -3,4 +3,9 @@ bin/
 .project
 .classpath
 
+.idea
+
 target/
+
+venv/
+__pycache__
