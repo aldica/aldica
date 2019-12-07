@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.common.ignite;
 
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -39,6 +40,7 @@ public abstract class GridTestsBase
         conf.setIgniteInstanceName("testGrid" + no);
         conf.setGridLogger(new Slf4jLogger());
         conf.setLocalHost(TEST_HOST);
+        conf.setWorkDirectory(Paths.get("target", "IgniteWork").toAbsolutePath().toString());
 
         conf.setCommunicationSpi(createCommunicationSpi());
         conf.setDiscoverySpi(createDiscoverySpi(primaryCredentials, assumeExisting));

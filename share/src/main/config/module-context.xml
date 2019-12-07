@@ -39,6 +39,7 @@
         <property name="igniteInstanceName" value="\${${moduleId}.core.name}" />
         <property name="consistentId" value="\${${moduleId}.core.local.id}" />
         <property name="localHost" value="\${${moduleId}.core.local.host}" />
+        <property name="workDirectory" value="\${java.io.tmpdir}/IgniteWork" />
         <property name="metricsExpireTime" value="1200000" />
         <property name="metricsLogFrequency" value="600000" />
         <property name="peerClassLoadingEnabled" value="false" />
