@@ -19,8 +19,6 @@
         <project.basePackage>org.aldica.repo.ignite</project.basePackage>
 
         <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
-
-
     </properties>
 
     <dependencyManagement>
@@ -187,7 +185,7 @@
                             </image>
                             <image>
                                 <!-- add another Repository image -->
-                                <name>maven-repository-test</name>
+                                <name>${moduleId}-repository-test</name>
                                 <alias>repository-2</alias>
                                 <build>
                                     <skip>true</skip>
