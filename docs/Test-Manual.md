@@ -1,4 +1,4 @@
-# Manual verfication tests
+# Manual verification tests
 
 This section describes a few of simple manual tests which can be performed in order to verify that the Aldica module is working as expected.
 
@@ -6,7 +6,7 @@ This section describes a few of simple manual tests which can be performed in or
 
 The following setup will be needed:
 
-- Two Alfreco Community repositories with the Aldica module installed according to the instructions given above (the repositories will be called `repo1` and `repo2`, respectively, below).
+- Two Alfresco Community repositories with the Aldica module installed according to the instructions given above (the repositories will be called `repo1` and `repo2`, respectively, below).
 - A common database used by both of the repositories.
 
 ## Verifying the distribution of authentication tickets

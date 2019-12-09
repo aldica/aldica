@@ -1,7 +1,7 @@
 # Getting started using Tomcat
 
 In the following it is described how to setup an Alfresco Community cluster 
-using Tomcat containers. The infomation provided here can be considered only as 
+using Tomcat containers. The information provided here can be considered only as 
 a "getting started guide" and should not be considered as a complete 
 reference describing all the steps required for setting up a cluster solution ready for production use.
 
@@ -287,7 +287,7 @@ $ sudo mount -a
 
 Now is a good 
 time to test that the filesystem has been mounted correctly, e.g. 
-try adding a file to `/mnt/nfs/ald_data` from repository 1 and check if 
+try adding a file to `/mnt/nfs/alf_data` from repository 1 and check if 
 the file can be deleted again in the same folder from repository 2.
 
 
