@@ -35,6 +35,27 @@ In order to build the project it is necessary to provide a basic toolchain confi
   </toolchain>
 </toolchains>
 ```
+Ubuntu example:
+```
+<?xml version='1.0' encoding='UTF-8'?>
+<toolchains xmlns="http://maven.apache.org/TOOLCHAINS/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/TOOLCHAINS/1.1.0 http://maven.apache.org/xsd/toolchains-1.1.0.xsd">
+  <toolchain>
+    <type>jdk</type>
+    <provides>
+      <version>1.8</version>
+      <vendor>oracle</vendor>
+    </provides>
+    <configuration>
+      <jdkHome>/usr/lib/jvm/java-1.8.0-openjdk-amd64/</jdkHome>
+    </configuration>
+  </toolchain>
+</toolchains>
+```
+The build process will produce two amp files, namely:
+```
+./repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp
+./share/target/aldica-share-ignite-1.0.0.0-SNAPSHOT.amp
+```
 
 ### Docker-based Integration Tests
 
