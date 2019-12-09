@@ -8,6 +8,7 @@ This folder contains detailed documentation sections concerning the alternative/
 - Installation / Configuration
     - [Install via Alfresco SDK](./Installation-SDK4.md)
     - [Install via Docker Build](./Installation-Docker.md)
+    - [Install via Kubernetes](./Installation-Kubernetes.md)
     - [Java Virtual Machine (JVM) Properties](./Configuration-JVMProperties.md)
     - [Repository Configuration Reference](./Configuration-RepoReference.md)
     - [Share Configuration Reference](./Configuration-ShareReference.md)
