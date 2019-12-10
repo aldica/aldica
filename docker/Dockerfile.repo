@@ -24,12 +24,13 @@ RUN mvn install -B -T2C
 
 
 # Build aldica-enabled Alfresco Repository
-FROM alfresco/alfresco-content-repository-community:6.1.2-ga
+FROM alfresco/alfresco-content-repository-community:6.2.0-ga
 
-#COPY --from=1 --chown=root:Alfresco /aldica/repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp .
-#COPY --from=0 --chown=root:Alfresco /alfresco-utility/core/repository/target/de.acosix.alfresco.utility.core.repo-1.0.8.0.amp .
-COPY --from=1 /aldica/repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp .
-COPY --from=0 /alfresco-utility/core/repository/target/de.acosix.alfresco.utility.core.repo-1.0.8.0.amp .
+COPY --from=1 --chown=root:Alfresco /aldica/repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp .
+COPY --from=0 --chown=root:Alfresco /alfresco-utility/core/repository/target/de.acosix.alfresco.utility.core.repo-1.0.8.0.amp .
 
-RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install de.acosix.alfresco.utility.core.repo-1.0.8.0.amp webapps/alfresco
-RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp webapps/alfresco
+USER root
+RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install de.acosix.alfresco.utility.core.repo-1.0.8.0.amp webapps/alfresco -nobackup
+RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp webapps/alfresco -nobackup
+USER alfresco
+
