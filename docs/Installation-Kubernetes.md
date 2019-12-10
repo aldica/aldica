@@ -43,14 +43,14 @@ docker {{ myregistry }}/aldica-share:latest
 ## Fetching the upstream Helm chart
 Fetch the latest [acs-community-deployment](https://github.com/Alfresco/acs-community-deployment/releases/latest) release archive.
 
-Extract the archive and navigate to the `helm/alfresco-content-services-community/` folder (the folder containing the Chart.yaml file).
+Extract the archive and navigate to root folder (the folder containing the LICENSE).
 
 This is the folder we want to work with in the next step.
 
 ## Patching the upstream Helm chart
-Find the provided path in ..., and apply it to the Helm chart folder, by running:
+Find the [provided patch file](./0001-Aldica.patch), and apply it to the Helm chart folder, by running:
 ```
-patch ...
+patch -p1 -i docs/0001-Aldica.patch
 ```
 At this point, you should insert your own docker image in the `values.yml` file.
 
