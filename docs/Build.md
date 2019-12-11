@@ -1,6 +1,6 @@
 # Build
 
-The aldica module project is based on a common Maven-based setup used by Acosix for Alfresco extension projects. The project is **not** using the Alfresco SDK for its various shortcomings, among them its extremely tight coupling with specific relase versions of Alfresco, inflexibility with regards to Maven build lifecycles and combination with other plugins for pre-/post-processing, and favouritism concerning AMP vs. JAR packaging.
+The aldica module project is based on a common Maven-based setup used by Acosix for Alfresco extension projects. The project is **not** using the Alfresco SDK for its various shortcomings, among them its extremely tight coupling with specific release versions of Alfresco, inflexibility with regards to Maven build lifecycles and combination with other plugins for pre-/post-processing, and favouritism concerning AMP vs. JAR packaging.
  
 ### General Build and Toolchains
 
