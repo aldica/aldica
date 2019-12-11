@@ -22,6 +22,20 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>org.alfresco</groupId>
+                <artifactId>alfresco-core</artifactId>
+                <version>${alfresco.safe.core.version}</version>
+                <scope>provided</scope>
+                <!-- exclude broken / irrelevant transitive dependencies -->
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework.social</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-beans</artifactId>
                 <version>${spring.version}</version>
@@ -85,6 +99,11 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
         </dependency>
 
         <dependency>
