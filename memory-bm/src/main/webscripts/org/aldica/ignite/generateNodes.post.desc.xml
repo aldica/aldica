@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<webscript>
+    <shortname>Generate Nodes</shortname>
+    <description>Generates a set of nodes with pseudo randomized metadata.</description>
+    <url>/aldica/mem-bm/generateNodes</url>
+    <authentication>none</authentication>
+</webscript>

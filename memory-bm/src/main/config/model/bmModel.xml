@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model name="bm:contentmodel" xmlns="http://www.alfresco.org/model/dictionary/1.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <imports>
+        <import uri="http://www.alfresco.org/model/dictionary/1.0" prefix="d" />
+        <import uri="http://www.alfresco.org/model/system/1.0" prefix="sys" />
+    </imports>
+
+    <namespaces>
+        <namespace uri="http://www.aldica.org/model/mem-bm/1.0" prefix="bm" />
+    </namespaces>
+
+    <aspects>
+        <aspect name="bm:benchmarkProperties">
+            <properties>
+                <property name="bm:intA">
+                    <type>d:int</type>
+                </property>
+                <property name="bm:longB">
+                    <type>d:long</type>
+                </property>
+                <property name="bm:floatC">
+                    <type>d:float</type>
+                </property>
+                <property name="bm:doubleD">
+                    <type>d:double</type>
+                </property>
+                <property name="bm:dateE">
+                    <type>d:date</type>
+                </property>
+                <property name="bm:dateF">
+                    <type>d:datetime</type>
+                </property>
+                <property name="bm:lovString">
+                    <type>d:text</type>
+                    <constraints>
+                        <constraint name="bm:lovStringValues" type="LIST">
+                            <parameter name="allowedValues">
+                                <list>
+                                    <value>Value ABC</value>
+                                    <value>Value DEF</value>
+                                    <value>Value GHI</value>
+                                    <value>Value JK</value>
+                                    <value>Value LMN</value>
+                                    <value>Value OPQ</value>
+                                    <value>Value RST</value>
+                                    <value>Value UVW</value>
+                                    <value>Value XYZ</value>
+                                </list>
+                            </parameter>
+                        </constraint>
+                    </constraints>
+                </property>
+            </properties>
+        </aspect>
+    </aspects>
+</model>

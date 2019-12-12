@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<webscript>
+    <shortname>Clear Node Caches</shortname>
+    <description>Clears all core caches related to nodes, aspects, properties and child by name lookups.</description>
+    <url>/aldica/mem-bm/clearNodeCaches</url>
+    <authentication>none</authentication>
+</webscript>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<webscript>
+    <shortname>Caches Node</shortname>
+    <description>Caches a set of nodes with pseudo randomized metadata.</description>
+    <url>/aldica/mem-bm/cacheNodes</url>
+    <authentication>none</authentication>
+</webscript>
