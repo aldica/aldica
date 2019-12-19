@@ -51,6 +51,7 @@
         </fileSet>
     </fileSets>
     <dependencySets>
+        <!-- Whole block must be commented when building Enterprise-based image -->
         <dependencySet>
             <outputDirectory>WEB-INF/lib</outputDirectory>
             <includes>
@@ -65,10 +66,14 @@
             <outputDirectory>WEB-INF/lib</outputDirectory>
             <includes>
                 <include>org.orderofthebee.support-tools:support-tools-repo:*</include>
+                <include>net.time4j:time4j-core:*</include>
+                <include>net.time4j:time4j-i18n:*</include>
+                <include>com.cronutils:cron-utils:*</include>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.common:*</include>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo.quartz1:*</include>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo.quartz2:*</include>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo:jar:installable:*</include>
+                <!-- Inclusion of aldica must be commented when building Enterprise-based image -->
                 <include>${project.groupId}:aldica-repo-ignite:jar:installable:*</include>
             </includes>
             <scope>test</scope>

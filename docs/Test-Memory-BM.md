@@ -20,13 +20,11 @@ The benchmark makes use of the Docker-based integration test environment configu
 
 The instance ```aldica-mem-bm-repository-test-1``` is started with the following parameters (only listing diverging settings):
 
-- Xms/Xmx set to 2 GiB
 - global aldica extension enablement flag (```aldica.core.enabled```) set to ```true```
 - default Ignite storage region
 
 The instance ```aldica-mem-bm-repository-test-2``` is started with the following parameters (only listing diverging settings):
 
-- Xms/Xmx set to 4 GiB (to accommodate for the expected higher heap memory usage of on-heap only caches in Alfresco default
 - global aldica extension enablement flag (```aldica.core.enabled```) set to ```false```
 
 The following parameters have been specified as common parameters for both instances, though the aldica-specific parameters only take effect in instance ```aldica-mem-bm-repository-test-1```:
@@ -42,7 +40,8 @@ Apart from the listed changes, both instances use the same default configuration
 - enabled string deduplication of G1 GC
 - forced scavenge before doing a full GC cycle
 - enabled parallel processing of references
-- pre-touch Java heap during JVM initialisation (all pages zeroed) 
+- pre-touch Java heap during JVM initialisation (all pages zeroed)
+- use of 4 GiB heap memory
 
 ## Full Execution + Data Retrieval
 
@@ -81,7 +80,6 @@ In the heap dump of both instances, the biggest object by retained heap memory i
 
 In the heap dump of the ```aldica-mem-bm-repository-test-2``` instance (alfresco-1m-nodes.hprof) the two next biggest objects by retained heap memory are ```aspectsSharedCache``` and ```propertiesSharedCache```, with roughly 355 MiB and 760 MiB respectively. 
 
-
 ### Overal Memory Usage
 The Ignite data region ```nodes``` of the ```aldica-mem-bm-repository-test-1``` instance uses a total amount of roughly 620 MiB of physical memory for the cached data of ```aspectsSharedCache``` and ```propertiesSharedCache```. The individual on-heap facades for Ignite-backed caches only make up a few hundred bytes each, so are negligible. In total, the Ignite-backed caches thus uses roughly 1450 MiB of memory for all three caches related to node identity, aspects and properties, compared to roughly 1925 MiB of memory used by default Alfresco caches, resulting in a 25 % reduction in used memory relative to the default (66 % reduction in heap memory). 
 
@@ -99,3 +97,17 @@ Since Ignite-backed caches save data off heap and outside the reach of deduplica
 - replacing content data instances (property values) with their database ID
 - transforming collections into simpler arrays
 - explicitly interning list-of-values string instances when read from off-heap memory into on-heap object form, to dedulicate not only the character data, but also the string wrapper, regardless of garbage collector configuration
+
+### Comparison with Alfresco Enterprise
+
+The benchmark can also be run against Alfresco Content Services in the Enterprise Edition. Since aldica does not support running in an Enterprise Edition instance, the benchmark can only be run with two clustered default ACS EE instances, instead of the default comparison setup with an Ignite-enabled and a default instance. In order to run with Enterprise Edition, the following changes need to be performed:
+
+- modify sub-module pom.xml to enable use of an alternative base Docker image via the module's &lt;properties&gt;
+- modify src/test/docker/Repository-Dockerfile to adapt USER / RUN directives for building an Enterprise-based image
+- modify src/test/repository-it.xml to exclude aldica libraries and dependencies
+
+All files that need to be modified contain comments to indicate the required changes.
+
+When run with ACS EE 6.2.0, this benchmark shows similar memory usage patterns as with the default ACS Community instance. This is to be expected as all caches use the same default cache implementation. Both ```aspectsSharedCache``` and ```propertiesSharedCache``` are not cluster-enabled at all in Enterprise Edition, and the ```nodesSharedCache``` only uses a thin facade to support Hazelcast-backed remote invalidation while the actual data structure is handled by the default cache implementation. Running the benchmark against one of the two clustered instances of ACS EE, the caches use a combined heap memory of 1910 MiB (800, 357 and 753 MiB respectively for ```nodesSharedCache```, ```aspectsSharedCache``` and ```propertiesSharedCache```). Running the benchmark against the second of the two clustered instances yields a similar result. Running the clearNodeCaches web script will also trigger the ```nodesSharedCache``` to be cleared / emptied on the first instance as well, so it will affect its memory usage. If the clearNodeCaches web script is NOT run, the ```nodesSharedCache``` will still be partially cleared on the first instance when running the benchmark against the second, as the Hazelcast-supported invalidating cache facade will trigger (superflous / overly cautious) invalidation messages to be sent when loading new data from the database into caches.
+
+The primary take-away from running the benchmark against ACS EE is that there is no significant difference in memory usage between Community and Enterprise Edition when it comes to the most important caches for node data. The relative reductions in memory usage observed between Community Edition with default caching and with aldica's Ignite-backed caches enabled, thus also apply in a comparison between Enterprise Edition with default (Hazelcast-enabled) caching and Community Edition with aldica's Ignite-backed caches enabled.

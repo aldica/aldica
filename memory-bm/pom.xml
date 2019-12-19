@@ -19,6 +19,11 @@
         <project.basePackage>org.aldica.repo.ignite</project.basePackage>
         <moduleId>aldica-mem-bm</moduleId>
         <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
+
+        <!-- optional switch to different base image (6.2.0 Enterprise in this case) -->
+        <!--
+        <docker.tests.repositoryBaseImage>alfresco/alfresco-content-repository:6.2.0</docker.tests.repositoryBaseImage>
+         -->
     </properties>
 
     <dependencyManagement>
@@ -160,7 +165,7 @@
                                             -Dsolr.base.url=${docker.tests.searchBaseUrl}
                                             -Dindex.subsystem.name=${docker.tests.searchSubsystem}
                                             -Dcsrf.filter.enabled=false
-                                            -Xms2g -Xmx2g
+                                            -Xms4g -Xmx4g
                                             -Daldica.core.enabled=true
                                         ]]></JAVA_OPTS>
                                     </env>
