@@ -2,7 +2,7 @@
 This detached sub-module of the project is aimed at providing the means for general memory footprint benchmarks of default Alfresco caches and Ignite-backed caches. Using a simple content model and a set of generate / clear cache / load cache web scripts, the sub-module offers standardised, easily reproducible comparisons of the amount of memory require to support a specific number of cached nodes in both types of systems.
 
 # Comparing Core Node Caches
-The primary/only benchmark currently provided by this sub-module is aimed at comparing the memory footprints of the node aspects and properties caches between default Alfresco and aldica's Ignite-backed caches. This benchmark focuses on the caches which store unique values for each node, avoiding any caches that may hold data specific to only a subset of nodes, e.g. content data / URL caches for nodes with attached binary contents.
+The primary / only benchmark currently provided by this sub-module is aimed at comparing the memory footprints of the node aspects and properties caches between default Alfresco and aldica's Ignite-backed caches. This benchmark focuses on the caches which store unique values for each node, avoiding any caches that may hold data specific to only a subset of nodes, e.g. content data / URL caches for nodes with attached binary contents.
 
 For this comparison, the following configurations and extensions have been bundled in this sub-module:
 
@@ -30,7 +30,7 @@ The instance ```aldica-mem-bm-repository-test-2``` is started with the following
 The following parameters have been specified as common parameters for both instances, though the aldica-specific parameters only take effect in instance ```aldica-mem-bm-repository-test-1```:
 
 - disable TTL based eviction on ```nodesSharedCache```
-- increase sizes of ```nodesSharedCache```, ```aspectsSharedCache``` and ```propertiesSharedCache``` to accommodate 1,000,000 nodes
+- increase sizes of ```nodesSharedCache```, ```aspectsSharedCache``` and ```propertiesSharedCache``` to accommodate 1,250,000 nodes, in order to avoid any premature eviction when loading 1,000,000 nodes
 - setup a Ignite data regions ```nodeAspects``` and ```nodeProperties``` of 10 MiB (initial size) and size limit of 5 GiB in ```${java.io.tmpdir}/IgniteWork/nodeAspects``` / ```${java.io.tmpdir}/IgniteWork/nodeProperties``` (essentially within the Tomcat temp directory)
 - associate aldica Ignite-backed caches ```aspectsSharedCache``` and ```propertiesSharedCache``` with the data region ```nodeAspects``` and ```nodeProperties``` respectively
 
@@ -67,22 +67,21 @@ docker exec -ti aldica-mem-bm-repository-test-2 /usr/java/default/bin/jmap -dump
 docker cp aldica-mem-bm-repository-test-2:/tmp/alfresco-1m-nodes.hprof ./alfresco-1m-nodes.hprof
 ```
 
-In addition to the heap dumps retrieved, it is necessary to retrieve the size of the Ignite ```nodes``` data region using the Admin Console page http://localhost:8180/alfresco/s/aldica/admin/ignite-data-regions
-Additionally, general cache state can also be compared using the Admin Console pages http://localhost:8180/alfresco/s/ootbee/admin/caches and http://localhost:8280/alfresco/s/ootbee/admin/caches 
+In addition to the heap dumps retrieved, it is necessary to retrieve the size of the Ignite ```nodeAspects``` and ```nodeProperties``` data regions using the Admin Console page http://localhost:8180/alfresco/s/aldica/admin/ignite-data-regions
+Additionally, general cache state can also be compared using the Admin Console pages http://localhost:8180/alfresco/s/ootbee/admin/caches and http://localhost:8280/alfresco/s/ootbee/admin/caches
+
+**Note**: The Ignite-backed caches are primarily limited by the maximum size of the off-heap memory data regions configured for the caches. The Alfresco-typical configuration of a maximum number of items only affects the on-heap cache layer intended to reduce IO / serialisation overhead for the most recently used entries, which is disabled by default (configured via the aldica.caches.ignoreDefaultEvictionConfiguration property).
 
 ## Results
 
-### General Cache State
-When comparing the general cache states of the aldica-enabled and Alfresco default instances, a minor difference in the effective cache sizes may be noticed. This difference is due to how the cache implementations handle value eviction upon nearing / reaching the limit. The Google Cache backed Alfresco default can prematurely evict cache entries (and more than may be needed to be evicted), based on its internal segment distribution structure and the configured concurrency level (Alfresco never configures this, so it is always set to 4). When using 1,000,000 nodes with pseudi-random property values, the overall difference should be sufficiently marginal.
-
 ### Heap Dump Analysis
-In the heap dump of both instances, the biggest object by retained heap memory is the ```nodesSharedCache```, taking roughly 810-830 MiB of heap memory. Due to Alfresco design flaws (mutable state in cache entries and usage patterns relying on server-local object semantics), this cache cannot be supported by an Ignite-backed cache, and as such there is no relevant difference in cache size between the two instances, apart from the minor difference due to different internal limit eviction behaviours.
+In the heap dump of both instances, the biggest object by retained heap memory is the ```nodesSharedCache```, taking roughly 810 MiB of heap memory. Due to Alfresco design flaws (mutable state in cache entries and usage patterns relying on server-local object semantics), this cache cannot be supported by an Ignite-backed cache, and as such there is no relevant difference in cache size between the two instances, apart from the minor difference due to different internal limit eviction behaviours.
 
-In the heap dump of the ```aldica-mem-bm-repository-test-2``` instance (alfresco-1m-nodes.hprof) the two next biggest objects by retained heap memory are ```aspectsSharedCache``` and ```propertiesSharedCache```, with roughly 355 MiB and 760 MiB respectively. 
+In the heap dump of the ```aldica-mem-bm-repository-test-2``` instance (alfresco-1m-nodes.hprof) the two next biggest objects by retained heap memory are ```aspectsSharedCache``` and ```propertiesSharedCache```, with roughly 360 MiB and 763 MiB respectively.
 
 ### Overal Memory Usage
 The Ignite data region ```nodeAspects``` of the ```aldica-mem-bm-repository-test-1``` instance uses roughly 218 MiB of physical memory for the cached data of ```aspectsSharedCache```, while ```nodeProperties``` uses roughly 408 MiB for ```propertiesSharedCache```. The individual on-heap facades for Ignite-backed caches only make up a few hundred bytes each, so are negligible. Compared directly to their on-heap counterparts in default Alfresco, the caches use 38 % and 46 % less memory respectively, not accounting for the fact that they each hold more entries overall due to a slight difference in limit / eviction handling.
-In total, the Ignite-backed caches thus use roughly 1455 MiB of memory for all three caches related to node identity, aspects and properties, compared to roughly 1925 MiB of memory used by default Alfresco caches, resulting in a 25 % reduction in used memory relative to the default (66 % reduction in heap memory).
+In total, the Ignite-backed caches thus use roughly 1435 MiB of memory for all three caches related to node identity, aspects and properties, compared to roughly 1933 MiB of memory used by default Alfresco caches, resulting in a 25 % reduction in used memory relative to the default (58 % reduction in heap memory).
 
 ## Remarks
 
