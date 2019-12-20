@@ -2,7 +2,7 @@ FROM ${docker.tests.repositoryBaseImage}
 COPY maven ${docker.tests.repositoryWebappPath}
 
 # must be uncommented when building 6.1.1+ / 6.2+ image
-USER root
+#USER root
 
 # Enable use of Web Session replication by modifying web.xml
 # Must be commented when building Enterprise-based image
@@ -15,4 +15,4 @@ RUN awk 'done != 1 && /<filter-mapping/ { \
     && mv ${docker.tests.repositoryWebappPath}/WEB-INF/web.xml.awked ${docker.tests.repositoryWebappPath}/WEB-INF/web.xml
 
 # must be uncommented when building 6.1.1+ / 6.2+ image
-USER alfresco
+#USER alfresco
