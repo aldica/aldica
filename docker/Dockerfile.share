@@ -1,12 +1,3 @@
-# Build de.acosix.alfresco.utility.core AMPs
-FROM maven:3-jdk-8
-RUN git clone https://github.com/Acosix/alfresco-utility.git
-WORKDIR /alfresco-utility/
-
-RUN mvn dependency:resolve -B -T2C
-RUN mvn install -B -T2C
-
-
 # Build aldica-ignite AMPs
 FROM maven:3-jdk-8
 ADD docker/toolchains.xml /root/.m2/
@@ -21,13 +12,13 @@ ADD share share
 
 # RUN mvn dependency:resolve -B -T2C
 RUN mvn install -B -T2C
-
+RUN mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.share:1.0.8.0:amp -DoutputDirectory=target -B -T2C
 
 # Build aldica-enabled Alfresco Share
 FROM alfresco/alfresco-share:6.2.0
 
-COPY --from=1 /aldica/share/target/aldica-share-ignite-1.0.0.0-SNAPSHOT.amp .
-COPY --from=0 /alfresco-utility/core/share/target/de.acosix.alfresco.utility.core.share-1.0.8.0.amp .
+COPY --from=0 /aldica/share/target/aldica-share-ignite-1.0.0.0-SNAPSHOT.amp .
+COPY --from=0 /aldica/target/de.acosix.alfresco.utility.core.share-1.0.8.0.amp .
 
 RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install de.acosix.alfresco.utility.core.share-1.0.8.0.amp webapps/share -force -nobackup
 RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install aldica-share-ignite-1.0.0.0-SNAPSHOT.amp webapps/share -nobackup
