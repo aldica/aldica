@@ -20,7 +20,7 @@ Building the aldica-enabled docker images can be done using the `Dockerfile`s wi
 * Dockerfile.repo
 * Dockerfile.share
 
-Note that building these images will take quite a while (~1 hour), depending on available CPU and network resources.
+Note that building these images will take quite a while (~35 minutes), depending on available CPU, IO performance and network resources.
 
 Building can be done either directly using `docker build .. -f Dockerfile.[repo|share]` or indirectly using `docker-compose build [alfresco|share]`.
 
@@ -36,8 +36,8 @@ docker tag {{ share_id }} {{ myregistry }}/aldica-share:latest
 ```
 And push them to `{{ myregistry }}`:
 ```
-docker {{ myregistry }}/aldica-repo:latest
-docker {{ myregistry }}/aldica-share:latest
+docker push {{ myregistry }}/aldica-repo:latest
+docker push {{ myregistry }}/aldica-share:latest
 ```
 
 ## Fetching the upstream Helm chart
@@ -52,7 +52,7 @@ Find the [provided patch file](./0001-Aldica.patch), and apply it to the Helm ch
 ```
 patch -p1 -i docs/0001-Aldica.patch
 ```
-At this point, you should insert your own docker image in the `values.yml` file.
+At this point, you should insert your own docker images in the `values.yml` file.
 
 Note: You may have to configure custom registry credentials, assuming your docker registry is not publicly available.
 
