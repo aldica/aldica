@@ -10,7 +10,7 @@ The following configuration properties affect the instantiation of the core Igni
 
 | Property | Default Value | Description |
 | --- | ---: | --- |
-| aldica.core.enabled | ``true`` | Central enablement flag for the module - if set to ``false``, the module will not activate its abstract Spring beans to instantiate an Ignite grid nor modify any default Spring beans to injects its functionalities / components (other features, especially those not directly controllable via properites, like web scripts for the Admin Console, will remain active/available) |
+| aldica.core.enabled | ``true`` | Central enablement flag for the module - if set to ``false``, the module will not activate its abstract Spring beans to instantiate an Ignite grid nor modify any default Spring beans to injects its functionalities / components (other features, especially those not directly controllable via properties, like web scripts for the Admin Console, will remain active/available) |
 | aldica.core.name | ``repositoryGrid`` | Name of the Ignite grid instance (technically, multiple grid instances can be created in a single JVM, so this is used to distinguish and select the instance to be used for all features of aldica) |
 | aldica.core.login | ``repository`` | Part of authentication data for a server to join an existing data grid |
 | aldica.core.password | ``repositoryGrid-dev`` | Part of authentication data for a server to join an existing data grid - should be changed **always** to avoid a server accidentally joining a data grid it is not meant to join  |
@@ -41,7 +41,7 @@ The following configuration properties affect the instantiation of the core Igni
 | aldica.core.local.time.port | ``47120`` | Network port on which to bind for the UDP-based time server handling |
 | aldica.core.local.time.portRange | ``0`` | Range / number of alternative ports (relative to _aldica.core.local.time.port_) on which to attempt to bind if the configured port is not available |
 | aldica.core.public.time.port |  | Publicly accessible port for time server handling used in network address translation handling, e.g. in a NAT-ed environment |
-| aldica.core.initialMembers |  | Comma-separated list of accessible network addresses to attempt to contact as initial data grid members during [member discovery](./Concept-GridMemberDiscovery.md). This is generally **not necessary** as aldica will handle discovery using database-stored address registrations. Configured addresses may use host names / IP addresss with or without ports / port ranges (based on the _aldica.core.local.disco.port_ and related settings), e.g. ``repo1.acme.com,192.168.0.2,repo2.acme.com:47110,192.168.0.4:47110-47119`` |
+| aldica.core.initialMembers |  | Comma-separated list of accessible network addresses to attempt to contact as initial data grid members during [member discovery](./Concept-GridMemberDiscovery.md). This is generally **not necessary** as aldica will handle discovery using database-stored address registrations. Configured addresses may use host names / IP addresses with or without ports / port ranges (based on the _aldica.core.local.disco.port_ and related settings), e.g. ``repo1.acme.com,192.168.0.2,repo2.acme.com:47110,192.168.0.4:47110-47119`` |
 
 ### Storage Properties
 
@@ -150,7 +150,7 @@ The configuration of the web session cache requires a change to the default Alfr
 | --- | ---: | --- |
 | aldica.webSessionCache.enabled | ``false``  | Central enablement flag for the Ignite web session cache - if set to ``false`` the cache will be inactive regardless of the configuration change made to _web.xml_ |
 | aldica.webSessionCache.instanceName | ``${aldica.core.name}`` | The name of the data grid to use for instantiating the Ignite cache |
-| aldica.webSessionCache.cacheName | ``servlet.webSessionCache`` | The name of the Ignite cache to instaniate for the feature |
+| aldica.webSessionCache.cacheName | ``servlet.webSessionCache`` | The name of the Ignite cache to instantiate for the feature |
 | aldica.webSessionCache.retriesOnFailure | ``2`` | The number of retries that should be attempted when a cache operation affecting a session failed |
 | aldica.webSessionCache.retriesTimeout | ``5000`` | The number of milliseconds before a retry cache operation affecting a session will timeout |
 | aldica.webSessionCache.keepBinary | ``true`` | Technical flag to specify whether the Ignite backed cache should keep the internal binary representation on all internal layers - should never need to be changed |

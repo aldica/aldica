@@ -1,9 +1,9 @@
 # About
-This directory contains a basic load-testing / benchmarking script basaed on [K6](https://k6.io/) from [LoadImpact](https://loadimpact.com/), which itself is open source under the GNU Affero General Public License v3.0. This load-testing / benchmarking script uses the Alfresco Public ReST API to perform very basic operations on Alfresco Content Service (authenticate, navigate a folder tree, create content, update content, read metadata). Running with multiple, concurrent clients as well as having a dedicated verification use case (randomly executed in 20% of all test iterations) this script can be used to verify that the Alfresco Community Open Grid extension works correctly and keeps the cache of all nodes in the grid consistent, even when under quite heavy load.
+This directory contains a basic load-testing / benchmarking script based on [K6](https://k6.io/) from [LoadImpact](https://loadimpact.com/), which itself is open source under the GNU Affero General Public License v3.0. This load-testing / benchmarking script uses the Alfresco Public ReST API to perform very basic operations on Alfresco Content Service (authenticate, navigate a folder tree, create content, update content, read metadata). Running with multiple, concurrent clients as well as having a dedicated verification use case (randomly executed in 20% of all test iterations) this script can be used to verify that the Alfresco Community Open Grid extension works correctly and keeps the cache of all nodes in the grid consistent, even when under quite heavy load.
 
 ### Note on "work-in-progress" state
 
-This script / load-testing setup is still very much a work in progress, as this is the first project any of this project'S developers have used it on. As such, there are a long list of potential improvements to be made, and the state of this README may not always perfectly reflect recent changes to the script.
+This script / load-testing setup is still very much a work in progress, as this is the first project any of this project's developers have used it on. As such, there are a long list of potential improvements to be made, and the state of this README may not always perfectly reflect recent changes to the script.
 
 # Test configuration
 

@@ -12,43 +12,40 @@
         <version>1.0.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>aldica-repo-ignite</artifactId>
-    <name>Alternative/Alfresco Distributed Cache - Repository Ignite Module</name>
+    <artifactId>aldica-repo-ignite-mem-bm</artifactId>
+    <name>Alternative/Alfresco Distributed Cache - Repository Ignite Module - Memory Benchmark</name>
 
     <properties>
         <project.basePackage>org.aldica.repo.ignite</project.basePackage>
-
+        <moduleId>aldica-mem-bm</moduleId>
         <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
+
+        <!-- optional switch to different base image (6.2.0 Enterprise in this case) -->
+        <!--
+        <docker.tests.repositoryBaseImage>alfresco/alfresco-content-repository:6.2.0</docker.tests.repositoryBaseImage>
+         -->
     </properties>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>de.acosix.alfresco.rest.client</groupId>
-                <artifactId>de.acosix.alfresco.rest.client</artifactId>
-                <version>${acosix.alfresco.client.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>de.acosix.alfresco.rest.client</groupId>
-                <artifactId>de.acosix.alfresco.rest.client</artifactId>
-                <version>${acosix.alfresco.client.version}</version>
-                <classifier>tests</classifier>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>${aldica.ignite-common.artifactId}</artifactId>
+                <artifactId>aldica-repo-ignite</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>${aldica.ignite-common.artifactId}</artifactId>
+                <artifactId>aldica-repo-ignite</artifactId>
                 <version>${project.version}</version>
-                <classifier>tests</classifier>
+                <classifier>installable</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.orderofthebee.support-tools</groupId>
+                <artifactId>support-tools-repo</artifactId>
+                <version>1.1.0.0</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -57,7 +54,7 @@
     <dependencies>
         <dependency>
             <groupId>org.alfresco</groupId>
-            <artifactId>alfresco-repository</artifactId>
+            <artifactId>alfresco-remote-api</artifactId>
             <exclusions>
                 <!-- xmlfactory and cxf mess with resteasy / JAX-RS in integration tests -->
                 <!-- opencmis exclusion excludes various transitive cxf inclusions -->
@@ -83,13 +80,13 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>${aldica.ignite-common.artifactId}</artifactId>
+            <artifactId>aldica-repo-ignite</artifactId>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>${aldica.ignite-common.artifactId}</artifactId>
-            <classifier>tests</classifier>
+            <artifactId>aldica-repo-ignite</artifactId>
+            <classifier>installable</classifier>
         </dependency>
 
         <dependency>
@@ -119,22 +116,6 @@
         </dependency>
 
         <dependency>
-            <groupId>de.acosix.alfresco.rest.client</groupId>
-            <artifactId>de.acosix.alfresco.rest.client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>de.acosix.alfresco.rest.client</groupId>
-            <artifactId>de.acosix.alfresco.rest.client</artifactId>
-            <classifier>tests</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
@@ -142,6 +123,11 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.orderofthebee.support-tools</groupId>
+            <artifactId>support-tools-repo</artifactId>
         </dependency>
     </dependencies>
 
@@ -167,7 +153,20 @@
                                     <!-- override JAVA_OPTS -->
                                     <env>
                                         <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.repositoryCommonJavaOpts}
+                                            ${docker.tests.igniteCommonJavaOpts}
+                                            -Dmessaging.broker.url=vm://localhost?broker.persistent=false
+                                            -Ddb.driver=org.postgresql.Driver
+                                            -Ddb.username=alfresco
+                                            -Ddb.password=alfresco
+                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                                            -Dsolr.host=search
+                                            -Dsolr.port=${docker.tests.internalSearchPort}
+                                            -Dsolr.secureComms=none
+                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
+                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
+                                            -Dcsrf.filter.enabled=false
+                                            -Xms4g -Xmx4g
+                                            -Daldica.core.enabled=true
                                         ]]></JAVA_OPTS>
                                     </env>
                                     <!-- add log directory mount to just the contentstore -->
@@ -189,7 +188,7 @@
                                 <!-- we don't use SOLR in this sub-module -->
                             </image>
                             <image>
-                                <!-- add another Repository image -->
+                                <!-- add another Repository image with Ignite disabled (default caching) -->
                                 <name>${moduleId}-repository-test</name>
                                 <alias>repository-2</alias>
                                 <build>
@@ -200,7 +199,20 @@
                                     <hostname>repository-2</hostname>
                                     <env>
                                         <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.repositoryCommonJavaOpts}
+                                            ${docker.tests.igniteCommonJavaOpts}
+                                            -Dmessaging.broker.url=vm://localhost?broker.persistent=false
+                                            -Ddb.driver=org.postgresql.Driver
+                                            -Ddb.username=alfresco
+                                            -Ddb.password=alfresco
+                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                                            -Dsolr.host=search
+                                            -Dsolr.port=${docker.tests.internalSearchPort}
+                                            -Dsolr.secureComms=none
+                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
+                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
+                                            -Dcsrf.filter.enabled=false
+                                            -Xms4g -Xmx4g
+                                            -Daldica.core.enabled=false
                                         ]]></JAVA_OPTS>
                                     </env>
                                     <ports>
@@ -247,27 +259,5 @@
         </plugins>
 
     </build>
-
-    <profiles>
-        <profile>
-            <id>expensiveTestSuppression</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <artifactId>maven-surefire-plugin</artifactId>
-                            <configuration>
-                                <excludedGroups>${project.basePackage}.ExpensiveTestCategory</excludedGroups>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
-    </profiles>
 
 </project>

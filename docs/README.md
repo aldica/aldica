@@ -15,5 +15,6 @@ This folder contains detailed documentation sections concerning the alternative/
     - [Getting started with Tomcat](./GettingStarted-Tomcat.md)
 - Verification / Tests
     - [K6 Benchmark](./Test-K6.md)
+    - [Memory Benchmark](./Test-Memory-BM.md)
     - [JMeter Benchmark](./Test-JMeter.md)
     - [Manual Verification](./Test-Manual.md)

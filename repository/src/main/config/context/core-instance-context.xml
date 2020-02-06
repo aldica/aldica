@@ -182,7 +182,8 @@
 
     <bean id="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobTrigger" abstract="true" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="cronExpression" value="\${${moduleId}.core.local.disco.registrationRefresh.cron}" />
-        <property name="startDelay" value="${system.cronJob.startDelayMilliseconds}"/>
+        <!-- system.cronJob.startDelayMilliseconds is only available in 6.0+, so we need the default value to be 5.x compatible -->
+        <property name="startDelay" value="${system.cronJob.startDelayMilliseconds:60000}"/>
         <property name="jobDetail">
             <bean id="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobDetail" class="de.acosix.alfresco.utility.repo.job.GenericJobDetailsFactoryBean">
                 <property name="jobClass" value="${project.basePackage}.job.MemberAddressRegistrationRefreshJob"/>
