@@ -3,7 +3,9 @@ This module project provides a distributed caching and data grid module for Alfr
 
 ## Compatibility
 
-The module of this project is built to be compatible with Alfresco Content Services 6.0.7 GA / Alfresco Share 6.0.c and above. Since the Alfresco core APIs on which this module relies have remained stable in the 6.x release lines, the module should also be compatible with Alfresco Content Services / Alfresco Share 5.2.f.
+The module of this project is built to be compatible with Alfresco Content Services 6.0.7 GA / Alfresco Share 6.0.c and above. Since the Alfresco core APIs on which this module relies have remained stable in the 6.x release lines, the module should also be compatible with Alfresco Content Services / Alfresco Share 5.2.f. The following **special** compatibility conditions apply:
+
+ - Spring 5 included in Alfresco 6.2+ introduced some internal changes which may break earlier versions of the Acosix Alfresco Utility addon (a dependency of this project). Only version 1.1.0+ of that addon is compatible with Alfresco 6.2+ and required to use the module in that version of Alfresco without risk of unexpected failures.
 
 # Build
 

@@ -240,11 +240,11 @@
                             <bundledSignature>jdk-deprecated</bundledSignature>
                             <bundledSignature>jdk-internal</bundledSignature>
                             <bundledSignature>jdk-system-out</bundledSignature>
+                            <bundledSignature>jdk-non-portable</bundledSignature>
                             <!-- disabled (compared to inherited default) as we can't avoid setAccessible -->
                             <!-- 
-                            <bundledSignature>jdk-non-portable</bundledSignature>
-                             -->
                             <bundledSignature>jdk-reflection</bundledSignature>
+                             -->
                         </bundledSignatures>
                     </configuration>
                 </plugin>
