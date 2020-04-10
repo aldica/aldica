@@ -10,7 +10,7 @@
         <groupId>de.acosix.alfresco.maven</groupId>
         <!-- <artifactId>de.acosix.alfresco.maven.project.parent-6.2.0</artifactId> -->
         <artifactId>de.acosix.alfresco.maven.project.parent-6.1.2</artifactId>
-        <version>1.3.0-SNAPSHOT</version>
+        <version>1.3.1</version>
     </parent>
 
     <groupId>org.aldica</groupId>
@@ -69,8 +69,8 @@
         <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
         <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
 
-        <acosix.utility.version>1.1.0</acosix.utility.version>
-        <apache.ignite.version>2.7.6</apache.ignite.version>
+        <acosix.utility.version>1.2.1</acosix.utility.version>
+        <apache.ignite.version>2.8.1</apache.ignite.version>
 
         <docker.tests.igniteCommonJavaOpts><![CDATA[
             --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
@@ -93,7 +93,7 @@
         ]]></docker.tests.igniteCommonJavaOpts>
         <docker.tests.repositoryCommonJavaOpts><![CDATA[
             ${docker.tests.igniteCommonJavaOpts}
-            -Dmessaging.broker.url=vm://localhost?broker.persistent=false
+            ${docker.tests.repositoryVersionSpecificJavaOpts}
             -Ddb.driver=org.postgresql.Driver
             -Ddb.username=alfresco
             -Ddb.password=alfresco
@@ -119,6 +119,8 @@
         <docker.tests.repositoryDebugPort>8185</docker.tests.repositoryDebugPort>
         <docker.tests.repositoryPort2>8280</docker.tests.repositoryPort2>
         <docker.tests.repositoryDebugPort2>8285</docker.tests.repositoryDebugPort2>
+        <docker.tests.repositoryPort3>8380</docker.tests.repositoryPort3>
+        <docker.tests.repositoryDebugPort3>8385</docker.tests.repositoryDebugPort3>
 
         <docker.tests.sharePort>8181</docker.tests.sharePort>
         <docker.tests.shareDebugPort>8186</docker.tests.shareDebugPort>

@@ -9,6 +9,7 @@ import java.util.Collections;
 
 import org.aldica.common.ignite.discovery.CredentialsAwareTcpDiscoverySpi;
 import org.aldica.common.ignite.plugin.SimpleSecurityPluginConfiguration;
+import org.aldica.common.ignite.plugin.SimpleSecurityPluginProvider;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -45,19 +46,25 @@ public abstract class GridTestsBase
         conf.setCommunicationSpi(createCommunicationSpi());
         conf.setDiscoverySpi(createDiscoverySpi(primaryCredentials, assumeExisting));
 
+        SimpleSecurityPluginConfiguration secConf = null;
         if (validCredentials.length > 0)
         {
-            final SimpleSecurityPluginConfiguration secConf = new SimpleSecurityPluginConfiguration();
+            secConf = new SimpleSecurityPluginConfiguration();
             secConf.setEnabled(true);
             secConf.setAllowedNodeCredentials(Arrays.asList(validCredentials));
-            conf.setPluginConfigurations(secConf);
         }
         else if (primaryCredentials != null)
         {
-            final SimpleSecurityPluginConfiguration secConf = new SimpleSecurityPluginConfiguration();
+            secConf = new SimpleSecurityPluginConfiguration();
             secConf.setEnabled(true);
             secConf.setAllowedNodeCredentials(Collections.singleton(primaryCredentials));
-            conf.setPluginConfigurations(secConf);
+        }
+
+        if (secConf != null)
+        {
+            final SimpleSecurityPluginProvider secProvider = new SimpleSecurityPluginProvider();
+            secProvider.setConfiguration(secConf);
+            conf.setPluginProviders(secProvider);
         }
 
         return conf;

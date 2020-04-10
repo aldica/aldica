@@ -13,7 +13,6 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
-import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
@@ -26,6 +25,17 @@ import org.apache.ignite.plugin.PluginValidationException;
  */
 public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecurityPluginConfiguration>
 {
+
+    protected SimpleSecurityPluginConfiguration configuration;
+
+    /**
+     * @param configuration
+     *            the configuration to set
+     */
+    public void setConfiguration(final SimpleSecurityPluginConfiguration configuration)
+    {
+        this.configuration = configuration;
+    }
 
     /**
      *
@@ -87,20 +97,9 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
     public <T> T createComponent(final PluginContext ctx, final Class<T> cls)
     {
         T component = null;
-
-        final PluginConfiguration[] pluginConfigurations = ctx.igniteConfiguration().getPluginConfigurations();
-        if (cls.isAssignableFrom(GridSecurityProcessor.class) && pluginConfigurations != null)
+        if (cls.isAssignableFrom(GridSecurityProcessor.class) && this.configuration != null)
         {
-            boolean containsConfig = false;
-            for (final PluginConfiguration config : pluginConfigurations)
-            {
-                containsConfig = containsConfig || config instanceof SimpleSecurityPluginConfiguration;
-            }
-
-            if (containsConfig)
-            {
-                component = cls.cast(new SimpleSecurityProcessor(ctx));
-            }
+            component = cls.cast(new SimpleSecurityProcessor(this.configuration));
         }
         return component;
     }
@@ -173,6 +172,7 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
      * {@inheritDoc}
      */
     @Override
+    @SuppressWarnings("rawtypes") // forced by interface
     public CachePluginProvider<?> createCacheProvider(final CachePluginContext ctx)
     {
         // NO-OP

@@ -29,7 +29,10 @@ import org.alfresco.service.transaction.TransactionService;
 import org.alfresco.util.EqualsHelper;
 import org.alfresco.util.ParameterCheck;
 import org.alfresco.util.PropertyCheck;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 import org.slf4j.Logger;
@@ -65,6 +68,10 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
 
     protected AttributeService attributeService;
 
+    protected AddressResolver addressResolver;
+
+    protected String initialMembers;
+
     public MemberTcpDiscoveryIpFinder()
     {
         super();
@@ -79,6 +86,24 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
     {
         PropertyCheck.mandatory(this, "transactionService", this.transactionService);
         PropertyCheck.mandatory(this, "attributeService", this.attributeService);
+        PropertyCheck.mandatory(this, "addressResolver", this.addressResolver);
+
+        if (this.initialMembers != null && !this.initialMembers.trim().isEmpty())
+        {
+            final String[] fragments = this.initialMembers.split("\\s*,\\s*");
+            final List<String> addresses = new ArrayList<>();
+            for (final String address : fragments)
+            {
+                if (!address.isEmpty())
+                {
+                    addresses.add(address);
+                }
+            }
+            if (!addresses.isEmpty())
+            {
+                this.setAddresses(addresses);
+            }
+        }
     }
 
     /**
@@ -97,6 +122,24 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
     public void setAttributeService(final AttributeService attributeService)
     {
         this.attributeService = attributeService;
+    }
+
+    /**
+     * @param addressResolver
+     *            the addressResolver to set
+     */
+    public void setAddressResolver(final AddressResolver addressResolver)
+    {
+        this.addressResolver = addressResolver;
+    }
+
+    /**
+     * @param initialMembers
+     *            the initialMembers to set
+     */
+    public void setInitialMembers(final String initialMembers)
+    {
+        this.initialMembers = initialMembers;
     }
 
     /**
@@ -151,30 +194,6 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
     }
 
     /**
-     * @param initialMembers
-     *            the initialMembers to set
-     */
-    public void setInitialMembers(final String initialMembers)
-    {
-        if (initialMembers != null && !initialMembers.trim().isEmpty())
-        {
-            final String[] fragments = initialMembers.split("\\s*,\\s*");
-            final List<String> addresses = new ArrayList<>();
-            for (final String address : fragments)
-            {
-                if (!address.isEmpty())
-                {
-                    addresses.add(address);
-                }
-            }
-            if (!addresses.isEmpty())
-            {
-                this.setAddresses(addresses);
-            }
-        }
-    }
-
-    /**
      * @param addresses
      *            the addresses to set
      */
@@ -222,27 +241,24 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
 
         super.initializeLocalAddresses(addresses);
 
-        if (!this.discoveryClientMode())
+        // we are in startup so instanceName should be available in context
+        final Object instanceName = ExternalContext.getExternalContextAttribute(ExternalContext.KEY_IGNITE_INSTANCE_NAME);
+        this.instanceName = instanceName instanceof String ? (String) instanceName : null;
+
+        final Map<InetSocketAddress, String> registrationIdByAddress = this.loadRemoteAddressesFromAttributes();
+        this.localAddresses.addAll(addresses);
+
+        // before storing our local addresses we clean up all old registrations that intersect with our current addresses
+        for (final InetSocketAddress localAddress : addresses)
         {
-            // we are in startup so instanceName should be available in context
-            final Object instanceName = ExternalContext.getExternalContextAttribute(ExternalContext.KEY_IGNITE_INSTANCE_NAME);
-            this.instanceName = instanceName instanceof String ? (String) instanceName : null;
-
-            final Map<InetSocketAddress, String> registrationIdByAddress = this.loadRemoteAddressesFromAttributes();
-            this.localAddresses.addAll(addresses);
-
-            // before storing our local addresses we clean up all old registrations that intersect with our current addresses
-            for (final InetSocketAddress localAddress : addresses)
+            final String oldRegistrationId = registrationIdByAddress.get(localAddress);
+            if (oldRegistrationId != null)
             {
-                final String oldRegistrationId = registrationIdByAddress.get(localAddress);
-                if (oldRegistrationId != null)
-                {
-                    this.removeDiscoveryAddressesAttributes(oldRegistrationId);
-                }
+                this.removeDiscoveryAddressesAttributes(oldRegistrationId);
             }
-
-            this.registerAddresses();
         }
+
+        this.registerAddresses();
 
         LOGGER.debug("Completed local address initialisation");
     }
@@ -316,6 +332,9 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
                     final Serializable[] keys = new Serializable[] { ALDICA_IGNITE_GRID_MEMBERS, this.instanceName,
                             this.effectiveRegistrationId };
 
+                    final Ignite ignite = Ignition.ignite(this.instanceName);
+                    final String localHost = ignite != null ? ignite.configuration().getLocalHost() : null;
+
                     if (this.localAddresses.size() == 1)
                     {
                         final InetSocketAddress localAddress = this.localAddresses.iterator().next();
@@ -325,10 +344,9 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
                             final String addressString = this.addressToString(localAddress);
                             this.attributeService.createAttribute(addressString, keys);
                         }
-                        else if (this.ignite != null && this.ignite.configuration().getLocalHost() != null)
+                        else if (localHost != null)
                         {
-                            final InetSocketAddress constructedLocalAddress = new InetSocketAddress(
-                                    this.ignite.configuration().getLocalHost(), localAddress.getPort());
+                            final InetSocketAddress constructedLocalAddress = new InetSocketAddress(localHost, localAddress.getPort());
                             LOGGER.trace("Registering local address {} constructed from loopback address {} and configured local host name",
                                     constructedLocalAddress, localAddress);
                             final String addressString = this.addressToString(constructedLocalAddress);
@@ -352,10 +370,9 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
                                 final String addressString = this.addressToString(localAddress);
                                 addressValues.add(addressString);
                             }
-                            else if (this.ignite != null && this.ignite.configuration().getLocalHost() != null)
+                            else if (localHost != null)
                             {
-                                final InetSocketAddress constructedLocalAddress = new InetSocketAddress(
-                                        this.ignite.configuration().getLocalHost(), localAddress.getPort());
+                                final InetSocketAddress constructedLocalAddress = new InetSocketAddress(localHost, localAddress.getPort());
                                 final String addressString = this.addressToString(constructedLocalAddress);
                                 if (addressValues.add(addressString))
                                 {
@@ -467,7 +484,7 @@ public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryIpFinderAdapter
             Collection<InetSocketAddress> externalAddresses;
             try
             {
-                externalAddresses = this.ignite.configuration().getAddressResolver().getExternalAddresses(address);
+                externalAddresses = this.addressResolver.getExternalAddresses(address);
             }
             catch (final IgniteCheckedException ice)
             {

@@ -7,7 +7,8 @@
            http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
-    <bean id="${moduleId}.core.defaultShareBeansFix" class="de.acosix.alfresco.utility.common.spring.BeanDefinitionFromPropertiesPostProcessor">
+    <bean id="${moduleId}.core.defaultShareBeansFix"
+        class="de.acosix.alfresco.utility.common.spring.BeanDefinitionFromPropertiesPostProcessor">
         <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
         <property name="propertyPrefix" value="${moduleId}.core" />
         <property name="beanTypes">
@@ -66,9 +67,9 @@
                 <value>100</value>
             </list>
         </property>
-        <property name="pluginConfigurations">
+        <property name="pluginProviders">
             <list>
-                <ref bean="PluginConfiguration.${moduleId}.core.security" />
+                <ref bean="PluginProvider.${moduleId}.core.security" />
             </list>
         </property>
 
@@ -134,7 +135,8 @@
         <property name="maxSize" value="\${${moduleId}.webSessionCache.maxSize}" />
     </bean>
 
-    <bean id="DiscoverySPI.${moduleId}.core" abstract="true" class="${aldica.ignite-common.basePackage}.discovery.CredentialsAwareTcpDiscoverySpi">
+    <bean id="DiscoverySPI.${moduleId}.core" abstract="true"
+        class="${aldica.ignite-common.basePackage}.discovery.CredentialsAwareTcpDiscoverySpi">
         <property name="ipFinder" ref="DiscoverySPI.${moduleId}.core.MemberFinder" />
         <property name="credentials" ref="DiscoverySPI.${moduleId}.core.credentials" />
 
@@ -157,7 +159,8 @@
         <property name="password" value="\${${moduleId}.core.password}" />
     </bean>
 
-    <bean id="AddressResolver.${moduleId}.core" abstract="true" class="${aldica.ignite-common.basePackage}.discovery.GridAddressResolutionManager">
+    <bean id="AddressResolver.${moduleId}.core" abstract="true"
+        class="${aldica.ignite-common.basePackage}.discovery.GridAddressResolutionManager">
         <property name="configuration" ref="Configuration.${moduleId}.core" />
         <property name="externalHost" value="\${${moduleId}.core.public.host}" />
         <property name="externalDiscoPortBase" value="\${${moduleId}.core.public.disco.port}" />
@@ -179,6 +182,11 @@
     </bean>
 
     <bean id="CollisionSPI.${moduleId}.core" abstract="true" class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi" />
+
+    <bean id="PluginProvider.${moduleId}.core.security" abstract="true"
+        class="${aldica.ignite-common.basePackage}.plugin.SimpleSecurityPluginProvider">
+        <property name="configuration" ref="PluginConfiguration.${moduleId}.core.security" />
+    </bean>
 
     <bean id="PluginConfiguration.${moduleId}.core.security" abstract="true"
         class="${aldica.ignite-common.basePackage}.plugin.SimpleSecurityPluginConfiguration">
