@@ -19,10 +19,10 @@
     </bean>
 
     <bean id="Configuration.${moduleId}.jobs" abstract="true" class="org.springframework.scheduling.quartz.SchedulerAccessorBean">
-        <property name="scheduler" ref="schedulerFactory"/>
+        <property name="scheduler" ref="schedulerFactory" />
         <property name="triggers">
             <list>
-                <ref bean="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobTrigger"/>
+                <ref bean="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobTrigger" />
             </list>
         </property>
     </bean>
@@ -57,9 +57,9 @@
                 <value>14</value> <!-- node segmented -->
             </list>
         </property>
-        <property name="pluginConfigurations">
+        <property name="pluginProviders">
             <list>
-                <ref bean="PluginConfiguration.${moduleId}.core.security" />
+                <ref bean="PluginProvider.${moduleId}.core.security" />
             </list>
         </property>
 
@@ -89,7 +89,8 @@
 
     <bean id="Configuration.${moduleId}.core.binary" abstract="true" class="org.apache.ignite.configuration.BinaryConfiguration" />
 
-    <bean id="Configuration.${moduleId}.core.binary.serializer.configurableRelevantFields" abstract="true" class="${aldica.ignite-common.basePackage}.binary.SelectivelyReflectiveBinarySerializer">
+    <bean id="Configuration.${moduleId}.core.binary.serializer.configurableRelevantFields" abstract="true"
+        class="${aldica.ignite-common.basePackage}.binary.SelectivelyReflectiveBinarySerializer">
         <property name="relevantFieldsProvider">
             <bean class="${aldica.ignite-common.basePackage}.binary.ConfigurableSerializationRelevantFieldsProvider">
                 <property name="basePropertyKey" value="${moduleId}.core.binary.relevantFields" />
@@ -161,7 +162,8 @@
         <property name="maxSize" value="\${${moduleId}.webSessionCache.maxSize}" />
     </bean>
 
-    <bean id="DiscoverySPI.${moduleId}.core" abstract="true" class="${aldica.ignite-common.basePackage}.discovery.CredentialsAwareTcpDiscoverySpi">
+    <bean id="DiscoverySPI.${moduleId}.core" abstract="true"
+        class="${aldica.ignite-common.basePackage}.discovery.CredentialsAwareTcpDiscoverySpi">
         <property name="ipFinder" ref="DiscoverySPI.${moduleId}.core.MemberFinder" />
         <property name="credentials" ref="DiscoverySPI.${moduleId}.core.credentials" />
 
@@ -177,19 +179,24 @@
         class="${project.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
         <property name="transactionService" ref="TransactionService" />
         <property name="attributeService" ref="AttributeService" />
+        <property name="addressResolver" ref="AddressResolver.${moduleId}.core" />
         <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
     </bean>
 
-    <bean id="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobTrigger" abstract="true" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+    <bean id="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobTrigger" abstract="true"
+        class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="cronExpression" value="\${${moduleId}.core.local.disco.registrationRefresh.cron}" />
         <!-- system.cronJob.startDelayMilliseconds is only available in 6.0+, so we need the default value to be 5.x compatible -->
-        <property name="startDelay" value="${system.cronJob.startDelayMilliseconds:60000}"/>
+        <property name="startDelay" value="${system.cronJob.startDelayMilliseconds:60000}" />
         <property name="jobDetail">
-            <bean id="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobDetail" class="de.acosix.alfresco.utility.repo.job.GenericJobDetailsFactoryBean">
-                <property name="jobClass" value="${project.basePackage}.job.MemberAddressRegistrationRefreshJob"/>
+            <bean id="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobDetail"
+                class="de.acosix.alfresco.utility.repo.job.GenericJobDetailsFactoryBean">
+                <property name="jobClass" value="${project.basePackage}.job.MemberAddressRegistrationRefreshJob" />
                 <property name="jobDataAsMap">
                     <map>
-                        <entry key="memberAddressRegistrar"><ref bean="DiscoverySPI.${moduleId}.core.MemberFinder"/></entry>
+                        <entry key="memberAddressRegistrar">
+                            <ref bean="DiscoverySPI.${moduleId}.core.MemberFinder" />
+                        </entry>
                     </map>
                 </property>
             </bean>
@@ -201,7 +208,8 @@
         <property name="password" value="\${${moduleId}.core.password}" />
     </bean>
 
-    <bean id="AddressResolver.${moduleId}.core" abstract="true" class="${aldica.ignite-common.basePackage}.discovery.GridAddressResolutionManager">
+    <bean id="AddressResolver.${moduleId}.core" abstract="true"
+        class="${aldica.ignite-common.basePackage}.discovery.GridAddressResolutionManager">
         <property name="configuration" ref="Configuration.${moduleId}.core" />
         <property name="externalHost" value="\${${moduleId}.core.public.host}" />
         <property name="externalDiscoPortBase" value="\${${moduleId}.core.public.disco.port}" />
@@ -223,6 +231,11 @@
     </bean>
 
     <bean id="CollisionSPI.${moduleId}.core" abstract="true" class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi" />
+
+    <bean id="PluginProvider.${moduleId}.core.security" abstract="true"
+        class="${aldica.ignite-common.basePackage}.plugin.SimpleSecurityPluginProvider">
+        <property name="configuration" ref="PluginConfiguration.${moduleId}.core.security" />
+    </bean>
 
     <bean id="PluginConfiguration.${moduleId}.core.security" abstract="true"
         class="${aldica.ignite-common.basePackage}.plugin.SimpleSecurityPluginConfiguration">

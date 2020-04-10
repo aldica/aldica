@@ -168,6 +168,7 @@
                                     <env>
                                         <JAVA_OPTS><![CDATA[
                                             ${docker.tests.repositoryCommonJavaOpts}
+                                            -D${moduleId}.core.local.host=repository
                                         ]]></JAVA_OPTS>
                                     </env>
                                     <!-- add log directory mount to just the contentstore -->
@@ -189,7 +190,7 @@
                                 <!-- we don't use SOLR in this sub-module -->
                             </image>
                             <image>
-                                <!-- add another Repository image -->
+                                <!-- add second Repository instance -->
                                 <name>${moduleId}-repository-test</name>
                                 <alias>repository-2</alias>
                                 <build>
@@ -201,6 +202,7 @@
                                     <env>
                                         <JAVA_OPTS><![CDATA[
                                             ${docker.tests.repositoryCommonJavaOpts}
+                                            -D${moduleId}.core.local.host=repository-2
                                         ]]></JAVA_OPTS>
                                     </env>
                                     <ports>
@@ -224,6 +226,50 @@
                                     <wait>
                                         <http>
                                             <url>http://localhost:${docker.tests.repositoryPort2}/alfresco/favicon.ico</url>
+                                            <method>GET</method>
+                                            <status>200</status>
+                                        </http>
+                                        <time>${docker.tests.repositoryStartupWaitTime}</time>
+                                    </wait>
+                                </run>
+                            </image>
+                            <image>
+                                <!-- and add third Repository, as previously some issues (like IGNITE-11352) have only shown up with more than two active instances -->
+                                <name>${moduleId}-repository-test</name>
+                                <alias>repository-3</alias>
+                                <build>
+                                    <skip>true</skip>
+                                </build>
+                                <run>
+                                    <skip>${docker.tests.skipRepositoryImage}</skip>
+                                    <hostname>repository-3</hostname>
+                                    <env>
+                                        <JAVA_OPTS><![CDATA[
+                                            ${docker.tests.repositoryCommonJavaOpts}
+                                            -D${moduleId}.core.local.host=repository-3
+                                        ]]></JAVA_OPTS>
+                                    </env>
+                                    <ports>
+                                        <port>${docker.tests.repositoryPort3}:8080</port>
+                                        <port>${docker.tests.repositoryDebugPort3}:${docker.tests.repositoryDebugPort}</port>
+                                    </ports>
+                                    <network>
+                                        <mode>custom</mode>
+                                        <name>${moduleId}-test</name>
+                                        <alias>repository-3</alias>
+                                    </network>
+                                    <volumes>
+                                        <bind>
+                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
+                                            <volume>${project.build.directory}/docker/repository-3-logs:/usr/local/tomcat/logs</volume>
+                                        </bind>
+                                    </volumes>
+                                    <dependsOn>
+                                        <container>postgres</container>
+                                    </dependsOn>
+                                    <wait>
+                                        <http>
+                                            <url>http://localhost:${docker.tests.repositoryPort3}/alfresco/favicon.ico</url>
                                             <method>GET</method>
                                             <status>200</status>
                                         </http>

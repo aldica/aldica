@@ -158,6 +158,7 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
                 this.onRemoteDictionaryChange(String.valueOf(tenant));
                 return true;
             });
+            LOGGER.debug("Registered listener for remote dictionary model activation");
             this.instanceActive = true;
         }
     }
@@ -242,8 +243,8 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
                 affectedTenants.addAll(pendingActivation.stream().map(nodeTenantMapper).collect(Collectors.toSet()));
                 affectedTenants.addAll(pendingDeactivation.stream().map(nodeTenantMapper).collect(Collectors.toSet()));
 
-                LOGGER.debug("Sending message about dictionary model (de)activations in tenants {} to other servers in the grid",
-                        affectedTenants);
+                LOGGER.debug("Sending message about dictionary model (de)activations in tenants {} to grid servers {}", affectedTenants,
+                        remotes.node());
 
                 affectedTenants.forEach(tenant -> ignite.message(remotes).send(DictionaryModelActivationChange.class.getName(), tenant));
             }

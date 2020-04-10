@@ -10,14 +10,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.alfresco.util.ParameterCheck;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.plugin.PluginConfiguration;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -40,35 +39,10 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
 
     protected final Map<UUID, SecuritySubject> authenticatedSubjects = new HashMap<>();
 
-    public SimpleSecurityProcessor(final PluginContext ctx)
+    public SimpleSecurityProcessor(final SimpleSecurityPluginConfiguration configuration)
     {
-        final PluginConfiguration[] pluginConfigurations = ctx.igniteConfiguration().getPluginConfigurations();
-        if (pluginConfigurations != null)
-        {
-            SimpleSecurityPluginConfiguration config = null;
-            for (final PluginConfiguration pluginConfiguration : pluginConfigurations)
-            {
-                if (pluginConfiguration instanceof SimpleSecurityPluginConfiguration)
-                {
-                    if (config != null)
-                    {
-                        throw new IllegalStateException("Multiple configurations for SimplePassphraseSecurityPlugin have been defined");
-                    }
-                    config = (SimpleSecurityPluginConfiguration) pluginConfiguration;
-                }
-            }
-
-            if (config == null)
-            {
-                throw new IllegalStateException("No configuration for SimplePassphraseSecurityPlugin has been defined");
-            }
-
-            this.configuration = config;
-        }
-        else
-        {
-            throw new IllegalStateException("No configuration for SimplePassphraseSecurityPlugin has been defined");
-        }
+        ParameterCheck.mandatory("configuration", configuration);
+        this.configuration = configuration;
     }
 
     /**
