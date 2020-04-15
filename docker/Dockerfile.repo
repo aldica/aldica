@@ -1,5 +1,5 @@
 # Build aldica-ignite AMPs
-FROM maven:3-jdk-8
+FROM maven:3-jdk-11
 ADD docker/toolchains.xml /root/.m2/
 
 WORKDIR /aldica
@@ -10,17 +10,20 @@ ADD common common
 ADD repository repository
 ADD share share
 
+# Substitute Acosix Alfresco parent version in the POM
+RUN sed -i 's/de.acosix.alfresco.maven.project.parent-6.1.2/de.acosix.alfresco.maven.project.parent-6.2.0/g' pom.xml
+
 # RUN mvn dependency:resolve -B -T2C
-RUN mvn install -B -T2C
-RUN mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo:1.0.8.0:amp -DoutputDirectory=target -B -T2C
+RUN mvn install -B -T2C -DskipTests -Dquality.findBugs.skip
+RUN mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo:1.1.0-SNAPSHOT:amp -DoutputDirectory=target -B -T2C
 
 # Build aldica-enabled Alfresco Repository
 FROM alfresco/alfresco-content-repository-community:6.2.0-ga
 
 COPY --from=0 --chown=root:Alfresco /aldica/repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp .
-COPY --from=0 --chown=root:Alfresco /aldica/target/de.acosix.alfresco.utility.core.repo-1.0.8.0.amp .
+COPY --from=0 --chown=root:Alfresco /aldica/target/de.acosix.alfresco.utility.core.repo-1.1.0-SNAPSHOT.amp .
 
 USER root
-RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install de.acosix.alfresco.utility.core.repo-1.0.8.0.amp webapps/alfresco -nobackup
+RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install de.acosix.alfresco.utility.core.repo-1.1.0-SNAPSHOT.amp webapps/alfresco -nobackup
 RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp webapps/alfresco -nobackup
 USER alfresco
