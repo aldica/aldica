@@ -104,8 +104,8 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
         // general testing
         try
         {
-            final IgniteConfiguration conf1 = createConfiguration(1, false, null);
-            final IgniteConfiguration conf2 = createConfiguration(2, true, null);
+            final IgniteConfiguration conf1 = createConfiguration(1, false);
+            final IgniteConfiguration conf2 = createConfiguration(2, true);
 
             final BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
             final BinaryTypeConfiguration binaryTypeConfigurationForKeyClass = new BinaryTypeConfiguration();

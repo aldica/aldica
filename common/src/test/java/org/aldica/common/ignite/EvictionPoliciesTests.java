@@ -37,7 +37,7 @@ public class EvictionPoliciesTests extends GridTestsBase
     {
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -90,7 +90,7 @@ public class EvictionPoliciesTests extends GridTestsBase
     {
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -177,7 +177,7 @@ public class EvictionPoliciesTests extends GridTestsBase
     {
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -265,7 +265,7 @@ public class EvictionPoliciesTests extends GridTestsBase
 
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<Long, Long> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -345,7 +345,7 @@ public class EvictionPoliciesTests extends GridTestsBase
     {
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -432,7 +432,7 @@ public class EvictionPoliciesTests extends GridTestsBase
     {
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -520,7 +520,7 @@ public class EvictionPoliciesTests extends GridTestsBase
 
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<Long, Long> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");

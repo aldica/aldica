@@ -86,6 +86,13 @@
         </property>
         <property name="binaryConfiguration" ref="Configuration.${moduleId}.core.binary" />
         <property name="dataStorageConfiguration" ref="Configuration.${moduleId}.core.storage" />
+
+        <property name="userAttributes">
+            <map>
+                <entry key="${moduleId}.tier" value="repository" />
+                <entry key="${moduleId}.role" value="repository-server" />
+            </map>
+        </property>
     </bean>
 
     <bean id="Configuration.${moduleId}.core.binary" abstract="true" class="org.apache.ignite.configuration.BinaryConfiguration" />
@@ -304,6 +311,12 @@
         <property name="allowedNodeCredentials">
             <list>
                 <ref bean="DiscoverySPI.${moduleId}.core.credentials" />
+            </list>
+        </property>
+        <property name="nodeTierAttributeKey" value="${moduleId}.tier" />
+        <property name="allowedNodeTierAttributeValues">
+            <list>
+                <value>repository</value>
             </list>
         </property>
     </bean>
