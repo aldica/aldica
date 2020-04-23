@@ -1,0 +1,557 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.aldica</groupId>
+        <artifactId>aldica-parent</artifactId>
+        <version>1.0.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>aldica-repo-ignite-keep-alive</artifactId>
+    <name>Alternative/Alfresco Distributed Cache - Repository Ignite Keep Alive Module</name>
+    <description>Standalone Java application to extend the Repository cache layer and keep cached data alive even in the case of a complete Repository-tier restart</description>
+
+    <properties>
+        <project.basePackage>org.aldica.repo.ignite.ka</project.basePackage>
+
+        <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- need some Alfresco Core utility classes -->
+            <dependency>
+                <groupId>org.alfresco</groupId>
+                <artifactId>alfresco-core</artifactId>
+                <version>${alfresco.safe.core.version}</version>
+                <scope>compile</scope>
+                <!-- exclude all transitive dependencies -->
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>${aldica.ignite-common.artifactId}</artifactId>
+                <version>${project.version}</version>
+                <scope>compile</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-web</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>javax.servlet-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context</artifactId>
+                <version>${spring.version}</version>
+                <scope>compile</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-jcl</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.rest.client</groupId>
+                <artifactId>de.acosix.alfresco.rest.client</artifactId>
+                <version>${acosix.alfresco.client.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.rest.client</groupId>
+                <artifactId>de.acosix.alfresco.rest.client</artifactId>
+                <version>${acosix.alfresco.client.version}</version>
+                <classifier>tests</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>${aldica.ignite-common.artifactId}</artifactId>
+                <version>${project.version}</version>
+                <classifier>tests</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>${aldica.ignite-repo.artifactId}</artifactId>
+                <version>${project.version}</version>
+                <classifier>installable</classifier>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${aldica.ignite-common.artifactId}</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${aldica.ignite-common.artifactId}</artifactId>
+            <classifier>tests</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${aldica.ignite-repo.artifactId}</artifactId>
+            <classifier>installable</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.utility</groupId>
+            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.utility</groupId>
+            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
+            <classifier>installable</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxb-provider</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson2-provider</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.rest.client</groupId>
+            <artifactId>de.acosix.alfresco.rest.client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.rest.client</groupId>
+            <artifactId>de.acosix.alfresco.rest.client</artifactId>
+            <classifier>tests</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.alfresco</groupId>
+            <artifactId>alfresco-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>.gitkeep</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>.gitkeep</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>shade</goal>
+                            </goals>
+                            <configuration>
+                                <createSourcesJar>true</createSourcesJar>
+                                <artifactSet>
+                                    <includes>
+                                        <include>org.alfresco:alfresco-core</include>
+                                        <include>org.springframework:spring-core</include>
+                                        <include>org.springframework:spring-context</include>
+                                        <include>org.springframework:spring-beans</include>
+                                        <include>org.springframework:spring-aop</include>
+                                        <include>org.springframework:spring-expression</include>
+                                        <include>${project.groupId}:${aldica.ignite-common.artifactId}</include>
+                                        <include>org.apache.ignite:ignite-core</include>
+                                        <include>org.apache.ignite:ignite-slf4j</include>
+                                        <include>javax.cache:cache-api</include>
+                                        <include>org.jetbrains:annotations</include>
+                                        <include>org.slf4j:slf4j-api</include>
+                                        <include>org.slf4j:jcl-over-slf4j</include>
+                                        <include>ch.qos.logback:logback-core</include>
+                                        <include>ch.qos.logback:logback-classic</include>
+                                    </includes>
+                                </artifactSet>
+                                <filters>
+                                    <filter>
+                                        <artifact>*:*</artifact>
+                                        <excludes>
+                                            <exclude>META-INF/MANIFEST.MF</exclude>
+                                        </excludes>
+                                    </filter>
+                                    <filter>
+                                        <artifact>org.alfresco:alfresco-core</artifact>
+                                        <includes>
+                                            <!-- only include the few utilities that aldica-common-ignite and this app need -->
+                                            <include>org/alfresco/api/AlfrescoPublicApi.class</include>
+                                            <include>org/alfresco/config/SystemPropertiesFactoryBean.class</include>
+                                            <include>org/alfresco/error/AlfrescoRuntimeException.class</include>
+                                            <include>org/alfresco/util/EqualsHelper.class</include>
+                                            <include>org/alfresco/util/Pair.class</include>
+                                            <include>org/alfresco/util/ParameterCheck.class</include>
+                                            <include>org/alfresco/util/PropertyCheck.class</include>
+                                        </includes>
+                                    </filter>
+                                    <filter>
+                                        <artifact>${project.groupId}:${aldica.ignite-common.artifactId}</artifact>
+                                        <excludes>
+                                            <!-- don't need session or any other web-handling (would require Servlet API and Spring Web library) -->
+                                            <exclude>org/aldica/common/ignite/web/*</exclude>
+                                        </excludes>
+                                    </filter>
+                                </filters>
+                                <transformers>
+                                    <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                    <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                        <resource>META-INF/spring.handlers</resource>
+                                    </transformer>
+                                    <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                        <resource>META-INF/spring.schemas</resource>
+                                    </transformer>
+                                    <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                        <resource>META-INF/spring.tooling</resource>
+                                    </transformer>
+                                    <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                        <mainClass>${project.basePackage}.Runner</mainClass>
+                                    </transformer>
+                                </transformers>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>**/integration/*.java</exclude>
+                            <exclude>**/integration/**/*.java</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <configuration>
+                        <includes>
+                            <include>**/integration/*.java</include>
+                            <include>**/integration/**/*.java</include>
+                        </includes>
+                    </configuration>
+                </plugin>
+
+                <!-- some image customisations -->
+                <!-- Maven + docker-maven-plugin result in somewhat weird inheritance handling -->
+                <!-- (relying on positional order of images for overrides) -->
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <configuration>
+                        <sourceDirectory>src/test/docker</sourceDirectory>
+                        <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
+                        <images>
+                            <image>
+                                <!-- no change to postgres image (first image in parent POM) -->
+                            </image>
+                            <image>
+                                <run>
+                                    <!-- override JAVA_OPTS -->
+                                    <env>
+                                        <JAVA_OPTS><![CDATA[
+                                            ${docker.tests.repositoryCommonJavaOpts}
+                                            -D${moduleId}.core.local.host=repository
+                                            -D${moduleId}.core.public.host=${docker.tests.host.name}
+                                        ]]></JAVA_OPTS>
+                                    </env>
+                                    <ports>
+                                        <port>${docker.tests.repositoryPort}:8080</port>
+                                        <port>${docker.tests.repositoryDebugPort}:${docker.tests.repositoryDebugPort}</port>
+                                        <port>47100:47100</port>
+                                        <port>47110:47110</port>
+                                        <port>47120:47120</port>
+                                    </ports>
+                                    <!-- add log directory mount to just the contentstore -->
+                                    <!-- (cannot be done in parent POM due to hard requirement on specific project structure -->
+                                    <volumes>
+                                        <bind>
+                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
+                                            <volume>${project.build.directory}/docker/repository-1-logs:/usr/local/tomcat/logs</volume>
+                                        </bind>
+                                    </volumes>
+                                </run>
+                            </image>
+                        </images>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-toolchains-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>RunIntegrationTestsWithDocker</id>
+            <activation>
+                <property>
+                    <name>docker.tests.enabled</name>
+                    <value>true</value>
+                </property>
+            </activation>
+
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>build-helper-maven-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <phase>pre-integration-test</phase>
+                                    <goals>
+                                        <goal>local-ip</goal>
+                                    </goals>
+                                    <configuration>
+                                        <localIpProperty>docker.tests.host.ip</localIpProperty>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+
+                        <plugin>
+                            <groupId>org.codehaus.gmaven</groupId>
+                            <artifactId>groovy-maven-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <phase>pre-integration-test</phase>
+                                    <goals>
+                                        <goal>execute</goal>
+                                    </goals>
+                                    <configuration>
+                                        <source>
+                                            project.properties["docker.tests.host.name"] =
+                                            InetAddress.getLocalHost().getHostName().toLowerCase(Locale.ENGLISH)
+                                        </source>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+
+                        <plugin>
+                            <artifactId>maven-resources-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>processIntegrationTestDockerResources</id>
+                                    <phase>pre-integration-test</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <outputDirectory>${project.build.directory}/docker</outputDirectory>
+                                        <resources>
+                                            <resource>
+                                                <directory>src/test/docker</directory>
+                                                <filtering>true</filtering>
+                                            </resource>
+                                        </resources>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+
+                        <plugin>
+                            <groupId>io.fabric8</groupId>
+                            <artifactId>docker-maven-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>build-test-image</id>
+                                    <phase>pre-integration-test</phase>
+                                    <goals>
+                                        <goal>build</goal>
+                                    </goals>
+                                </execution>
+                                <execution>
+                                    <id>start-test-containers</id>
+                                    <phase>pre-integration-test</phase>
+                                    <goals>
+                                        <goal>volume-create</goal>
+                                        <goal>start</goal>
+                                    </goals>
+                                </execution>
+                                <execution>
+                                    <id>stop-test-containers</id>
+                                    <phase>post-integration-test</phase>
+                                    <goals>
+                                        <goal>stop</goal>
+                                        <goal>remove</goal>
+                                        <goal>volume-remove</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+
+                        <plugin>
+                            <artifactId>maven-failsafe-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <goals>
+                                        <goal>integration-test</goal>
+                                        <goal>verify</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.gmaven</groupId>
+                        <artifactId>groovy-maven-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

@@ -1,0 +1,224 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <bean id="global-properties" class="org.alfresco.config.SystemPropertiesFactoryBean">
+        <property name="locations">
+            <list>
+                <value>classpath:config.properties</value>
+                <value>file:custom-config.properties</value>
+            </list>
+        </property>
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE" />
+        <property name="systemProperties">
+            <list>
+                <!-- not sure how repository makes java.io.tmpdir available without any explicit config like this -->
+                <value>java.io.tmpdir</value>
+                <!-- other potentially relevant properties for placeholders -->
+                <value>file.separator</value>
+                <value>line.separator</value>
+                <value>path.separator</value>
+                <value>file.encoding</value>
+            </list>
+        </property>
+    </bean>
+    
+    <bean class="${aldica.ignite-common.basePackage}.lifecycle.SpringIgniteLifecycleBean">
+        <property name="enabled" value="true" />
+        <property name="configuration" ref="Configuration.${moduleId}.core" />
+    </bean>
+
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="propertiesArray">
+            <list>
+                <ref bean="global-properties" />
+                <!-- runtime-overrides is a utility for the runner class to provide final overrides if necessary (e.g. during testing) -->
+                <ref bean="runtime-overrides" />
+            </list>
+        </property>
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_NEVER" />
+        <property name="valueSeparator">
+            <null />
+        </property>
+        <property name="ignoreUnresolvablePlaceholders" value="true" />
+        <property name="searchSystemEnvironment" value="false" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="discoverySpi" ref="DiscoverySPI.${moduleId}.core" />
+        <property name="addressResolver" ref="AddressResolver.${moduleId}.core" />
+        <property name="communicationSpi" ref="CommunicationSPI.${moduleId}.core" />
+        <property name="collisionSpi" ref="CollisionSPI.${moduleId}.core" />
+        <property name="gridLogger" ref="Misc.${moduleId}.core.logger" />
+        <property name="igniteInstanceName" value="\${${moduleId}.core.name}" />
+        <property name="consistentId" value="\${${moduleId}.core.local.id}" />
+        <property name="localHost" value="\${${moduleId}.core.local.host}" />
+        <property name="workDirectory" value="\${java.io.tmpdir}/IgniteWork" />
+        <property name="metricsExpireTime" value="1200000" />
+        <property name="metricsLogFrequency" value="600000" />
+        <property name="peerClassLoadingEnabled" value="false" />
+        <property name="connectorConfiguration">
+            <null />
+        </property>
+        <property name="failureDetectionTimeout" value="\${${moduleId}.core.failureDetectionTimeout}" />
+        <property name="systemWorkerBlockedTimeout" value="\${${moduleId}.core.systemWorkerBlockedTimeout}" />
+        <property name="segmentationPolicy" value="NOOP" />
+        <property name="includeEventTypes">
+            <!-- TODO: Have dynamic feature configurations to add / remove included event types -->
+            <list>
+                <!-- discovery events -->
+                <value>10</value> <!-- node joined -->
+                <value>11</value> <!-- node left -->
+                <value>12</value> <!-- node failed -->
+                <value>13</value> <!-- node metrics updated -->
+                <value>14</value> <!-- node segmented -->
+            </list>
+        </property>
+        <property name="pluginConfigurations">
+            <list>
+                <ref bean="PluginConfiguration.${moduleId}.core.security" />
+            </list>
+        </property>
+
+        <property name="publicThreadPoolSize" value="\${${moduleId}.core.publicThreadPoolSize}" />
+        <property name="serviceThreadPoolSize" value="\${${moduleId}.core.serviceThreadPoolSize}" />
+        <property name="systemThreadPoolSize" value="\${${moduleId}.core.systemThreadPoolSize}" />
+        <property name="asyncCallbackPoolSize" value="\${${moduleId}.core.asyncCallbackThreadPoolSize}" />
+        <property name="managementThreadPoolSize" value="\${${moduleId}.core.managementThreadPoolSize}" />
+        <property name="peerClassLoadingThreadPoolSize" value="\${${moduleId}.core.peerClassLoadingThreadPoolSize}" />
+        <property name="igfsThreadPoolSize" value="\${${moduleId}.core.igfsThreadPoolSize}" />
+        <property name="dataStreamerThreadPoolSize" value="\${${moduleId}.core.dataStreamerThreadPoolSize}" />
+        <property name="utilityCachePoolSize" value="\${${moduleId}.core.utilityCacheThreadPoolSize}" />
+        <property name="queryThreadPoolSize" value="\${${moduleId}.core.queryThreadPoolSize}" />
+        <property name="rebalanceThreadPoolSize" value="\${${moduleId}.core.rebalanceThreadPoolSize}" />
+
+        <property name="timeServerPortBase" value="\${${moduleId}.core.local.time.port}" />
+        <property name="timeServerPortRange" value="\${${moduleId}.core.local.time.portRange}" />
+
+        <property name="binaryConfiguration" ref="Configuration.${moduleId}.core.binary" />
+        <property name="dataStorageConfiguration" ref="Configuration.${moduleId}.core.storage" />
+
+        <property name="userAttributes">
+            <map>
+                <entry key="${moduleId}.tier" value="repository" />
+                <entry key="${moduleId}.role" value="repository-keep-alive" />
+            </map>
+        </property>
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary" class="org.apache.ignite.configuration.BinaryConfiguration" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.configurableRelevantFields"
+        class="${aldica.ignite-common.basePackage}.binary.SelectivelyReflectiveBinarySerializer">
+        <property name="relevantFieldsProvider">
+            <bean class="${aldica.ignite-common.basePackage}.binary.ConfigurableSerializationRelevantFieldsProvider">
+                <property name="basePropertyKey" value="${moduleId}.core.binary.relevantFields" />
+                <property name="propertiesSource" ref="global-properties" />
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.binaryTypeConfigurationBeanEmitter"
+        class="${aldica.ignite-common.basePackage}.spring.BinaryTypeConfigurationBeanDefinitionEmitter">
+        <property name="enabled" value="true" />
+        <property name="propertyPrefix" value="${moduleId}.core.binary.type." />
+        <property name="binaryConfigurationBeanDefinitionName">
+            <idref bean="Configuration.${moduleId}.core.binary" />
+        </property>
+        <property name="binaryTypeConfigurationBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.binary.type." />
+        <property name="instanceNameProperty" value="${moduleId}.core.name" />
+        <property name="propertiesSource" ref="global-properties" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.storage" class="org.apache.ignite.configuration.DataStorageConfiguration">
+        <property name="defaultDataRegionConfiguration" ref="Configuration.${moduleId}.core.storage.defaultDataRegion" />
+
+        <property name="pageSize" value="\${${moduleId}.core.storage.pageSize}" />
+        <property name="systemRegionInitialSize" value="\${${moduleId}.core.storage.systemInitialSize}" />
+        <property name="systemRegionMaxSize" value="\${${moduleId}.core.storage.systemMaxSize}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.storage.dataRegionBeanEmitter"
+        class="${aldica.ignite-common.basePackage}.spring.DataRegionBeanDefinitionEmitter">
+        <property name="enabled" value="true" />
+        <property name="propertyPrefix" value="${moduleId}.core.storage.region." />
+        <property name="storageBeanDefinitionName">
+            <idref bean="Configuration.${moduleId}.core.storage" />
+        </property>
+        <property name="dataRegionBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.storage.region." />
+        <property name="instanceNameProperty" value="${moduleId}.core.name" />
+        <property name="propertiesSource" ref="global-properties" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.storage.defaultDataRegion" class="org.apache.ignite.configuration.DataRegionConfiguration">
+        <property name="name" value="\${${moduleId}.core.name}.defaultDataRegion" />
+        <property name="initialSize" value="\${${moduleId}.core.storage.defaultStorageRegion.initialSize}" />
+        <property name="maxSize" value="\${${moduleId}.core.storage.defaultStorageRegion.maxSize}" />
+        <property name="metricsEnabled" value="true" />
+
+        <property name="swapPath" value="\${${moduleId}.core.storage.defaultStorageRegion.swapPath}" />
+        <property name="pageEvictionMode" value="RANDOM_2_LRU" />
+    </bean>
+
+    <bean id="DiscoverySPI.${moduleId}.core" class="${aldica.ignite-common.basePackage}.discovery.CredentialsAwareTcpDiscoverySpi">
+        <property name="ipFinder" ref="DiscoverySPI.${moduleId}.core.MemberFinder" />
+        <property name="credentials" ref="DiscoverySPI.${moduleId}.core.credentials" />
+
+        <property name="localPort" value="\${${moduleId}.core.local.disco.port}" />
+        <property name="localPortRange" value="\${${moduleId}.core.local.disco.portRange}" />
+        <property name="joinTimeout" value="\${${moduleId}.core.local.disco.joinTimeout}" />
+        <property name="ackTimeout" value="\${${moduleId}.core.local.disco.ackTimeout}" />
+        <property name="socketTimeout" value="\${${moduleId}.core.local.disco.socketTimeout}" />
+        <property name="networkTimeout" value="\${${moduleId}.core.local.disco.networkTimeout}" />
+    </bean>
+
+    <bean id="DiscoverySPI.${moduleId}.core.MemberFinder" class="${project.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
+        <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
+        <property name="shared" value="false" />
+    </bean>
+
+    <bean id="DiscoverySPI.${moduleId}.core.credentials" class="org.apache.ignite.plugin.security.SecurityCredentials">
+        <property name="login" value="\${${moduleId}.core.login}" />
+        <property name="password" value="\${${moduleId}.core.password}" />
+    </bean>
+
+    <bean id="AddressResolver.${moduleId}.core" class="${aldica.ignite-common.basePackage}.discovery.GridAddressResolutionManager">
+        <property name="configuration" ref="Configuration.${moduleId}.core" />
+        <property name="externalHost" value="\${${moduleId}.core.public.host}" />
+        <property name="externalDiscoPortBase" value="\${${moduleId}.core.public.disco.port}" />
+        <property name="externalCommPortBase" value="\${${moduleId}.core.public.comm.port}" />
+        <property name="externalTimePortBase" value="\${${moduleId}.core.public.time.port}" />
+    </bean>
+
+    <bean id="CommunicationSPI.${moduleId}.core" class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+        <property name="localPort" value="\${${moduleId}.core.local.comm.port}" />
+        <property name="localPortRange" value="\${${moduleId}.core.local.comm.portRange}" />
+
+        <property name="connectTimeout" value="\${${moduleId}.core.local.comm.connectTimeout}" />
+        <property name="maxConnectTimeout" value="\${${moduleId}.core.local.comm.maxConnectTimeout}" />
+        <property name="socketWriteTimeout" value="\${${moduleId}.core.local.comm.socketWriteTimeout}" />
+        <property name="connectionsPerNode" value="\${${moduleId}.core.local.comm.connectionsPerNode}" />
+        <property name="filterReachableAddresses" value="\${${moduleId}.core.local.comm.filterReachableAddresses}" />
+
+        <property name="messageQueueLimit" value="\${${moduleId}.core.local.comm.messageQueueLimit}" />
+    </bean>
+
+    <bean id="CollisionSPI.${moduleId}.core" class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi" />
+
+    <bean id="PluginConfiguration.${moduleId}.core.security"
+        class="${aldica.ignite-common.basePackage}.plugin.SimpleSecurityPluginConfiguration">
+        <property name="enabled" value="true" />
+        <property name="allowedNodeCredentials">
+            <list>
+                <ref bean="DiscoverySPI.${moduleId}.core.credentials" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="Misc.${moduleId}.core.logger" class="org.apache.ignite.logger.slf4j.Slf4jLogger" />
+</beans>

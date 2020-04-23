@@ -2,6 +2,7 @@
 bin/
 .project
 .classpath
+dependency-reduced-pom.xml
 
 .idea
 *.iml
