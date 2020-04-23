@@ -32,6 +32,11 @@
                         <groupId>org.springframework.social</groupId>
                         <artifactId>*</artifactId>
                     </exclusion>
+                    <!-- avoid dependencies we may not want to propagate to dependent projects -->
+                    <exclusion>
+                        <groupId>org.alfresco.surf</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
 
