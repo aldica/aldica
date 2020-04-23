@@ -36,6 +36,8 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     private static final String DATA_REGION_CONFIGURATIONS_PROPERTY_NAME = "dataRegionConfigurations";
 
+    protected boolean enabled;
+
     protected String enabledPropertyKey;
 
     protected String propertyPrefix;
@@ -73,6 +75,15 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
         PropertyCheck.mandatory(this, "valueSeparator", this.valueSeparator);
 
         this.placeholderHelper = new PropertyPlaceholderHelper(this.placeholderPrefix, this.placeholderSuffix, this.valueSeparator, true);
+    }
+
+    /**
+     * @param enabled
+     *            the enabled to set
+     */
+    public void setEnabled(final boolean enabled)
+    {
+        this.enabled = enabled;
     }
 
     /**
@@ -171,7 +182,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
     @Override
     public void postProcessBeanDefinitionRegistry(final BeanDefinitionRegistry registry) throws BeansException
     {
-        boolean enabled = false;
+        boolean enabled = this.enabled;
         if (this.enabledPropertyKey != null && !this.enabledPropertyKey.isEmpty())
         {
             final String property = this.propertiesSource.getProperty(this.enabledPropertyKey);
