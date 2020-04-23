@@ -21,6 +21,10 @@ public class SimpleSecurityPluginConfiguration implements PluginConfiguration
 
     protected Collection<SecurityCredentials> allowedClientCredentials;
 
+    protected String nodeTierAttributeKey;
+
+    protected Collection<String> allowedNodeTierAttributeValues;
+
     /**
      * @return the enabled
      */
@@ -61,6 +65,40 @@ public class SimpleSecurityPluginConfiguration implements PluginConfiguration
     public Collection<SecurityCredentials> getAllowedClientCredentials()
     {
         return asDecoupledCredentialsCollection(this.allowedClientCredentials);
+    }
+
+    /**
+     * @return the nodeTierAttributeKey
+     */
+    public String getNodeTierAttributeKey()
+    {
+        return this.nodeTierAttributeKey;
+    }
+
+    /**
+     * @param nodeTierAttributeKey
+     *            the nodeTierAttributeKey to set
+     */
+    public void setNodeTierAttributeKey(final String nodeTierAttributeKey)
+    {
+        this.nodeTierAttributeKey = nodeTierAttributeKey;
+    }
+
+    /**
+     * @return the allowedNodeTierAttributeValues
+     */
+    public Collection<String> getAllowedNodeTierAttributeValues()
+    {
+        return this.allowedNodeTierAttributeValues != null ? new HashSet<>(this.allowedNodeTierAttributeValues) : null;
+    }
+
+    /**
+     * @param allowedNodeTierAttributeValues
+     *            the allowedNodeTierAttributeValues to set
+     */
+    public void setAllowedNodeTierAttributeValues(final Collection<String> allowedNodeTierAttributeValues)
+    {
+        this.allowedNodeTierAttributeValues = allowedNodeTierAttributeValues;
     }
 
     /**

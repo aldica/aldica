@@ -213,7 +213,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
         // base line test for trivial cache keys
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<String, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -261,7 +261,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
         // base line test for trivial cache keys
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<String, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -304,7 +304,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
     {
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<CacheKeyWithOnlyHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -351,7 +351,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
     {
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<CacheKeyWithOnlyHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -393,7 +393,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
     {
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -461,7 +461,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
             serializer.setRelevantFieldsProvider(
                     cls -> cls.equals(CacheKeyWithNonHashRelevantFields.class) ? Arrays.asList("hashRelevant") : Collections.emptyList());
 
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
             final BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
             final BinaryTypeConfiguration binaryTypeConfigurationForKeyClass = new BinaryTypeConfiguration();
             binaryTypeConfigurationForKeyClass.setTypeName(CacheKeyWithNonHashRelevantFields.class.getName());
@@ -527,7 +527,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
     {
         try
         {
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
 
             final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
@@ -590,7 +590,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
             serializer.setRelevantFieldsProvider(
                     cls -> cls.equals(CacheKeyWithNonHashRelevantFields.class) ? Arrays.asList("hashRelevant") : Collections.emptyList());
 
-            final IgniteConfiguration conf = createConfiguration(1, false, null);
+            final IgniteConfiguration conf = createConfiguration(1, false);
             final BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
             final BinaryTypeConfiguration binaryTypeConfigurationForKeyClass = new BinaryTypeConfiguration();
             binaryTypeConfigurationForKeyClass.setTypeName(CacheKeyWithNonHashRelevantFields.class.getName());

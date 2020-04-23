@@ -94,6 +94,13 @@
             </list>
         </property>
         <property name="dataStorageConfiguration" ref="Configuration.${moduleId}.core.storage" />
+
+        <property name="userAttributes">
+            <map>
+                <entry key="${moduleId}.tier" value="share" />
+                <entry key="${moduleId}.role" value="share-server" />
+            </map>
+        </property>
     </bean>
 
     <bean id="Configuration.${moduleId}.core.storage" abstract="true" class="org.apache.ignite.configuration.DataStorageConfiguration">
@@ -151,7 +158,7 @@
     <bean id="DiscoverySPI.${moduleId}.core.MemberFinder" abstract="true"
         class="${project.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
         <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
-        <property name="shared" value="true" />
+        <property name="shared" value="false" />
     </bean>
 
     <bean id="DiscoverySPI.${moduleId}.core.credentials" abstract="true" class="org.apache.ignite.plugin.security.SecurityCredentials">
@@ -196,11 +203,17 @@
                 <ref bean="DiscoverySPI.${moduleId}.core.credentials" />
             </list>
         </property>
+        <property name="nodeTierAttributeKey" value="${moduleId}.tier" />
+        <property name="allowedNodeTierAttributeValues">
+            <list>
+                <value>share</value>
+            </list>
+        </property>
     </bean>
 
     <bean id="Misc.${moduleId}.core.logger" abstract="true" class="org.apache.ignite.logger.slf4j.Slf4jLogger" />
 
-    <bean id="Misc.${moduleId}.core.custerService" abstract="true" class="${project.basePackage}.surf.ClusterServiceImpl">
+    <bean id="Misc.${moduleId}.core.clusterService" abstract="true" class="${project.basePackage}.surf.ClusterServiceImpl">
         <property name="enabled" value="\${${moduleId}.core.enabled}" />
         <property name="instanceName" value="\${${moduleId}.core.name}" />
         <property name="topicName" value="slingshot-topic" />

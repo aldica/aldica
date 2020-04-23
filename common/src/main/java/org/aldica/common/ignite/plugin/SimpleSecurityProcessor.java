@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.alfresco.util.ParameterCheck;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -28,6 +27,8 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Axel Faust
@@ -35,14 +36,66 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 public class SimpleSecurityProcessor implements GridSecurityProcessor
 {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSecurityProcessor.class);
+
     protected final SimpleSecurityPluginConfiguration configuration;
 
     protected final Map<UUID, SecuritySubject> authenticatedSubjects = new HashMap<>();
 
+    /**
+     * Initialises a new instance of this class with an explicit plugin configuration.
+     *
+     * @param configuration
+     *            the configuration of the plugin
+     */
     public SimpleSecurityProcessor(final SimpleSecurityPluginConfiguration configuration)
     {
-        ParameterCheck.mandatory("configuration", configuration);
+        if (configuration == null)
+        {
+            throw new IllegalStateException("No configuration for SimplePassphraseSecurityPlugin has been defined");
+        }
         this.configuration = configuration;
+
+        final String nodeTierAttributeKey = configuration.getNodeTierAttributeKey();
+        final Collection<String> allowedNodeTierAttributeValues = configuration.getAllowedNodeTierAttributeValues();
+
+        final Collection<SecurityCredentials> allowedClientCredentials = this.configuration.getAllowedClientCredentials();
+        final Collection<SecurityCredentials> allowedNodeCredentials = this.configuration.getAllowedNodeCredentials();
+        if (allowedClientCredentials == null || allowedClientCredentials.isEmpty())
+        {
+            LOGGER.info("No allowed client credentials have been configured - no client will be allowed to connect");
+        }
+        if (allowedNodeCredentials == null || allowedNodeCredentials.isEmpty())
+        {
+            LOGGER.warn("No allowed node credentials have been configured - no node will be allowed to connect");
+        }
+
+        if (nodeTierAttributeKey != null)
+        {
+            if (nodeTierAttributeKey.trim().isEmpty())
+            {
+                LOGGER.warn("The node-tier attribute key was configured to an effectively empty string - any node is allowed to connect");
+                configuration.setNodeTierAttributeKey(null);
+            }
+            else
+            {
+                configuration.setNodeTierAttributeKey(nodeTierAttributeKey.trim());
+
+                if (allowedNodeTierAttributeValues == null)
+                {
+                    LOGGER.info("No allowed values for the node-tier attribute have been configured - any node is allowed to connect");
+                }
+                else if (allowedNodeTierAttributeValues.isEmpty())
+                {
+                    LOGGER.warn(
+                            "An empty list of allowed values for the node-tier attribute have been configured - no node will effectively be allowed to connect");
+                }
+            }
+        }
+        else
+        {
+            LOGGER.info("No node-tier attribute key name has been configured - any node is allowed to connect");
+        }
     }
 
     /**
@@ -83,6 +136,7 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
             throw new SecurityException("Unable to authenticate without subject type");
         }
 
+        boolean failedPrecondition = false;
         final SecurityContext securityContext;
 
         switch (ctx.subjectType())
@@ -91,39 +145,46 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
                 final Collection<SecurityCredentials> allowedClientCredentials = this.configuration.getAllowedClientCredentials();
                 if (allowedClientCredentials == null)
                 {
-                    throw new SecurityException("Client access is not allowed");
+                    LOGGER.info("Rejecting client {} ({}) as no allowed client credentials have been configured", ctx
+                            .subjectId(),
+                            ctx.address());
+                    failedPrecondition = true;
                 }
 
-                if (allowedClientCredentials.contains(ctx.credentials()))
-                {
-                    final SecuritySubject securitySubject = new SimpleSecuritySubject(ctx.subjectId(), ctx.subjectType(),
-                            ctx.credentials().getLogin(), ctx.address(), new NoopSecurityPermissionSet());
-                    this.authenticatedSubjects.put(ctx.subjectId(), securitySubject);
-                    securityContext = new NoopSecurityContext(securitySubject);
-                }
-                else
-                {
-                    securityContext = null;
-                }
+                securityContext = failedPrecondition ? null : this.validateCredentials(ctx, allowedClientCredentials);
                 break;
             case REMOTE_NODE:
                 final Collection<SecurityCredentials> allowedNodeCredentials = this.configuration.getAllowedNodeCredentials();
                 if (allowedNodeCredentials == null)
                 {
-                    throw new SecurityException("Node access is not allowed");
+                    LOGGER.info("Rejecting node {} ({}) as no allowed node credentials have been configured", ctx
+                            .subjectId(),
+                            ctx.address());
+                    failedPrecondition = true;
                 }
 
-                if (allowedNodeCredentials.contains(ctx.credentials()))
+                final String nodeTierAttributeKey = this.configuration.getNodeTierAttributeKey();
+                final Collection<String> nodeTierAttributeValues = this.configuration.getAllowedNodeTierAttributeValues();
+                if (nodeTierAttributeKey != null && nodeTierAttributeValues != null)
                 {
-                    final SecuritySubject securitySubject = new SimpleSecuritySubject(ctx.subjectId(), ctx.subjectType(),
-                            ctx.credentials().getLogin(), ctx.address(), new NoopSecurityPermissionSet());
-                    this.authenticatedSubjects.put(ctx.subjectId(), securitySubject);
-                    securityContext = new NoopSecurityContext(securitySubject);
+                    final Object tierValueO = ctx.nodeAttributes().get(nodeTierAttributeKey);
+                    if (!(tierValueO instanceof String))
+                    {
+                        LOGGER.info("Rejecting node {} ({}) due to incompatible node-tier attribute value {}", ctx
+                                .subjectId(),
+                                ctx.address(), tierValueO);
+                        failedPrecondition = true;
+                    }
+                    else if (!nodeTierAttributeValues.contains(tierValueO))
+                    {
+                        LOGGER.info("Rejecting node {} ({}) due to unallowed node-tier attribute value {}", ctx.subjectId(), ctx
+                                .address(),
+                                tierValueO);
+                        failedPrecondition = true;
+                    }
                 }
-                else
-                {
-                    securityContext = null;
-                }
+
+                securityContext = failedPrecondition ? null : this.validateCredentials(ctx, allowedNodeCredentials);
                 break;
             default:
                 throw new SecurityException("Unsupported / unexpected subject type");
@@ -305,6 +366,26 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
     public boolean enabled()
     {
         return true;
+    }
+
+    protected SecurityContext validateCredentials(final AuthenticationContext ctx,
+            final Collection<SecurityCredentials> allowedNodeCredentials)
+    {
+        final SecurityContext securityContext;
+        if (allowedNodeCredentials.contains(ctx.credentials()))
+        {
+            LOGGER.debug("Accepting {} ({}) as provided credentials match", ctx.subjectId(), ctx.address());
+            final SecuritySubject securitySubject = new SimpleSecuritySubject(ctx.subjectId(), ctx.subjectType(),
+                    ctx.credentials().getLogin(), ctx.address(), new NoopSecurityPermissionSet());
+            this.authenticatedSubjects.put(ctx.subjectId(), securitySubject);
+            securityContext = new NoopSecurityContext(securitySubject);
+        }
+        else
+        {
+            LOGGER.info("Rejecting {} ({}) as provided credentials do not match", ctx.subjectId(), ctx.address());
+            securityContext = null;
+        }
+        return securityContext;
     }
 
 }
