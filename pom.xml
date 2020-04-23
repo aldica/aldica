@@ -65,6 +65,8 @@
         <project.longNameNoWs>AlternativeAlfrescoDistributedCache</project.longNameNoWs>
         <project.basePackage>org.aldica</project.basePackage>
 
+        <maven.shade.version>3.2.3</maven.shade.version>
+
         <aldica.ignite-common.artifactId>aldica-common-ignite</aldica.ignite-common.artifactId>
         <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
         <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
@@ -254,6 +256,11 @@
                     </configuration>
                 </plugin>
 
+                <plugin>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${maven.shade.version}</version>
+                </plugin>
+
             </plugins>
         </pluginManagement>
     </build>
@@ -261,6 +268,7 @@
     <modules>
         <module>common</module>
         <module>repository</module>
+        <module>repository-keep-alive</module>
         <module>share</module>
     </modules>
 </project>
