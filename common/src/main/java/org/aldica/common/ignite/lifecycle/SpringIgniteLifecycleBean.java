@@ -19,9 +19,14 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEvent;
-import org.springframework.extensions.surf.util.AbstractLifecycleBean;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
 
 /**
  * This lifecycle bean initialises an Ignite grid when the Spring application context has been bootstrapped and shuts it down when the
@@ -29,12 +34,14 @@ import org.springframework.extensions.surf.util.AbstractLifecycleBean;
  *
  * @author Axel Faust
  */
-public class SpringIgniteLifecycleBean extends AbstractLifecycleBean implements InitializingBean
+public class SpringIgniteLifecycleBean implements InitializingBean, ApplicationListener<ApplicationEvent>, ApplicationContextAware
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpringIgniteLifecycleBean.class);
 
     protected boolean enabled;
+
+    protected ApplicationContext applicationContext;
 
     protected IgniteConfiguration configuration;
 
@@ -49,14 +56,37 @@ public class SpringIgniteLifecycleBean extends AbstractLifecycleBean implements 
         PropertyCheck.mandatory(this, "configuration", this.configuration);
     }
 
+    @Override
+    public void onApplicationEvent(final ApplicationEvent event)
+    {
+        if (event instanceof ContextRefreshedEvent)
+        {
+            final ContextRefreshedEvent refreshEvent = (ContextRefreshedEvent) event;
+            final ApplicationContext refreshContext = refreshEvent.getApplicationContext();
+            if (refreshContext != null && refreshContext.equals(this.applicationContext))
+            {
+                this.initializeGrid();
+            }
+        }
+        else if (event instanceof ContextClosedEvent)
+        {
+            final ContextClosedEvent closedEvent = (ContextClosedEvent) event;
+            final ApplicationContext closedContext = closedEvent.getApplicationContext();
+            if (closedContext != null && closedContext.equals(this.applicationContext))
+            {
+                this.shutdownGrid();
+            }
+        }
+    }
+
     /**
      *
      * {@inheritDoc}
      */
     @Override
-    public void onBootstrap(final ApplicationEvent event)
+    public void setApplicationContext(final ApplicationContext applicationContext) throws BeansException
     {
-        this.initializeGrid();
+        this.applicationContext = applicationContext;
     }
 
     /**
@@ -77,22 +107,12 @@ public class SpringIgniteLifecycleBean extends AbstractLifecycleBean implements 
         this.configuration = configuration;
     }
 
-    /**
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    protected void onShutdown(final ApplicationEvent event)
-    {
-        this.shutdownGrid();
-    }
-
     protected void initializeGrid()
     {
         if (this.enabled && this.ignite == null)
         {
             final String instanceName = this.configuration.getIgniteInstanceName();
-            final Collection<IgniteInstanceLifecycleAware> gridLifecycleAwareBeans = this.getApplicationContext()
+            final Collection<IgniteInstanceLifecycleAware> gridLifecycleAwareBeans = this.applicationContext
                     .getBeansOfType(IgniteInstanceLifecycleAware.class, true, false).values();
 
             synchronized (this)
@@ -126,7 +146,7 @@ public class SpringIgniteLifecycleBean extends AbstractLifecycleBean implements 
         if (this.ignite != null)
         {
             final String instaneName = this.configuration.getIgniteInstanceName();
-            final Collection<IgniteInstanceLifecycleAware> gridLifecycleAwareBeans = this.getApplicationContext()
+            final Collection<IgniteInstanceLifecycleAware> gridLifecycleAwareBeans = this.applicationContext
                     .getBeansOfType(IgniteInstanceLifecycleAware.class, true, false).values();
 
             synchronized (this)
