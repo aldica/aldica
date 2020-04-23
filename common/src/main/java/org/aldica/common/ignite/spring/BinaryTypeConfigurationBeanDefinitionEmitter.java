@@ -40,6 +40,8 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
 
     private static final String TYPE_CONFIGURATIONS_PROPERTY_NAME = "typeConfigurations";
 
+    protected boolean enabled;
+
     protected String enabledPropertyKey;
 
     protected String propertyPrefix;
@@ -77,6 +79,15 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
         PropertyCheck.mandatory(this, "valueSeparator", this.valueSeparator);
 
         this.placeholderHelper = new PropertyPlaceholderHelper(this.placeholderPrefix, this.placeholderSuffix, this.valueSeparator, true);
+    }
+
+    /**
+     * @param enabled
+     *            the enabled to set
+     */
+    public void setEnabled(final boolean enabled)
+    {
+        this.enabled = enabled;
     }
 
     /**
@@ -175,7 +186,7 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
     @Override
     public void postProcessBeanDefinitionRegistry(final BeanDefinitionRegistry registry) throws BeansException
     {
-        boolean enabled = false;
+        boolean enabled = this.enabled;
         if (this.enabledPropertyKey != null && !this.enabledPropertyKey.isEmpty())
         {
             final String property = this.propertiesSource.getProperty(this.enabledPropertyKey);
