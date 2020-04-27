@@ -1,0 +1,45 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, ubuntu-latest]
+        java_version: [1.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.java_version }}
+    - run: echo $HOME
+    # Template toolchains.xml
+    - name: Setup toolchains.xml
+      uses: cuchi/jinja2-action@v1.1.0
+      with:
+        template: .github/toolchains.xml.j2
+        output_file: .github/toolchains.xml
+        strict: true
+        variables: |
+          JAVA_HOME=${JAVA_HOME}
+          JAVA_VERSION=${{ matrix.java_version }}
+    # Move toolchains.xml to m2
+    - run: mkdir -p ~/.m2/
+    - run: cp .github/toolchains.xml ~/.m2/toolchains.xml
+    - run: cat ~/.m2/toolchains.xml
+    # Build
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
