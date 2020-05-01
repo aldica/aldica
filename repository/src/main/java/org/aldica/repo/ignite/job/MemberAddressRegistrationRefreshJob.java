@@ -9,8 +9,8 @@ import de.acosix.alfresco.utility.repo.job.GenericJob;
 import de.acosix.alfresco.utility.repo.job.JobUtilities;
 
 /**
- * Instances of this class execute the simple job of {@link MemberAddressRegistrar#refreshAddressRegistration() refreshing the registration
- * of local addresses} for this data grid member.
+ * Instances of this class execute the simple job of {@link MemberAddressRegistrar#updateMemberRegistration() updating the member
+ * registrations} with regards to addresses of the active grid members.
  *
  * @author Axel Faust
  */
@@ -26,7 +26,7 @@ public class MemberAddressRegistrationRefreshJob implements GenericJob
     {
         final MemberAddressRegistrar memberAddressRegistrar = JobUtilities.getJobDataValue(jobExecutionContext, "memberAddressRegistrar",
                 MemberAddressRegistrar.class);
-        memberAddressRegistrar.refreshAddressRegistration();
+        memberAddressRegistrar.updateMemberRegistration();
     }
 
 }

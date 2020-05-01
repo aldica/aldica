@@ -14,6 +14,7 @@
 
     <artifactId>aldica-repo-ignite</artifactId>
     <name>Alternative/Alfresco Distributed Cache - Repository Ignite Module</name>
+    <description>Repository-tier addon to provide Ignite-based distributed caching and data grid capabilities</description>
 
     <properties>
         <project.basePackage>org.aldica.repo.ignite</project.basePackage>

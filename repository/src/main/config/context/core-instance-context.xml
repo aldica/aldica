@@ -244,11 +244,19 @@
     </bean>
 
     <bean id="DiscoverySPI.${moduleId}.core.MemberFinder" abstract="true"
-        class="${project.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
-        <property name="transactionService" ref="TransactionService" />
-        <property name="attributeService" ref="AttributeService" />
-        <property name="addressResolver" ref="AddressResolver.${moduleId}.core" />
+        class="${aldica.ignite-common.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
+        <property name="shared" value="true" />
         <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
+    </bean>
+
+    <bean id="DiscoverySPI.${moduleId}.core.MemberAddressRegistrar" abstract="true"
+        class="${project.basePackage}.discovery.MemberAddressRegistrarImpl">
+        <property name="transactionService" ref="TransactionService" />
+        <property name="jobLockService" ref="JobLockService" />
+        <property name="attributeService" ref="AttributeService" />
+        <property name="configuration" ref="Configuration.${moduleId}.core" />
+        <property name="ipFinder" ref="DiscoverySPI.${moduleId}.core.MemberFinder" />
+        <property name="instanceName" value="\${${moduleId}.core.name}" />
     </bean>
 
     <bean id="DiscoverySPI.${moduleId}.core.MemberFinder.refreshJobTrigger" abstract="true"
@@ -263,7 +271,7 @@
                 <property name="jobDataAsMap">
                     <map>
                         <entry key="memberAddressRegistrar">
-                            <ref bean="DiscoverySPI.${moduleId}.core.MemberFinder" />
+                            <ref bean="DiscoverySPI.${moduleId}.core.MemberAddressRegistrar" />
                         </entry>
                     </map>
                 </property>

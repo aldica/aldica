@@ -4,7 +4,7 @@
 package org.aldica.repo.ignite.discovery;
 
 /**
- * Instances of this interface handle the registration of the address details of the local data grid member / server.
+ * Instances of this interface handle the registration of data grid member address details.
  *
  * @author Axel Faust
  */
@@ -12,18 +12,8 @@ public interface MemberAddressRegistrar
 {
 
     /**
-     * Refreshes the registered address details of the local data grid member. This operation will automatically clear any old registrations
-     * if they can be determined to belong to / have originated from the local data grid member
+     * Updates the data grid member registrations. This operation may not perform any write operation in the underlying database if there
+     * are no changes in the grid topology or if another member in the grid is currently processing the same operation.
      */
-    void refreshAddressRegistration();
-
-    /**
-     * Stores the address details of the local data grid member.
-     */
-    void registerAddresses();
-
-    /**
-     * Removes any registered address details of the local data grid member.
-     */
-    void removeAddressRegistrations();
+    void updateMemberRegistration();
 }

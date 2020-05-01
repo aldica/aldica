@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-package org.aldica.share.ignite.discovery;
+package org.aldica.common.ignite.discovery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +9,9 @@ import java.util.List;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
+ * Instances of this class simply provide a Spring-compatible means to configure the initial members of a data grid via a simple, textual
+ * configuration property.
+ *
  * @author Axel Faust
  */
 public class MemberTcpDiscoveryIpFinder extends TcpDiscoveryVmIpFinder

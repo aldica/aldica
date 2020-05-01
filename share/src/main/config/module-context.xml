@@ -156,9 +156,9 @@
     </bean>
 
     <bean id="DiscoverySPI.${moduleId}.core.MemberFinder" abstract="true"
-        class="${project.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
-        <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
+        class="${aldica.ignite-common.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
         <property name="shared" value="false" />
+        <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
     </bean>
 
     <bean id="DiscoverySPI.${moduleId}.core.credentials" abstract="true" class="org.apache.ignite.plugin.security.SecurityCredentials">
