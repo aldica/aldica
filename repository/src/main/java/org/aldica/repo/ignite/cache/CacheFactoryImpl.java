@@ -20,7 +20,6 @@ import javax.cache.expiry.ModifiedExpiryPolicy;
 import org.aldica.common.ignite.cache.CombinedExpiryPolicy;
 import org.aldica.common.ignite.lifecycle.IgniteInstanceLifecycleAware;
 import org.aldica.common.ignite.lifecycle.SpringIgniteLifecycleBean;
-import org.aldica.repo.ignite.discovery.MemberTcpDiscoveryIpFinder;
 import org.alfresco.repo.cache.AbstractCacheFactory;
 import org.alfresco.repo.cache.DefaultSimpleCache;
 import org.alfresco.repo.cache.SimpleCache;
@@ -665,9 +664,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     /**
      * Instances of this AOP invocation handler handle grid starts after initial cache(s) have been created since the
-     * {@link SpringIgniteLifecycleBean grid startup}, specifically {@link MemberTcpDiscoveryIpFinder discovery} may rely on Alfresco
-     * services which in turn require caches. This would cause a circular dependency graph without the ability to lazily swap temporary
-     * caches with the eventual final instances.
+     * {@link SpringIgniteLifecycleBean grid startup}, specifically discovery may rely on Alfresco services which in turn require caches.
+     * This would cause a circular dependency graph without the ability to lazily swap temporary caches with the eventual final instances.
      *
      * @author Axel Faust
      */

@@ -27,7 +27,7 @@
             </list>
         </property>
     </bean>
-    
+
     <bean class="${aldica.ignite-common.basePackage}.lifecycle.SpringIgniteLifecycleBean">
         <property name="enabled" value="true" />
         <property name="configuration" ref="Configuration.${moduleId}.core" />
@@ -177,9 +177,10 @@
         <property name="networkTimeout" value="\${${moduleId}.core.local.disco.networkTimeout}" />
     </bean>
 
-    <bean id="DiscoverySPI.${moduleId}.core.MemberFinder" class="${project.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
-        <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
+    <bean id="DiscoverySPI.${moduleId}.core.MemberFinder"
+        class="${aldica.ignite-common.basePackage}.discovery.MemberTcpDiscoveryIpFinder">
         <property name="shared" value="false" />
+        <property name="initialMembers" value="\${${moduleId}.core.initialMembers}" />
     </bean>
 
     <bean id="DiscoverySPI.${moduleId}.core.credentials" class="org.apache.ignite.plugin.security.SecurityCredentials">

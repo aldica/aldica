@@ -10,7 +10,6 @@ import java.lang.reflect.Proxy;
 
 import org.aldica.common.ignite.lifecycle.IgniteInstanceLifecycleAware;
 import org.aldica.common.ignite.lifecycle.SpringIgniteLifecycleBean;
-import org.aldica.repo.ignite.discovery.MemberTcpDiscoveryIpFinder;
 import org.alfresco.repo.lock.mem.LockState;
 import org.alfresco.repo.lock.mem.LockStore;
 import org.alfresco.repo.lock.mem.LockStoreFactory;
@@ -193,10 +192,9 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     /**
      * This old-school AOP invocation handler is necessary to handle grid starts after initial lock store has been created since the
-     * {@link SpringIgniteLifecycleBean grid startup}, specifically {@link MemberTcpDiscoveryIpFinder discovery} may rely on Alfresco
-     * services
-     * which in turn require caches and other initialisation, possibly the lock store. This would cause a circular dependency graph without
-     * the ability to lazily swap temporary lock stores with the eventual final instances.
+     * {@link SpringIgniteLifecycleBean grid startup}, specifically discovery may rely on Alfresco services which in turn require caches and
+     * other initialisation, possibly the lock store. This would cause a circular dependency graph without the ability to lazily swap
+     * temporary lock stores with the eventual final instances.
      *
      * @author Axel Faust
      */

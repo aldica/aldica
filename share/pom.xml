@@ -14,6 +14,7 @@
 
     <artifactId>aldica-share-ignite</artifactId>
     <name>Alternative/Alfresco Distributed Cache - Share Ignite Module</name>
+    <description>Share-tier addon to provide Ignite-based distributed caching and data grid capabilities</description>
 
     <properties>
         <project.basePackage>org.aldica.share.ignite</project.basePackage>
@@ -109,6 +110,7 @@
                                     <env>
                                         <JAVA_OPTS><![CDATA[
                                             ${docker.tests.repositoryCommonJavaOpts}
+                                            -D${moduleId}.core.local.host=repository
                                         ]]></JAVA_OPTS>
                                     </env>
                                     <!-- add log directory mount to just the contentstore -->
@@ -157,6 +159,7 @@
                                     <env>
                                         <JAVA_OPTS><![CDATA[
                                             ${docker.tests.repositoryCommonJavaOpts}
+                                            -D${moduleId}.core.local.host=repository-2
                                         ]]></JAVA_OPTS>
                                     </env>
                                     <ports>

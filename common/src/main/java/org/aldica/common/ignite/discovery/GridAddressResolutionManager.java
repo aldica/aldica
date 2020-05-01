@@ -144,6 +144,7 @@ public class GridAddressResolutionManager implements AddressResolver, IgniteInst
             this.configuration.setAddressResolver(this);
 
             LOGGER.debug("Initialising own host / socket mappings");
+
             this.initialiseOwnAddressMappings();
 
             if (!this.ownHostMappings.isEmpty() || !this.ownSocketMappings.isEmpty())
@@ -166,7 +167,7 @@ public class GridAddressResolutionManager implements AddressResolver, IgniteInst
                 this.updateEffectiveMappings();
             }
 
-            LOGGER.debug("Own host / socket mapping initialisation completed");
+            LOGGER.debug("Completed initialisation of own host / socket mappings");
         }
     }
 

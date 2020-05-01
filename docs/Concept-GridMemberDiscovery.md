@@ -5,13 +5,14 @@ This documentation section provides high-level concepts / information on how Alf
 The aldica module supports auto-discovery and auto-join capabilities for servers on the Repository-tier to automatically form / join into an Apache Ignite data grid. This support is based on the fact that all instances of Alfresco Repository need to be connected to the same central database, and can share identity / location information via that database without having to know each other's addresses beforehand. During startup of the local Ignite grid instance, each Repository instance performs the following steps to either join an existing grid or set itself up as the initial member of a new grid:
 
 1. Parse and set up list of addresses for “initial members” if configured
-2. Calculate address translation map for "self" addresses based on configuration of publicly accessible host name / ports
+2. Calculate address translation map for "self" addresses based on configuration of publicly accessible host name / ports, and set up server metadata
 3. Determine and register list of “self” addresses in Ignite in-memory state, using address translation if relevant
-4. Lookup non-"self" address registered in the shared database
-5. Clean up old address registrations from the shared database for the same addresses as the current “self”
-6. Register current “self” addresses in the shared database
-7. Sequentially attempt to connect to an initial node using the list of configured "initial members" and non-"self" addresses retrieved from the shared database
-8. Update address translation map from metadata of other servers in the data grid
+4. Load all addresses of currently active grid members from the shared database, and register in Ignite in-memory state
+5. Sequentially attempt to connect to an initial node using the list of configured "initial members" and non-"self" addresses retrieved from the shared database
+6. or 7. Update address translation map from metadata of other servers in the data grid
+6. or 7. Update central registration in the shared database to include all addresses of currently active grid members retrieved from respective server medatata
+
+Steps 6 and 7 are not guaranteed to execute in a specific order and are independent of one another.
 
 ## Alfresco Share
 Alfresco Share lacks a central database that every instance can use without relying on the Repository (which may be unavailable during startup of Share). As a result, there is no auto-discovery support for connecting the various instances of Share into a data grid. It is required that each Share instance is configured with a set of logical network addresses to find at least a common sub-set of “initial members” for the grid. Once such initial members are found during startup, other instances can join the grid without having to know all the members beforehand. During startup of the local Ignite grid instance, each Share instance performs the following steps to either join an existing grid or set itself up as the initial member of a new grid:
