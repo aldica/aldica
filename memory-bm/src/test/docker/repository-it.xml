@@ -69,6 +69,7 @@
                 <include>net.time4j:time4j-core:*</include>
                 <include>net.time4j:time4j-i18n:*</include>
                 <include>com.cronutils:cron-utils:*</include>
+                <include>com.thedeanda:lorem:*</include>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.common:*</include>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo.quartz1:*</include>
                 <include>de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo.quartz2:*</include>

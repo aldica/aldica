@@ -5,6 +5,7 @@ package org.aldica.repo.ignite.web.scripts;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,15 +23,16 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.thedeanda.lorem.Lorem;
+import com.thedeanda.lorem.LoremIpsum;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.batch.BatchProcessWorkProvider;
 import org.alfresco.repo.batch.BatchProcessor;
 import org.alfresco.repo.batch.BatchProcessor.BatchProcessWorker;
+import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
-import org.alfresco.service.cmr.repository.NodeRef;
-import org.alfresco.service.cmr.repository.NodeService;
-import org.alfresco.service.cmr.repository.StoreRef;
+import org.alfresco.service.cmr.repository.*;
 import org.alfresco.service.cmr.rule.RuleService;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
@@ -82,9 +84,13 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
 
     private static final long MAX_TIME = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC);
 
+    private static final Lorem lorem = LoremIpsum.getInstance();
+
     protected TransactionService transactionService;
 
     protected NodeService nodeService;
+
+    protected ContentService contentService;
 
     protected RuleService ruleService;
 
@@ -121,6 +127,10 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         this.nodeService = nodeService;
     }
 
+    public void setContentService(ContentService contentService) {
+        this.contentService = contentService;
+    }
+
     /**
      * @param ruleService
      *            the ruleService to set
@@ -149,6 +159,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         final int threads = Integer.parseInt(req.getParameter("threads"));
         final int count = Integer.parseInt(req.getParameter("countNodes"));
         final int maxChildrenPerFolder = Integer.parseInt(req.getParameter("maxChildrenPerFolder"));
+        final int wordsPerNode = req.getParameter("wordsPerNode") != null ? Integer.parseInt(req.getParameter("wordsPerNode")) : 0;
 
         LOGGER.info("Web script called to generate {} nodes in {} threads with {} max children per folder", count, threads,
                 maxChildrenPerFolder);
@@ -162,12 +173,12 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
             final int requiredTargetFolderCount = (int) Math.ceil(1.0f * count / maxChildrenPerFolder);
             LOGGER.info("{} nodes require {} target folders for sub-division", count, requiredTargetFolderCount);
             final List<NodeRef> targetFolders = this.generateTargetFolders(companyHome, requiredTargetFolderCount, maxChildrenPerFolder,
-                    threads);
+                    threads, wordsPerNode);
 
-            final String nameSuffix = " of " + count;
+            final String nameSuffix = "of" + count;
             this.generateNodes(targetFolders, count, threads, i -> i + nameSuffix, this::generateRandomContentTypeAndProperties, (t) -> {
                 // NO-OP
-            });
+            }, wordsPerNode);
 
             return null;
         });
@@ -176,7 +187,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
     }
 
     protected List<NodeRef> generateTargetFolders(final NodeRef rootNode, final int folderCount, final int maxChildrenPerFolder,
-            final int threads)
+            final int threads, final int wordsPerNode)
     {
         final List<NodeRef> targetFolders = new ArrayList<>(folderCount);
         final List<NodeRef> parentFolders;
@@ -185,7 +196,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
             final int requiredParentFolderCount = (int) Math.ceil(1.0f * folderCount / maxChildrenPerFolder);
             LOGGER.info("{} folders is more than the allowed limit of children - need to generate {} folders for further sub-divison",
                     folderCount, requiredParentFolderCount);
-            parentFolders = this.generateTargetFolders(rootNode, requiredParentFolderCount, maxChildrenPerFolder, threads);
+            parentFolders = this.generateTargetFolders(rootNode, requiredParentFolderCount, maxChildrenPerFolder, threads, wordsPerNode);
         }
         else
         {
@@ -193,7 +204,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
             parentFolders = Collections.singletonList(rootNode);
         }
 
-        final String nameSuffix = " of " + folderCount;
+        final String nameSuffix = "of" + folderCount;
         final Pair<QName, Map<QName, Serializable>> typeAndProperties = new Pair<>(ContentModel.TYPE_FOLDER, Collections.emptyMap());
 
         this.generateNodes(parentFolders, folderCount, threads, i -> i + nameSuffix, () -> typeAndProperties, folders -> {
@@ -201,15 +212,20 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
             {
                 targetFolders.addAll(folders);
             }
-        });
+        }, wordsPerNode);
 
         return targetFolders;
     }
 
-    protected void generateNodes(final List<NodeRef> parentFolders, final int nodeCount, final int threads,
+    protected void generateNodes(
+            final List<NodeRef> parentFolders,
+            final int nodeCount,
+            final int threads,
             final Function<Integer, String> nodeNameProvider,
             final Supplier<Pair<QName, Map<QName, Serializable>>> typeAndPropertiesProvider,
-            final Consumer<List<NodeRef>> nodeBatchProcessor)
+            final Consumer<List<NodeRef>> nodeBatchProcessor,
+            final int wordsPerNode
+    )
     {
         LOGGER.info("Starting actual generation step for {} nodes in {} parent folders with {} threads", nodeCount, parentFolders.size(),
                 threads);
@@ -309,6 +325,17 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
                         .createNode(this.parent.get(), ContentModel.ASSOC_CONTAINS,
                                 QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, entry), typeAndProperties.getFirst(), properties)
                         .getChildRef();
+
+                if (wordsPerNode > 0) {
+                    // Generate file content
+                    if (typeAndProperties.getFirst().equals(ContentModel.TYPE_CONTENT)) {
+                        ContentWriter writer = contentService.getWriter(childRef, ContentModel.PROP_CONTENT, true);
+                        writer.setMimetype(MimetypeMap.MIMETYPE_TEXT_PLAIN);
+                        writer.setEncoding(StandardCharsets.UTF_8.name());
+                        writer.putContent(generateFileContent(wordsPerNode));
+                    }
+                }
+
                 this.createdNodes.get().add(childRef);
             }
 
@@ -367,5 +394,9 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         final int epochDay = MIN_DAY + RN_JESUS.nextInt(MAX_DAY - MIN_DAY);
         final Date d = Date.from(LocalDate.ofEpochDay(epochDay).atStartOfDay().atOffset(ZoneOffset.UTC).toInstant());
         return d;
+    }
+
+    protected static String generateFileContent(int length) {
+        return lorem.getWords(0, length);
     }
 }
