@@ -90,7 +90,7 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
         final int threads = Integer.parseInt(req.getParameter("threads"));
         final int count = Integer.parseInt(req.getParameter("countNodes"));
 
-        final String nameSuffix = " of " + count;
+        final String nameSuffix = "of" + count;
         this.loadNodes(count, threads, i -> i + nameSuffix);
     }
 
