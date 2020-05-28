@@ -20,6 +20,8 @@
         <project.basePackage>org.aldica.repo.ignite.ka</project.basePackage>
 
         <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
+        <docker.tests.keepAliveBaseImage>openjdk:8-jdk-slim</docker.tests.keepAliveBaseImage>
+        <docker.tests.skipKeepAliveImageBuild>false</docker.tests.skipKeepAliveImageBuild>
     </properties>
 
     <dependencyManagement>
@@ -354,6 +356,37 @@
                                     </volumes>
                                 </run>
                             </image>
+                            <image>
+                                <!-- no change to share image (third image in parent POM) -->
+                            </image>
+                            <image>
+                                <!-- no change to search image (fourth image in parent POM) -->
+                            </image>
+                            <image>
+                                <!-- additional image - built solely for use in external start-stop test script -->
+                                <name>${moduleId}-keep-alive-test</name>
+                                <alias>keep-alive</alias>
+                                <build>
+                                    <from>${docker.tests.keepAliveBaseImage}</from>
+                                    <skip>${docker.tests.skipKeepAliveImageBuild}</skip>
+                                    <assembly>
+                                        <inline>
+                                            <file>
+                                                <source>${project.build.directory}/${project.build.finalName}.jar</source>
+                                                <outputDirectory>.</outputDirectory>
+                                            </file>
+                                            <file>
+                                                <source>${project.build.directory}/${project.build.finalName}.jar</source>
+                                                <outputDirectory>.</outputDirectory>
+                                            </file>
+                                        </inline>
+                                    </assembly>
+                                    <workdir>/maven</workdir>
+                                    <cmd> 
+                                        <shell>java -Xms512M -Xmx512M -jar ${project.build.finalName}.jar</shell>
+                                    </cmd>
+                                </build>
+                            </image>
                         </images>
                     </configuration>
                 </plugin>
@@ -548,6 +581,60 @@
 
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>StartStopTestPreparations</id>
+
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-resources-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>processIntegrationTestDockerResources</id>
+                                    <phase>pre-integration-test</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <outputDirectory>${project.build.directory}/docker</outputDirectory>
+                                        <resources>
+                                            <resource>
+                                                <directory>src/test/docker</directory>
+                                                <filtering>true</filtering>
+                                            </resource>
+                                        </resources>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+
+                        <plugin>
+                            <groupId>io.fabric8</groupId>
+                            <artifactId>docker-maven-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>build-test-image</id>
+                                    <phase>pre-integration-test</phase>
+                                    <goals>
+                                        <goal>build</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+
+                <plugins>
+
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
                     </plugin>
                 </plugins>
             </build>
