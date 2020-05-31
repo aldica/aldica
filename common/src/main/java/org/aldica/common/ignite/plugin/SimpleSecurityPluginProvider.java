@@ -54,7 +54,7 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
     @Override
     public String version()
     {
-        return "1.0.0.0";
+        return "1.0.0";
     }
 
     /**

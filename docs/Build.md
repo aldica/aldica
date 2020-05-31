@@ -53,8 +53,8 @@ Ubuntu example:
 ```
 The build process will produce two amp files, namely:
 ```
-./repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp
-./share/target/aldica-share-ignite-1.0.0.0-SNAPSHOT.amp
+./repository/target/aldica-repo-ignite-1.0.0-SNAPSHOT.amp
+./share/target/aldica-share-ignite-1.0.0-SNAPSHOT.amp
 ```
 
 ### Docker-based Integration Tests
