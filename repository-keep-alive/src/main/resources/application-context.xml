@@ -79,9 +79,9 @@
                 <value>14</value> <!-- node segmented -->
             </list>
         </property>
-        <property name="pluginConfigurations">
+        <property name="pluginProviders">
             <list>
-                <ref bean="PluginConfiguration.${moduleId}.core.security" />
+                <ref bean="PluginProvider.${moduleId}.core.security" />
             </list>
         </property>
 
@@ -211,12 +211,23 @@
 
     <bean id="CollisionSPI.${moduleId}.core" class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi" />
 
+    <bean id="PluginProvider.${moduleId}.core.security"
+        class="${aldica.ignite-common.basePackage}.plugin.SimpleSecurityPluginProvider">
+        <property name="configuration" ref="PluginConfiguration.${moduleId}.core.security" />
+    </bean>
+
     <bean id="PluginConfiguration.${moduleId}.core.security"
         class="${aldica.ignite-common.basePackage}.plugin.SimpleSecurityPluginConfiguration">
         <property name="enabled" value="true" />
         <property name="allowedNodeCredentials">
             <list>
                 <ref bean="DiscoverySPI.${moduleId}.core.credentials" />
+            </list>
+        </property>
+        <property name="nodeTierAttributeKey" value="${moduleId}.tier" />
+        <property name="allowedNodeTierAttributeValues">
+            <list>
+                <value>repository</value>
             </list>
         </property>
     </bean>
