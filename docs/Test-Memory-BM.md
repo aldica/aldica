@@ -52,8 +52,8 @@ mvn clean integration-test -Ddocker.tests.enabled=true
 # generate 1,000,000 nodes on one instance
 curl -X POST -i 'http://localhost:8180/alfresco/s/aldica/mem-bm/generateNodes?countNodes=1000000&threads=4&maxChildrenPerFolder=50'
 
-# clear caches on aldica-enabled instance and load nodes into cache
-curl -X POST -i 'http://localhost:8180/alfresco/s/aldica/mem-bm/clearNodeCaches'
+# restart repo in order to fully clear the Ignite caches on aldica-enabled instance and load nodes into cache
+docker restart aldica-mem-bm-repository-test-1
 curl -X GET -i 'http://localhost:8180/alfresco/s/aldica/mem-bm/cacheNodes?countNodes=1000000&threads=4'
 
 docker exec -ti aldica-mem-bm-repository-test-1 /usr/java/default/bin/jmap -dump:format=b,live,file=/tmp/aldica-1m-nodes.hprof 1
