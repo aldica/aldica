@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-package org.aldica.repo.ignite.ka;
+package org.aldica.repo.ignite.companion;
 
 import java.util.Map;
 import java.util.Properties;
@@ -12,7 +12,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
- * Instances of this class provide the main entry-point of the stand-alone Repository-tier keep-alive application.
+ * Instances of this class provide the main entry-point of the stand-alone Repository-tier companion application.
  *
  * @author Axel Faust
  */
@@ -28,7 +28,7 @@ public class Runner
     private Thread keepAliveThread;
 
     /**
-     * Runs the keep-alive application, starting a single instance and letting it run until the JVM is forcibly stopped via a kill signal.
+     * Runs the companion application, starting a single instance and letting it run until the JVM is forcibly stopped via a kill signal.
      *
      * @param args
      *            the command line arguments
@@ -40,7 +40,7 @@ public class Runner
     }
 
     /**
-     * Initialises a standard instance of the keep-alive application runner.
+     * Initialises a standard instance of the companion application runner.
      */
     public Runner()
     {
@@ -48,7 +48,7 @@ public class Runner
     }
 
     /**
-     * Initialises a customised instance of the keep-alive application runner, with runtime configuration values that override / supplement
+     * Initialises a customised instance of the companion application runner, with runtime configuration values that override / supplement
      * configuration read from static files.
      *
      * @param configurationProperties
@@ -64,7 +64,7 @@ public class Runner
     }
 
     /**
-     * Starts this instance of the keep-alive application.
+     * Starts this instance of the companion application.
      */
     public synchronized void start()
     {
@@ -118,7 +118,7 @@ public class Runner
     }
 
     /**
-     * Stops this instance of the keep-alive application.
+     * Stops this instance of the companion application.
      */
     public synchronized void stop()
     {
