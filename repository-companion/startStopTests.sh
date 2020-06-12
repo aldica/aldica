@@ -3,7 +3,7 @@
 set -uo pipefail
 
 # AFAIK no Maven plugin or JUnit library to support Docker-based tests supports simple start/stop during an integration test
-# ...so this script performs a general test of the cache keep alive by starting-stopping Repository nodes + keep-alive
+# ...so this script performs a general test of the cache keep alive by starting-stopping Repository nodes + companion
 # all while doing basic cURL calls to check authentication tickets
 
 mvn clean integration-test -P StartStopTestPreparations

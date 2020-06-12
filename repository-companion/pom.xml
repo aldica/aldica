@@ -12,16 +12,16 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>aldica-repo-ignite-keep-alive</artifactId>
-    <name>Alternative/Alfresco Distributed Cache - Repository Ignite Keep Alive Module</name>
-    <description>Standalone Java application to extend the Repository cache layer and keep cached data alive even in the case of a complete Repository-tier restart</description>
+    <artifactId>aldica-repo-ignite-companion</artifactId>
+    <name>Alternative/Alfresco Distributed Cache - Repository Ignite Companion Application</name>
+    <description>Standalone Java companion application to extend the Repository cache layer and keep cached data alive even in the case of a complete Repository-tier restart</description>
 
     <properties>
-        <project.basePackage>org.aldica.repo.ignite.ka</project.basePackage>
+        <project.basePackage>org.aldica.repo.ignite.companion</project.basePackage>
 
         <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
-        <docker.tests.keepAliveBaseImage>openjdk:8-jdk-slim</docker.tests.keepAliveBaseImage>
-        <docker.tests.skipKeepAliveImageBuild>false</docker.tests.skipKeepAliveImageBuild>
+        <docker.tests.companionBaseImage>openjdk:8-jdk-slim</docker.tests.companionBaseImage>
+        <docker.tests.skipCompanionImageBuild>false</docker.tests.skipCompanionImageBuild>
     </properties>
 
     <dependencyManagement>
@@ -364,11 +364,11 @@
                             </image>
                             <image>
                                 <!-- additional image - built solely for use in external start-stop test script -->
-                                <name>${moduleId}-keep-alive-test</name>
-                                <alias>keep-alive</alias>
+                                <name>${moduleId}-companion-test</name>
+                                <alias>companion</alias>
                                 <build>
-                                    <from>${docker.tests.keepAliveBaseImage}</from>
-                                    <skip>${docker.tests.skipKeepAliveImageBuild}</skip>
+                                    <from>${docker.tests.companionBaseImage}</from>
+                                    <skip>${docker.tests.skipCompanionImageBuild}</skip>
                                     <assembly>
                                         <inline>
                                             <file>

@@ -1,13 +1,13 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-package org.aldica.repo.ignite.ka.integration;
+package org.aldica.repo.ignite.companion.integration;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.aldica.repo.ignite.ka.Runner;
+import org.aldica.repo.ignite.companion.Runner;
 import org.junit.Test;
 
 /**

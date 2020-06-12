@@ -106,7 +106,7 @@
         <property name="userAttributes">
             <map>
                 <entry key="${moduleId}.tier" value="repository" />
-                <entry key="${moduleId}.role" value="repository-keep-alive" />
+                <entry key="${moduleId}.role" value="repository-companion" />
             </map>
         </property>
     </bean>

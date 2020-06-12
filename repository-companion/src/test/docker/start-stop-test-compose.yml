@@ -50,21 +50,21 @@ services:
         restart: unless-stopped
 
     keepAlive01:
-        image: ${moduleId}-keep-alive-test
+        image: ${moduleId}-companion-test
         hostname: keepAlive01
         networks:
           - testNetwork
         volumes:
-          - ./keep-alive-01-custom-config.properties:/maven/custom-config.properties
+          - ./companion-01-custom-config.properties:/maven/custom-config.properties
         restart: unless-stopped
 
     keepAlive02:
-        image: ${moduleId}-keep-alive-test
+        image: ${moduleId}-companion-test
         hostname: keepAlive02
         networks:
           - testNetwork
         volumes:
-          - ./keep-alive-02-custom-config.properties:/maven/custom-config.properties
+          - ./companion-02-custom-config.properties:/maven/custom-config.properties
         restart: unless-stopped
 
 networks:

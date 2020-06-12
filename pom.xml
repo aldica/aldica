@@ -268,7 +268,7 @@
     <modules>
         <module>common</module>
         <module>repository</module>
-        <module>repository-keep-alive</module>
+        <module>repository-companion</module>
         <module>share</module>
     </modules>
 </project>

@@ -1,7 +1,7 @@
 @ECHO OFF
 
 rem AFAIK no Maven plugin or JUnit library to support Docker-based tests supports simple start/stop during an integration test
-rem ...so this script performs a general test of the cache keep alive by starting-stopping Repository nodes + keep-alive
+rem ...so this script performs a general test of the cache keep alive by starting-stopping Repository nodes + companion
 rem all while doing basic cURL calls to check authentication tickets
 
 SETLOCAL
