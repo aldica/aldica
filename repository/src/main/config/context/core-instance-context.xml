@@ -99,6 +99,38 @@
         </property>
     </bean>
 
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionKey" abstract="true"
+        class="${project.basePackage}.binary.CacheRegionKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.cacheKey.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionValueKey" abstract="true"
+        class="${project.basePackage}.binary.CacheRegionValueKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.cacheValueKey.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedModuleVersionNumber" abstract="true"
+        class="${project.basePackage}.binary.ModuleVersionNumberBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.moduleVersionNumber.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedMLText" abstract="true"
+        class="${project.basePackage}.binary.MLTextBinarySerializer">
+        <property name="useIdsWhenPossible" value="\${${moduleId}.core.binary.optimisation.mlText.useIdsWhenPossible}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.mlText.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeRef" abstract="true"
+        class="${project.basePackage}.binary.NodeRefBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeRef.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeProperties" abstract="true"
+        class="${project.basePackage}.binary.NodePropertiesBinarySerializer">
+        <property name="useIdsWhenPossible" value="\${${moduleId}.core.binary.optimisation.nodeProperties.useIdsWhenPossible}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeProperties.useRawSerial}" />
+    </bean>
+
     <bean id="Configuration.${moduleId}.core.binary.binaryTypeConfigurationBeanEmitter"
         class="${aldica.ignite-common.basePackage}.spring.BinaryTypeConfigurationBeanDefinitionEmitter">
         <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
