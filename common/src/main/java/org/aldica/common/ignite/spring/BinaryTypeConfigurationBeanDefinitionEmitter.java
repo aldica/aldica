@@ -3,8 +3,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.common.ignite.spring;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.function.Predicate;
 
 import org.alfresco.util.PropertyCheck;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -236,6 +239,15 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
         final String instanceName = this.placeholderHelper.replacePlaceholders(this.propertiesSource.getProperty(this.instanceNameProperty),
                 this.propertiesSource);
 
+        final Map<String, Boolean> cachedEnabled = new HashMap<>();
+        final Predicate<String> isEnabled = typeName -> Boolean.TRUE.equals(cachedEnabled.computeIfAbsent(typeName, typeNameI -> {
+            final String key = this.propertyPrefix + typeName + ".enabled";
+            String value = this.propertiesSource.getProperty(key, "true");
+            value = this.placeholderHelper.replacePlaceholders(value, this.propertiesSource);
+            final Boolean enabled = Boolean.valueOf(value);
+            return enabled;
+        }));
+
         this.propertiesSource.stringPropertyNames().forEach(propertyName -> {
             if (propertyName.startsWith(this.propertyPrefix))
             {
@@ -244,18 +256,23 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
                 {
                     final int sepIdx = effPropertyName.lastIndexOf('.');
                     final String typeName = effPropertyName.substring(0, sepIdx);
-                    final String typeConfigurationPropertyName = effPropertyName.substring(sepIdx + 1);
+                    if (isEnabled.test(typeName))
+                    {
+                        final String typeConfigurationPropertyName = effPropertyName.substring(sepIdx + 1);
 
-                    final BeanDefinition binaryTypeConfigurationBeanDefinition = this.lookupOrCreateBinaryTypeConfigurationBeanDefinition(
-                            registry, binaryTypeConfigurations, instanceName, typeName);
+                        final BeanDefinition binaryTypeConfigurationBeanDefinition = this
+                                .lookupOrCreateBinaryTypeConfigurationBeanDefinition(registry, binaryTypeConfigurations, instanceName,
+                                        typeName);
 
-                    final String beanName = this.placeholderHelper.replacePlaceholders(this.propertiesSource.getProperty(propertyName),
-                            this.propertiesSource);
-                    LOGGER.debug("Setting binary type configuration property {} to reference bean {} on {} for instance {}",
-                            typeConfigurationPropertyName, beanName, typeName, instanceName);
+                        final String beanName = this.placeholderHelper.replacePlaceholders(this.propertiesSource.getProperty(propertyName),
+                                this.propertiesSource);
+                        LOGGER.debug(
+                                "Setting binary type configuration property {} to reference bean {} for type {} on instance {}",
+                                typeConfigurationPropertyName, beanName, typeName, instanceName);
 
-                    binaryTypeConfigurationBeanDefinition.getPropertyValues().add(typeConfigurationPropertyName,
-                            new RuntimeBeanReference(beanName));
+                        binaryTypeConfigurationBeanDefinition.getPropertyValues().add(typeConfigurationPropertyName,
+                                new RuntimeBeanReference(beanName));
+                    }
                 }
             }
         });

@@ -69,7 +69,7 @@
         <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
         <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
 
-        <acosix.utility.version>1.2.1</acosix.utility.version>
+        <acosix.utility.version>1.2.2-SNAPSHOT</acosix.utility.version>
         <apache.ignite.version>2.8.1</apache.ignite.version>
 
         <docker.tests.igniteCommonJavaOpts><![CDATA[
