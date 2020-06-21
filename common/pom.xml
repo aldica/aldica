@@ -143,6 +143,25 @@
             </testResource>
         </testResources>
 
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <argLine><![CDATA[
+                            -Dfile.encoding=UTF-8
+                            -Djava.net.preferIPv4Stack=true
+                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                            -DIGNITE_QUIET=true
+                            -DIGNITE_NO_ASCII=true
+                            -DIGNITE_UPDATE_NOTIFIER=false
+                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                        ]]></argLine>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
 
             <plugin>

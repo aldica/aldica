@@ -20,10 +20,11 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.aldica.common.ignite.GridTestsBase;
-import org.aldica.common.ignite.binary.SelectivelyReflectiveBinarySerializer;
 import org.aldica.repo.ignite.ExpensiveTestCategory;
+import org.aldica.repo.ignite.binary.QNameBinarySerializer;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.cache.SimpleCache;
+import org.alfresco.repo.cache.TransactionalCache;
 import org.alfresco.repo.cache.TransactionalCache.ValueHolder;
 import org.alfresco.repo.cache.lookup.CacheRegionKey;
 import org.alfresco.repo.cache.lookup.CacheRegionValueKey;
@@ -106,14 +107,10 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
             final IgniteConfiguration conf1 = createConfiguration(1, false, null);
             final IgniteConfiguration conf2 = createConfiguration(2, true, null);
 
-            final SelectivelyReflectiveBinarySerializer serializer = new SelectivelyReflectiveBinarySerializer();
-            serializer.setRelevantFieldsProvider(
-                    cls -> cls.equals(QName.class) ? Arrays.asList("namespaceURI", "localName") : Collections.emptyList());
-
             final BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
             final BinaryTypeConfiguration binaryTypeConfigurationForKeyClass = new BinaryTypeConfiguration();
             binaryTypeConfigurationForKeyClass.setTypeName(QName.class.getName());
-            binaryTypeConfigurationForKeyClass.setSerializer(serializer);
+            binaryTypeConfigurationForKeyClass.setSerializer(new QNameBinarySerializer());
             binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForKeyClass));
 
             conf1.setBinaryConfiguration(binaryConfiguration);
@@ -162,14 +159,9 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
             final NamespacePrefixResolver nsPrefixResolver = new TestNamespacePrefixResolver();
             final QNameDAO qnameDAO = new TestQNameDAO();
 
-            final ImmutableEntityTransformer immutableEntityTransformer = new ImmutableEntityTransformer();
-            immutableEntityTransformer.setQNameDAO(qnameDAO);
-
             // we are not using transactions in this test, but actually need this to properly test with the ValueHolder wrapper
-            final ValueTransformingTransactionalCache<Serializable, Serializable> immutableEntityCache = new ValueTransformingTransactionalCache<>();
+            final TransactionalCache<Serializable, Serializable> immutableEntityCache = new TransactionalCache<>();
             immutableEntityCache.setSharedCache(simpleCache);
-            // note: this was not active at the customer at the time of initial tests (bug in default config of the module version)
-            immutableEntityCache.setValueTransformer(immutableEntityTransformer);
             immutableEntityCache.setName("org.alfresco.cache.immutableEntityTransactionalCache");
             immutableEntityCache.setMaxCacheSize(10000);
             // logically not true (cache name literally contains "immutableEntity")
@@ -269,7 +261,7 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
 
             Assert.assertNotNull("Value creation should have added a cache entry resolveable by ID", lowLevelCacheValue);
             Assert.assertEquals("Value creation should have added a cache entry resolveable by ID",
-                    new QNameValueHolder(qnameDAO.getNamespace(folderQName.getNamespaceURI()).getFirst(), folderQName),
+                    folderQName,
                     lowLevelCacheValue.getValue());
 
             lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, folderQName);
@@ -354,9 +346,7 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
                                 lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheKey);
 
                                 Assert.assertNotNull("Value creation should have added a cache entry", lowLevelCacheValue);
-                                Assert.assertEquals("Value creation should have added a cache entry",
-                                        new QNameValueHolder(qnameDAO.getNamespace(qname.getNamespaceURI()).getFirst().longValue(), qname),
-                                        lowLevelCacheValue.getValue());
+                                Assert.assertEquals("Value creation should have added a cache entry", qname, lowLevelCacheValue.getValue());
 
                                 lowLevelEntryCacheValueKey = new CacheRegionValueKey(CACHE_REGION_QNAME, effectiveQName);
                                 lowLevelCacheValue = igniteCache.get(lowLevelEntryCacheValueKey);
@@ -398,7 +388,7 @@ public class AlfrescoCacheScenariosConsistencyTests extends GridTestsBase
                         Assert.assertNotNull("Low-level cache should contain a proper cache entry for value previously created",
                                 lowLevelCacheValue);
                         Assert.assertEquals("Low-level cache should contain a proper cache entry for value previously created",
-                                new QNameValueHolder(qnameDAO.getNamespace(qname.getNamespaceURI()).getFirst().longValue(), qname),
+                                qname,
                                 lowLevelCacheValue.getValue());
                     }
                 }
