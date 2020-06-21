@@ -23,7 +23,7 @@ import org.springframework.context.ApplicationContextAware;
 /**
  * Instances of this class handle (de-)serialisations of {@link MLText} instances. As a custom sub-class of {@link HashMap}, MLText
  * instances cannot be covered by Ignite's default/preferred {@link BinaryMarshaller} and falls back to {@link OptimizedMarshaller}. While
- * already fast than regular JVM serialisation, it does not necessarily result in the smallest serial form, and we are able to apply
+ * already faster than regular JVM serialisation, it does not necessarily result in the smallest serial form, and we are able to apply
  * optional optimisations during marshalling via this class.
  *
  *
@@ -36,9 +36,9 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
 
     protected LocaleDAO localeDAO;
 
-    protected boolean useIdsWhenPossible = false;
+    protected boolean useIdsWhenReasonable = false;
 
-    protected boolean useRawSerialForm = true;
+    protected boolean useRawSerialForm = false;
 
     /**
      * {@inheritDoc}
@@ -50,12 +50,12 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
     }
 
     /**
-     * @param useIdsWhenPossible
-     *            the useIdsWhenPossible to set
+     * @param useIdsWhenReasonable
+     *            the useIdsWhenReasonable to set
      */
-    public void setUseIdsWhenPossible(final boolean useIdsWhenPossible)
+    public void setUseIdsWhenReasonable(final boolean useIdsWhenReasonable)
     {
-        this.useIdsWhenPossible = useIdsWhenPossible;
+        this.useIdsWhenReasonable = useIdsWhenReasonable;
     }
 
     /**
@@ -79,7 +79,7 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
 
-        if (this.useIdsWhenPossible)
+        if (this.useIdsWhenReasonable)
         {
             this.ensureLocaleDAOAvailable();
         }
@@ -95,7 +95,7 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
             {
                 final Locale key = entry.getKey();
                 final String value = entry.getValue();
-                if (this.useIdsWhenPossible)
+                if (this.useIdsWhenReasonable)
                 {
                     final Pair<Long, Locale> localePair = this.localeDAO.getLocalePair(key);
                     rawWriter.writeBoolean(localePair != null);
@@ -117,7 +117,7 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
         }
         else
         {
-            if (this.useIdsWhenPossible)
+            if (this.useIdsWhenReasonable)
             {
                 final Map<Object, String> values = new HashMap<>();
                 mlText.forEach((l, s) -> {
@@ -128,7 +128,9 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
             }
             else
             {
-                writer.writeMap("values", mlText);
+                // must be wrapped otherwise it would be written as self-referential handle
+                // effectively preventing ANY values from being written
+                writer.writeMap("values", new HashMap<>(mlText));
             }
         }
     }
@@ -145,7 +147,7 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
 
-        if (this.useIdsWhenPossible)
+        if (this.useIdsWhenReasonable)
         {
             this.ensureLocaleDAOAvailable();
         }
@@ -160,7 +162,7 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
             for (int idx = 0; idx < size; idx++)
             {
                 Locale key;
-                if (this.useIdsWhenPossible)
+                if (this.useIdsWhenReasonable)
                 {
                     final boolean isId = rawReader.readBoolean();
                     if (isId)
@@ -189,7 +191,7 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
         else
         {
             final Map<Object, String> values = reader.readMap("values");
-            if (this.useIdsWhenPossible)
+            if (this.useIdsWhenReasonable)
             {
                 values.forEach((k, v) -> {
                     Locale k2;

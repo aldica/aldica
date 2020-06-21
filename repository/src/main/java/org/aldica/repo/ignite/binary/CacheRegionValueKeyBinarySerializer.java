@@ -56,7 +56,7 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
         }
     }
 
-    protected boolean useRawSerialForm = true;
+    protected boolean useRawSerialForm = false;
 
     /**
      * @param useRawSerialForm
@@ -86,10 +86,10 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
             final Object cacheValueKey = CACHE_VALUE_KEY_FIELD.get(obj);
 
             final CacheRegion literal = CacheRegion.getLiteral(cacheRegion);
-            final BinaryRawWriter rawWriter = writer.rawWriter();
 
             if (this.useRawSerialForm)
             {
+                final BinaryRawWriter rawWriter = writer.rawWriter();
                 rawWriter.writeByte((byte) literal.ordinal());
                 if (literal == CacheRegion.CUSTOM)
                 {
@@ -126,16 +126,34 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
 
-        final BinaryRawReader rawReader = reader.rawReader();
+        String cacheRegion = null;
+        CacheRegion literal;
+        Object cacheValueKey;
 
-        final byte literalOrdinal = this.useRawSerialForm ? rawReader.readByte() : reader.readByte(CACHE_REGION_TYPE);
-        final CacheRegion literal = CacheRegion.values()[literalOrdinal];
-        String cacheRegion = literal.getCacheRegionName();
-        if (literal == CacheRegion.CUSTOM)
+        if (this.useRawSerialForm)
         {
-            cacheRegion = this.useRawSerialForm ? rawReader.readString() : reader.readString(CACHE_REGION);
+            final BinaryRawReader rawReader = reader.rawReader();
+
+            final byte literalOrdinal = rawReader.readByte();
+            literal = CacheRegion.values()[literalOrdinal];
+            if (literal == CacheRegion.CUSTOM)
+            {
+                cacheRegion = rawReader.readString();
+            }
+            cacheValueKey = rawReader.readObject();
         }
-        final Object cacheValueKey = this.useRawSerialForm ? rawReader.readObject() : reader.readObject(CACHE_VALUE_KEY);
+        else
+        {
+            final byte literalOrdinal = reader.readByte(CACHE_REGION_TYPE);
+            literal = CacheRegion.values()[literalOrdinal];
+            if (literal == CacheRegion.CUSTOM)
+            {
+                cacheRegion = reader.readString(CACHE_REGION);
+            }
+            cacheValueKey = reader.readObject(CACHE_VALUE_KEY);
+        }
+
+        cacheRegion = cacheRegion != null ? cacheRegion : literal.getCacheRegionName();
 
         try
         {

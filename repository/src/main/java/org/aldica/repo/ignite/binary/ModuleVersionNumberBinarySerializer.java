@@ -8,7 +8,6 @@ import java.lang.reflect.Field;
 
 import org.alfresco.repo.module.ModuleVersionNumber;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
@@ -46,7 +45,7 @@ public class ModuleVersionNumberBinarySerializer implements BinarySerializer
         }
     }
 
-    protected boolean useRawSerialForm = true;
+    protected boolean useRawSerialForm = false;
 
     /**
      * @param useRawSerialForm
@@ -96,9 +95,7 @@ public class ModuleVersionNumberBinarySerializer implements BinarySerializer
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
 
-        final BinaryRawReader rawReader = reader.rawReader();
-
-        final String version = this.useRawSerialForm ? rawReader.readString() : reader.readString(VERSION);
+        final String version = this.useRawSerialForm ? reader.rawReader().readString() : reader.readString(VERSION);
         // null will never occur, but technically possible
         final ComparableVersion delegate = new ComparableVersion(version != null ? version : "");
 

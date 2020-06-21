@@ -4,22 +4,63 @@
    - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
 <configuration>
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="ERROUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
-            </pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="ERROR">
-        <appender-ref ref="STDOUT" />
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${project.build.directory}/junit.log</file>
+
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+
+    <root level="INFO">
+        <appender-ref ref="FILE" />
+        <appender-ref ref="ERROUT" />
     </root>
 
-    <logger name="${aldica.ignite-common.basePackage}" level="INFO" />
-    <logger name="${project.basePackage}" level="INFO" />
-    <logger name="${project.basePackage}.cache.SimpleCacheInstance" level="INFO" />
+    <logger name="${project.basePackage}.binary.CacheRegionKeyBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.CacheRegionValueKeyBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.QNameBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.StoreRefBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.NodeRefBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.ContentDataBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.ModuleVersionNumberBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.MLTextBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
 
-    <logger name="org.apache.http.wire" level="INFO" />
-    <logger name="org.jboss.resteasy" level="INFO" />
+    <logger name="${project.basePackage}.cache.AlfrescoCacheScenariosConsistencyTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
 
 </configuration>

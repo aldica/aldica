@@ -4,6 +4,9 @@
 package org.aldica.repo.ignite.binary;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.StoreRef;
@@ -17,12 +20,24 @@ import org.apache.ignite.binary.BinaryWriter;
 /**
  * Instances of this class handle (de-)serialisations of {@link NodeRef} instances in order to optimise their serial form. This
  * implementation primarily aims to optimise handling of well-known {@link StoreRef stores} as part of the node reference, and flatten the
- * serial form - instead of writing the store as a nested, complex object - in case a custom store needs to be handled
+ * serial form - instead of writing the store as a nested, complex object - in case a custom store needs to be handled.
  *
  * @author Axel Faust
  */
 public class NodeRefBinarySerializer implements BinarySerializer
 {
+
+    public static final StoreRef REF_USER_ALFRESCO_USER_STORE = new StoreRef("user://alfrescoUserStore");
+
+    public static final StoreRef REF_SYSTEM_SYSTEM = new StoreRef("system://system");
+
+    public static final StoreRef REF_WORKSPACE_LIGHT_WEIGHT_VERSION_STORE = new StoreRef("workspace://lightWeightVersionStore");
+
+    public static final StoreRef REF_WORKSPACE_VERSION2STORE = new StoreRef("workspace://version2Store");
+
+    public static final StoreRef REF_ARCHIVE_SPACES_STORE = StoreRef.STORE_REF_ARCHIVE_SPACESSTORE;
+
+    public static final StoreRef REF_WORKSPACE_SPACES_STORE = StoreRef.STORE_REF_WORKSPACE_SPACESSTORE;
 
     private static final String STORE_TYPE = "storeType";
 
@@ -32,46 +47,39 @@ public class NodeRefBinarySerializer implements BinarySerializer
 
     private static final String ID = "id";
 
-    // store constant values are the typical default IDs when Alfresco is bootstrapped, but are not treated as IDs here - rather re-used for
-    // familiarity
+    private static final String PROTOCOL_USER = "user";
 
-    private static final byte USER_ALFRESCO_USER_STORE = 1;
+    private static final String PROTOCOL_SYSTEM = "system";
 
-    private static final byte SYSTEM_SYSTEM = 2;
+    private static final StoreRef[] STORES = { REF_USER_ALFRESCO_USER_STORE, REF_SYSTEM_SYSTEM, REF_WORKSPACE_LIGHT_WEIGHT_VERSION_STORE,
+            REF_WORKSPACE_VERSION2STORE, REF_ARCHIVE_SPACES_STORE, REF_WORKSPACE_SPACES_STORE };
 
-    private static final byte WORKSPACE_LIGHT_WEIGHT_VERSION_STORE = 3;
+    private static final String[] PROTOCOLS = { PROTOCOL_USER, PROTOCOL_SYSTEM, StoreRef.PROTOCOL_ARCHIVE, StoreRef.PROTOCOL_WORKSPACE };
 
-    private static final byte WORKSPACE_VERSION2STORE = 4;
+    private static final byte CUSTOM_STORE = (byte) STORES.length;
 
-    private static final byte ARCHIVE_SPACES_STORE = 5;
+    private static final byte KNOWN_PROTOCOL = (byte) (CUSTOM_STORE + 1);
 
-    private static final byte WORKSPACE_SPACES_STORE = 6;
+    private static Map<StoreRef, Byte> KNOWN_STORES;
 
-    private static final byte CUSTOM_STORE = 7;
+    private static Map<String, Byte> KNOWN_PROTOCOLS;
 
-    private static final String STR_USER_ALFRESCO_USER_STORE = "user://alfrescoUserStore";
+    static
+    {
+        final Map<StoreRef, Byte> knownStores = new HashMap<>(6);
+        for (int idx = 0; idx < STORES.length; idx++)
+        {
+            knownStores.put(STORES[idx], (byte) idx);
+        }
+        KNOWN_STORES = Collections.unmodifiableMap(knownStores);
 
-    private static final String STR_SYSTEM_SYSTEM = "system://system";
-
-    private static final String STR_WORKSPACE_LIGHT_WEIGHT_VERSION_STORE = "workspace://lightWeightVersionStore";
-
-    private static final String STR_WORKSPACE_VERSION2STORE = "workspace://version2Store";
-
-    private static final String STR_ARCHIVE_SPACES_STORE = "archive://SpacesStore";
-
-    private static final String STR_WORKSPACE_SPACES_STORE = "workspace://SpacesStore";
-
-    private static final StoreRef REF_USER_ALFRESCO_USER_STORE = new StoreRef(STR_USER_ALFRESCO_USER_STORE);
-
-    private static final StoreRef REF_SYSTEM_SYSTEM = new StoreRef(STR_SYSTEM_SYSTEM);
-
-    private static final StoreRef REF_WORKSPACE_LIGHT_WEIGHT_VERSION_STORE = new StoreRef(STR_WORKSPACE_LIGHT_WEIGHT_VERSION_STORE);
-
-    private static final StoreRef REF_WORKSPACE_VERSION2STORE = new StoreRef(STR_WORKSPACE_VERSION2STORE);
-
-    private static final StoreRef REF_ARCHIVE_SPACES_STORE = new StoreRef(STR_ARCHIVE_SPACES_STORE);
-
-    private static final StoreRef REF_WORKSPACE_SPACES_STORE = new StoreRef(STR_WORKSPACE_SPACES_STORE);
+        final Map<String, Byte> knownProtocols = new HashMap<>(4);
+        for (int idx = 0; idx < PROTOCOLS.length; idx++)
+        {
+            knownProtocols.put(PROTOCOLS[idx], (byte) idx);
+        }
+        KNOWN_PROTOCOLS = Collections.unmodifiableMap(knownProtocols);
+    }
 
     private static final Field STORE_REF_FIELD;
 
@@ -93,7 +101,7 @@ public class NodeRefBinarySerializer implements BinarySerializer
         }
     }
 
-    protected boolean useRawSerialForm = true;
+    protected boolean useRawSerialForm = false;
 
     /**
      * @param useRawSerialForm
@@ -122,29 +130,18 @@ public class NodeRefBinarySerializer implements BinarySerializer
         final StoreRef storeRef = node.getStoreRef();
         final String id = node.getId();
 
-        byte storeType;
-        switch (storeRef.toString())
+        Byte storeType = KNOWN_STORES.get(storeRef);
+        if (storeType == null)
         {
-            case STR_USER_ALFRESCO_USER_STORE:
-                storeType = USER_ALFRESCO_USER_STORE;
-                break;
-            case STR_SYSTEM_SYSTEM:
-                storeType = SYSTEM_SYSTEM;
-                break;
-            case STR_WORKSPACE_LIGHT_WEIGHT_VERSION_STORE:
-                storeType = WORKSPACE_LIGHT_WEIGHT_VERSION_STORE;
-                break;
-            case STR_WORKSPACE_VERSION2STORE:
-                storeType = WORKSPACE_VERSION2STORE;
-                break;
-            case STR_ARCHIVE_SPACES_STORE:
-                storeType = ARCHIVE_SPACES_STORE;
-                break;
-            case STR_WORKSPACE_SPACES_STORE:
-                storeType = WORKSPACE_SPACES_STORE;
-                break;
-            default:
+            final Byte protocolType = KNOWN_PROTOCOLS.get(storeRef.getProtocol());
+            if (protocolType != null)
+            {
+                storeType = Byte.valueOf((byte) (KNOWN_PROTOCOL + protocolType.byteValue()));
+            }
+            else
+            {
                 storeType = CUSTOM_STORE;
+            }
         }
 
         if (this.useRawSerialForm)
@@ -154,6 +151,9 @@ public class NodeRefBinarySerializer implements BinarySerializer
             if (storeType == CUSTOM_STORE)
             {
                 rawWriter.writeString(storeRef.getProtocol());
+            }
+            if (storeType == CUSTOM_STORE || storeType >= KNOWN_PROTOCOL)
+            {
                 rawWriter.writeString(storeRef.getIdentifier());
             }
             rawWriter.writeString(id);
@@ -164,6 +164,9 @@ public class NodeRefBinarySerializer implements BinarySerializer
             if (storeType == CUSTOM_STORE)
             {
                 writer.writeString(STORE_PROTOCOL, storeRef.getProtocol());
+            }
+            if (storeType == CUSTOM_STORE || storeType >= KNOWN_PROTOCOL)
+            {
                 writer.writeString(STORE_ID, storeRef.getIdentifier());
             }
             writer.writeString(ID, id);
@@ -183,41 +186,68 @@ public class NodeRefBinarySerializer implements BinarySerializer
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
 
-        final BinaryRawReader rawReader = reader.rawReader();
+        // need two separate branches as rawReader() sets internal flag
+        // otherwise would have used ternary read, e.g. this.useRawSerialForm ? rawReader.readByte() : reader.readByte(STORE_TYPE);
 
-        final byte storeType = this.useRawSerialForm ? rawReader.readByte() : reader.readByte(STORE_TYPE);
-
-        StoreRef storeRef;
-        switch (storeType)
+        final byte storeType;
+        StoreRef storeRef = null;
+        String id;
+        if (this.useRawSerialForm)
         {
-            case USER_ALFRESCO_USER_STORE:
-                storeRef = REF_USER_ALFRESCO_USER_STORE;
-                break;
-            case SYSTEM_SYSTEM:
-                storeRef = REF_SYSTEM_SYSTEM;
-                break;
-            case WORKSPACE_LIGHT_WEIGHT_VERSION_STORE:
-                storeRef = REF_WORKSPACE_LIGHT_WEIGHT_VERSION_STORE;
-                break;
-            case WORKSPACE_VERSION2STORE:
-                storeRef = REF_WORKSPACE_VERSION2STORE;
-                break;
-            case ARCHIVE_SPACES_STORE:
-                storeRef = REF_ARCHIVE_SPACES_STORE;
-                break;
-            case WORKSPACE_SPACES_STORE:
-                storeRef = REF_WORKSPACE_SPACES_STORE;
-                break;
-            case CUSTOM_STORE:
-                final String protocol = this.useRawSerialForm ? rawReader.readString() : reader.readString(STORE_PROTOCOL);
-                final String identifier = this.useRawSerialForm ? rawReader.readString() : reader.readString(STORE_ID);
+            final BinaryRawReader rawReader = reader.rawReader();
+            storeType = rawReader.readByte();
+
+            if (storeType == CUSTOM_STORE)
+            {
+                final String protocol = rawReader.readString();
+                final String identifier = rawReader.readString();
                 storeRef = new StoreRef(protocol, identifier);
-                break;
-            default:
-                throw new BinaryObjectException("Read unsupported store type flag value " + storeType);
+            }
+            else if (storeType > KNOWN_PROTOCOL)
+            {
+                final byte protocolType = (byte) (storeType - KNOWN_PROTOCOL);
+                if (protocolType >= PROTOCOLS.length || protocolType < 0)
+                {
+                    throw new BinaryObjectException("Read unsupported protocol flag value " + protocolType);
+                }
+                final String protocol = PROTOCOLS[protocolType];
+                final String identifier = rawReader.readString();
+                storeRef = new StoreRef(protocol, identifier);
+            }
+            id = rawReader.readString();
+        }
+        else
+        {
+            storeType = reader.readByte(STORE_TYPE);
+
+            if (storeType == CUSTOM_STORE)
+            {
+                final String protocol = reader.readString(STORE_PROTOCOL);
+                final String identifier = reader.readString(STORE_ID);
+                storeRef = new StoreRef(protocol, identifier);
+            }
+            else if (storeType > KNOWN_PROTOCOL)
+            {
+                final byte protocolType = (byte) (storeType - KNOWN_PROTOCOL);
+                if (protocolType >= PROTOCOLS.length || protocolType < 0)
+                {
+                    throw new BinaryObjectException("Read unsupported protocol flag value " + protocolType);
+                }
+                final String protocol = PROTOCOLS[protocolType];
+                final String identifier = reader.readString(STORE_ID);
+                storeRef = new StoreRef(protocol, identifier);
+            }
+            id = reader.readString(ID);
         }
 
-        final String id = this.useRawSerialForm ? rawReader.readString() : reader.readString(ID);
+        if (storeType < 0)
+        {
+            throw new BinaryObjectException("Read unsupported store type flag value " + storeType);
+        }
+        else if (storeType < CUSTOM_STORE)
+        {
+            storeRef = STORES[storeType];
+        }
 
         try
         {

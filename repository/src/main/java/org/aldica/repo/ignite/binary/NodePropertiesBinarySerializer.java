@@ -13,11 +13,8 @@ import java.util.function.Function;
 import org.aldica.repo.ignite.cache.NodePropertiesCacheMap;
 import org.alfresco.repo.domain.contentdata.ContentDataDAO;
 import org.alfresco.repo.domain.node.ContentDataWithId;
-import org.alfresco.repo.domain.node.NodeDAO;
 import org.alfresco.repo.domain.qname.QNameDAO;
 import org.alfresco.service.cmr.repository.ContentData;
-import org.alfresco.service.cmr.repository.NodeRef;
-import org.alfresco.service.cmr.repository.StoreRef;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -36,14 +33,22 @@ import org.springframework.context.ApplicationContextAware;
  * marshalling, resulting in generally smaller binary representations.
  *
  * This implementation is capable of replacing {@link QName property keys} and {@link ContentDataWithId content data values} with their
- * corresponding IDs for a more efficient serial form. It would have been possible to also partially optimise {@link NodeRef node reference
- * values} by replacing the complex {@link StoreRef store} construct with its ID, but the Alfresco {@link NodeDAO} does not offer an API to
- * selectively resolve such an ID back to the correct reference.
+ * corresponding IDs for a more efficient serial form. These two replacements are guarded by separate configuration flags as both have
+ * different levels of impact on performance. It can be reasonably expected that QName instances can be efficiently resolved using fully
+ * replicated caches, due to reasonably low numbers of class/feature qualified names from dictionary models (in the hundreds to low
+ * thousands range). But ContentDataWithId instances can well be in the millions or billions for larger systems, and their resolution miss
+ * partitioned caches and/or require network calls to retrieve values from different grid members.
  *
  * @author Axel Faust
  */
 public class NodePropertiesBinarySerializer implements BinarySerializer, ApplicationContextAware
 {
+
+    private static final String VALUES = "values";
+
+    private static final String REGULAR_VALUES = "regularValues";
+
+    private static final String CONTENT_ID_VALUES = "contentIdValues";
 
     private static final byte FLAG_QNAME_ID = 1;
 
@@ -79,9 +84,11 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
 
     protected ContentDataDAO contentDataDAO;
 
+    protected boolean useIdsWhenReasonable = false;
+
     protected boolean useIdsWhenPossible = false;
 
-    protected boolean useRawSerialForm = true;
+    protected boolean useRawSerialForm = false;
 
     /**
      * {@inheritDoc}
@@ -90,6 +97,15 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
     public void setApplicationContext(final ApplicationContext applicationContext) throws BeansException
     {
         this.applicationContext = applicationContext;
+    }
+
+    /**
+     * @param useIdsWhenReasonable
+     *            the useIdsWhenReasonable to set
+     */
+    public void setUseIdsWhenReasonable(final boolean useIdsWhenReasonable)
+    {
+        this.useIdsWhenReasonable = useIdsWhenReasonable;
     }
 
     /**
@@ -187,7 +203,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
                 flags |= FLAG_NULL;
             }
 
-            if (this.useIdsWhenPossible)
+            if (this.useIdsWhenReasonable)
             {
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(key);
                 if (qnamePair != null)
@@ -195,30 +211,33 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
                     keyId = qnamePair.getFirst();
                 }
 
-                if (value instanceof ContentDataWithId)
+                if (this.useIdsWhenPossible)
                 {
-                    valueIds = new long[] { ((ContentDataWithId) value).getId() };
-                }
-                else if (value instanceof List<?>)
-                {
-                    final long[] ids = new long[((List<?>) value).size()];
-                    int idx = 0;
-                    boolean allIds = true;
-                    for (final Object element : (List<?>) value)
+                    if (value instanceof ContentDataWithId)
                     {
-                        if (element instanceof ContentDataWithId)
-                        {
-                            ids[idx++] = ((ContentDataWithId) element).getId();
-                        }
-                        else
-                        {
-                            allIds = false;
-                        }
+                        valueIds = new long[] { ((ContentDataWithId) value).getId() };
                     }
-
-                    if (allIds)
+                    else if (value instanceof List<?>)
                     {
-                        valueIds = ids;
+                        final long[] ids = new long[((List<?>) value).size()];
+                        int idx = 0;
+                        boolean allIds = true;
+                        for (final Object element : (List<?>) value)
+                        {
+                            if (element instanceof ContentDataWithId)
+                            {
+                                ids[idx++] = ((ContentDataWithId) element).getId();
+                            }
+                            else
+                            {
+                                allIds = false;
+                            }
+                        }
+
+                        if (allIds)
+                        {
+                            valueIds = ids;
+                        }
                     }
                 }
             }
@@ -337,14 +356,18 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
         {
             final byte flags = rawReader.readByte();
 
+            if (!this.useIdsWhenReasonable && (flags & FLAG_QNAME_ID) == FLAG_QNAME_ID)
+            {
+                throw new BinaryObjectException("Serializer is not configured to use IDs in place of QName keys");
+            }
+            if (!this.useIdsWhenPossible && (flags & FLAG_CONTENT_DATA_VALUE_ID) == FLAG_CONTENT_DATA_VALUE_ID)
+            {
+                throw new BinaryObjectException("Serializer is not configured to use IDs in place of ContentData values");
+            }
+
             final QName key;
             if ((flags & FLAG_QNAME_ID) == FLAG_QNAME_ID)
             {
-                if (!this.useIdsWhenPossible)
-                {
-                    throw new BinaryObjectException("Serializer is not configured to use IDs in place of keys/values");
-                }
-
                 final long id = rawReader.readLong();
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(id);
                 if (qnamePair == null)
@@ -482,30 +505,37 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
             properties.forEach((qn, v) -> {
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(qn);
 
-                if (v instanceof ContentDataWithId)
+                if (this.useIdsWhenPossible)
                 {
-                    contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ((ContentDataWithId) v).getId());
-                }
-                else if (v instanceof List<?>)
-                {
-                    final Long[] ids = new Long[((List<?>) v).size()];
-                    int idx = 0;
-                    boolean allContent = true;
-                    for (final Object element : (List<?>) v)
+                    if (v instanceof ContentDataWithId)
                     {
-                        if (element instanceof ContentDataWithId)
+                        contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ((ContentDataWithId) v).getId());
+                    }
+                    else if (v instanceof List<?>)
+                    {
+                        final Long[] ids = new Long[((List<?>) v).size()];
+                        int idx = 0;
+                        boolean allContent = true;
+                        for (final Object element : (List<?>) v)
                         {
-                            ids[idx++] = ((ContentDataWithId) element).getId();
+                            if (element instanceof ContentDataWithId)
+                            {
+                                ids[idx++] = ((ContentDataWithId) element).getId();
+                            }
+                            else
+                            {
+                                allContent = false;
+                            }
+                        }
+
+                        if (allContent)
+                        {
+                            contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ids);
                         }
                         else
                         {
-                            allContent = false;
+                            regularProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, v);
                         }
-                    }
-
-                    if (allContent)
-                    {
-                        contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ids);
                     }
                     else
                     {
@@ -518,46 +548,61 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
                 }
             });
 
-            writer.writeMap("regularValues", regularProperties);
-            writer.writeMap("contentValues", contentProperties);
+            writer.writeMap(REGULAR_VALUES, regularProperties);
+            writer.writeMap(CONTENT_ID_VALUES, contentProperties);
+        }
+        else if (this.useIdsWhenReasonable)
+        {
+            final Map<Serializable, Serializable> mappedProperties = new HashMap<>();
+            properties.forEach((qn, v) -> {
+                final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(qn);
+                mappedProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, v);
+            });
+
+            writer.writeMap(VALUES, mappedProperties);
         }
         else
         {
-            writer.writeMap("values", properties);
+            writer.writeMap(VALUES, properties);
         }
     }
 
     protected void readPropertiesRegularSerialForm(final NodePropertiesCacheMap properties, final BinaryReader reader)
     {
+        final Function<Entry<Object, Serializable>, QName> resolveQName = entry -> {
+            final Object key = entry.getKey();
+            QName qn;
+            if (key instanceof Long)
+            {
+                if (!this.useIdsWhenReasonable)
+                {
+                    throw new BinaryObjectException("Serializer is not configured to use IDs in place of QName keys");
+                }
+
+                final Pair<Long, QName> qnamePair = this.qnameDAO.getQName((Long) key);
+                if (qnamePair == null)
+                {
+                    throw new BinaryObjectException("Cannot resolve QName for ID " + key);
+                }
+                qn = qnamePair.getSecond();
+            }
+            else
+            {
+                qn = (QName) key;
+            }
+            return qn;
+        };
+
         if (this.useIdsWhenPossible)
         {
-            final Map<Object, Serializable> regularProperties = reader.readMap("regularValues");
-
-            final Function<Entry<Object, Serializable>, QName> resolveQName = entry -> {
-                final Object key = entry.getKey();
-                QName qn;
-                if (key instanceof Long)
-                {
-                    final Pair<Long, QName> qnamePair = this.qnameDAO.getQName((Long) key);
-                    if (qnamePair == null)
-                    {
-                        throw new BinaryObjectException("Cannot resolve QName for ID " + key);
-                    }
-                    qn = qnamePair.getSecond();
-                }
-                else
-                {
-                    qn = (QName) key;
-                }
-                return qn;
-            };
+            final Map<Object, Serializable> regularProperties = reader.readMap(REGULAR_VALUES);
 
             for (final Entry<Object, Serializable> regularEntry : regularProperties.entrySet())
             {
                 properties.put(resolveQName.apply(regularEntry), regularEntry.getValue());
             }
 
-            final Map<Object, Serializable> contentProperties = reader.readMap("contentValues");
+            final Map<Object, Serializable> contentProperties = reader.readMap(CONTENT_ID_VALUES);
             for (final Entry<Object, Serializable> contentEntry : contentProperties.entrySet())
             {
                 final QName qn = resolveQName.apply(contentEntry);
@@ -594,36 +639,42 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
         }
         else
         {
-            final Map<QName, Serializable> values = reader.readMap("values");
-            properties.putAll(values);
+            final Map<Object, Serializable> values = reader.readMap(VALUES);
+            values.entrySet().forEach(entry -> {
+                final QName qn = resolveQName.apply(entry);
+                properties.put(qn, entry.getValue());
+            });
         }
     }
 
     protected void ensureDAOsAvailable() throws BinaryObjectException
     {
-        if (this.useIdsWhenPossible && this.qnameDAO == null)
+        if (this.useIdsWhenReasonable || this.useIdsWhenPossible)
         {
-            try
+            if (this.qnameDAO == null)
             {
-                this.qnameDAO = this.applicationContext.getBean("qnameDAO", QNameDAO.class);
+                try
+                {
+                    this.qnameDAO = this.applicationContext.getBean("qnameDAO", QNameDAO.class);
+                }
+                catch (final BeansException be)
+                {
+                    throw new BinaryObjectException(
+                            "Cannot (de-)serialise node properties in current configuration without access to QNameDAO", be);
+                }
             }
-            catch (final BeansException be)
-            {
-                throw new BinaryObjectException("Cannot (de-)serialise node properties in current configuration without access to QNameDAO",
-                        be);
-            }
-        }
 
-        if (this.useIdsWhenPossible && this.contentDataDAO == null)
-        {
-            try
+            if (this.useIdsWhenPossible || this.contentDataDAO == null)
             {
-                this.contentDataDAO = this.applicationContext.getBean("contentDataDAO", ContentDataDAO.class);
-            }
-            catch (final BeansException be)
-            {
-                throw new BinaryObjectException(
-                        "Cannot (de-)serialise node properties in current configuration without access to ContentDataDAO", be);
+                try
+                {
+                    this.contentDataDAO = this.applicationContext.getBean("contentDataDAO", ContentDataDAO.class);
+                }
+                catch (final BeansException be)
+                {
+                    throw new BinaryObjectException(
+                            "Cannot (de-)serialise node properties in current configuration without access to ContentDataDAO", be);
+                }
             }
         }
     }

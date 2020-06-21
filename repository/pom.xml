@@ -51,6 +51,13 @@
                 <classifier>tests</classifier>
                 <scope>test</scope>
             </dependency>
+
+            <dependency>
+                <groupId>org.easymock</groupId>
+                <artifactId>easymock</artifactId>
+                <version>${easymock.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -142,6 +149,11 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymock</artifactId>
         </dependency>
     </dependencies>
 
@@ -278,6 +290,21 @@
                                 </run>
                             </image>
                         </images>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <argLine><![CDATA[
+                            -Dfile.encoding=UTF-8
+                            -Djava.net.preferIPv4Stack=true
+                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                            -DIGNITE_QUIET=true
+                            -DIGNITE_NO_ASCII=true
+                            -DIGNITE_UPDATE_NOTIFIER=false
+                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                        ]]></argLine>
                     </configuration>
                 </plugin>
             </plugins>
