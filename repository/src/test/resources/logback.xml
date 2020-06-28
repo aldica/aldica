@@ -58,6 +58,9 @@
     <logger name="${project.basePackage}.binary.MLTextBinarySerializerTests" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
+    <logger name="${project.basePackage}.binary.NodePropertiesBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
 
     <logger name="${project.basePackage}.cache.AlfrescoCacheScenariosConsistencyTests" additivity="false">
         <appender-ref ref="STDOUT" />

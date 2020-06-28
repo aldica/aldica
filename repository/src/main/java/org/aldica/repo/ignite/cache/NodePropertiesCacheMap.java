@@ -23,6 +23,15 @@ public class NodePropertiesCacheMap extends HashMap<QName, Serializable>
     private static final long serialVersionUID = -5207020576251149198L;
 
     /**
+     * Creates a new empty instance.
+     *
+     */
+    public NodePropertiesCacheMap()
+    {
+        super();
+    }
+
+    /**
      * Creates a new instance as the copy of an existing map.
      *
      * @param m

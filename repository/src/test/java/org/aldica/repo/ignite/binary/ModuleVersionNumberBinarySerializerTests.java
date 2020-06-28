@@ -98,8 +98,8 @@ public class ModuleVersionNumberBinarySerializerTests extends GridTestsBase
             final IgniteCache<Long, ModuleVersionNumber> referenceCache = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, ModuleVersionNumber> cache = grid.getOrCreateCache(cacheConfig);
 
-            // inherent externalizable serialisation appears to be more efficient by an unexpected margin - -12.5%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", -0.125);
+            // inherent externalizable serialisation appears to be more efficient by an unexpected margin - -13%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", -0.13);
         }
         finally
         {

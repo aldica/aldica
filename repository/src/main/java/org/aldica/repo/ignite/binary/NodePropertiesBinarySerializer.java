@@ -3,6 +3,7 @@ package org.aldica.repo.ignite.binary;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -505,37 +506,30 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
             properties.forEach((qn, v) -> {
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(qn);
 
-                if (this.useIdsWhenPossible)
+                if (v instanceof ContentDataWithId)
                 {
-                    if (v instanceof ContentDataWithId)
+                    contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ((ContentDataWithId) v).getId());
+                }
+                else if (v instanceof List<?>)
+                {
+                    final Long[] ids = new Long[((List<?>) v).size()];
+                    int idx = 0;
+                    boolean allContent = true;
+                    for (final Object element : (List<?>) v)
                     {
-                        contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ((ContentDataWithId) v).getId());
-                    }
-                    else if (v instanceof List<?>)
-                    {
-                        final Long[] ids = new Long[((List<?>) v).size()];
-                        int idx = 0;
-                        boolean allContent = true;
-                        for (final Object element : (List<?>) v)
+                        if (element instanceof ContentDataWithId)
                         {
-                            if (element instanceof ContentDataWithId)
-                            {
-                                ids[idx++] = ((ContentDataWithId) element).getId();
-                            }
-                            else
-                            {
-                                allContent = false;
-                            }
-                        }
-
-                        if (allContent)
-                        {
-                            contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ids);
+                            ids[idx++] = ((ContentDataWithId) element).getId();
                         }
                         else
                         {
-                            regularProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, v);
+                            allContent = false;
                         }
+                    }
+
+                    if (allContent)
+                    {
+                        contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ids);
                     }
                     else
                     {
@@ -563,7 +557,9 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
         }
         else
         {
-            writer.writeMap(VALUES, properties);
+            // must be wrapped otherwise it would be written as self-referential handle
+            // effectively preventing ANY values from being written
+            writer.writeMap(VALUES, Collections.unmodifiableMap(properties));
         }
     }
 
