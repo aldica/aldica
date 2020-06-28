@@ -67,7 +67,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
     }
 
     protected static IgniteConfiguration createConfiguration(final ApplicationContext applicationContext,
-            final boolean idsWhenPossible,
+            final boolean idsWhenReasonable,
             final boolean serialForm, final String... regionNames)
     {
         final IgniteConfiguration conf = createConfiguration(1, false, null);
@@ -78,7 +78,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForMLText.setTypeName(MLText.class.getName());
         final MLTextBinarySerializer serializer = new MLTextBinarySerializer();
         serializer.setApplicationContext(applicationContext);
-        serializer.setUseIdsWhenReasonable(idsWhenPossible);
+        serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseRawSerialForm(serialForm);
         binaryTypeConfigurationForMLText.setSerializer(serializer);
 
@@ -231,19 +231,19 @@ public class MLTextBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, MLText> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache2 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // 22.5%
+                // 24%
                 this.efficiencyImpl(referenceGrid, useIdGrid, referenceCache2, cache2, "aldica raw serial (ID substitution)",
-                        "aldica optimised", 0.225);
+                        "aldica optimised", 0.24);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
                 final IgniteCache<Long, MLText> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache3 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // 22.5%
+                // 24%
                 this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3,
                         "aldica raw serial (ID substitution)",
-                        "aldica raw serial", 0.225);
+                        "aldica raw serial", 0.24);
             }
             finally
             {

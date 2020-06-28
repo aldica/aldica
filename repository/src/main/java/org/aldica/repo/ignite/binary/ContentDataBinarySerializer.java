@@ -58,7 +58,7 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
 
     private static final byte FLAG_ENCODING_ID = 8;
 
-    // locale is technically never null in ConentData (ensured via constructor)
+    // locale is technically never null in ContentData (ensured via constructor)
     private static final byte FLAG_LOCALE_NULL = 16;
 
     private static final byte FLAG_LOCALE_ID = 32;

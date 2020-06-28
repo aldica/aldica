@@ -1,5 +1,6 @@
 package org.aldica.repo.ignite.binary;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -130,7 +131,7 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
             {
                 // must be wrapped otherwise it would be written as self-referential handle
                 // effectively preventing ANY values from being written
-                writer.writeMap("values", new HashMap<>(mlText));
+                writer.writeMap("values", Collections.unmodifiableMap(mlText));
             }
         }
     }

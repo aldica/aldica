@@ -106,7 +106,7 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
     }
 
     protected static IgniteConfiguration createConfiguration(final ApplicationContext applicationContext,
-            final boolean idsWhenPossible,
+            final boolean idsWhenReasonable,
             final boolean serialForm, final String... regionNames)
     {
         final IgniteConfiguration conf = createConfiguration(1, false, null);
@@ -115,7 +115,7 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
 
         final ContentDataBinarySerializer serializer = new ContentDataBinarySerializer();
         serializer.setApplicationContext(applicationContext);
-        serializer.setUseIdsWhenReasonable(idsWhenPossible);
+        serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseRawSerialForm(serialForm);
 
         final BinaryTypeConfiguration binaryTypeConfigurationForContentData = new BinaryTypeConfiguration();
