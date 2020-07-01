@@ -32,6 +32,12 @@
                 <property name="bm:dateF">
                     <type>d:datetime</type>
                 </property>
+                <property name="bm:nodeG">
+                    <type>d:noderef</type>
+                </property>
+                <property name="bm:qnameH">
+                    <type>d:qname</type>
+                </property>
                 <property name="bm:lovString">
                     <type>d:text</type>
                     <constraints>

@@ -19,12 +19,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.thedeanda.lorem.Lorem;
-import com.thedeanda.lorem.LoremIpsum;
+import org.aldica.repo.ignite.binary.Namespace;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.batch.BatchProcessWorkProvider;
 import org.alfresco.repo.batch.BatchProcessor;
@@ -32,7 +32,11 @@ import org.alfresco.repo.batch.BatchProcessor.BatchProcessWorker;
 import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
-import org.alfresco.service.cmr.repository.*;
+import org.alfresco.service.cmr.repository.ContentService;
+import org.alfresco.service.cmr.repository.ContentWriter;
+import org.alfresco.service.cmr.repository.NodeRef;
+import org.alfresco.service.cmr.repository.NodeService;
+import org.alfresco.service.cmr.repository.StoreRef;
 import org.alfresco.service.cmr.rule.RuleService;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
@@ -49,11 +53,16 @@ import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.springframework.extensions.webscripts.WebScriptResponse;
 
+import com.thedeanda.lorem.Lorem;
+import com.thedeanda.lorem.LoremIpsum;
+
 /**
  * @author Axel Faust
  */
 public class GenerateNodes extends AbstractWebScript implements InitializingBean
 {
+
+    private static final Namespace[] NAMESPACES = Namespace.values();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenerateNodes.class);
 
@@ -69,6 +78,10 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
 
     private static final QName DATE_F = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "dateF");
 
+    private static final QName NODE_G = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "nodeG");
+
+    private static final QName QNAME_H = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "qnameH");
+
     private static final QName LOV_STRING = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "lovString");
 
     private static final Random RN_JESUS = new SecureRandom();
@@ -78,11 +91,11 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
 
     private static final int MIN_DAY = (int) LocalDate.of(2010, 1, 1).toEpochDay();
 
-    private static final int MAX_DAY = (int) LocalDate.now().toEpochDay();
+    private static final int MAX_DAY = (int) LocalDate.now(ZoneOffset.UTC).toEpochDay();
 
     private static final long MIN_TIME = LocalDateTime.of(2010, 1, 1, 0, 0).toEpochSecond(ZoneOffset.UTC);
 
-    private static final long MAX_TIME = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC);
+    private static final long MAX_TIME = LocalDateTime.now(ZoneOffset.UTC).toEpochSecond(ZoneOffset.UTC);
 
     private static final Lorem lorem = LoremIpsum.getInstance();
 
@@ -127,7 +140,8 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         this.nodeService = nodeService;
     }
 
-    public void setContentService(ContentService contentService) {
+    public void setContentService(final ContentService contentService)
+    {
         this.contentService = contentService;
     }
 
@@ -217,15 +231,11 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         return targetFolders;
     }
 
-    protected void generateNodes(
-            final List<NodeRef> parentFolders,
-            final int nodeCount,
+    protected void generateNodes(final List<NodeRef> parentFolders, final int nodeCount,
             final int threads,
             final Function<Integer, String> nodeNameProvider,
             final Supplier<Pair<QName, Map<QName, Serializable>>> typeAndPropertiesProvider,
-            final Consumer<List<NodeRef>> nodeBatchProcessor,
-            final int wordsPerNode
-    )
+            final Consumer<List<NodeRef>> nodeBatchProcessor, final int wordsPerNode)
     {
         LOGGER.info("Starting actual generation step for {} nodes in {} parent folders with {} threads", nodeCount, parentFolders.size(),
                 threads);
@@ -326,10 +336,12 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
                                 QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, entry), typeAndProperties.getFirst(), properties)
                         .getChildRef();
 
-                if (wordsPerNode > 0) {
+                if (wordsPerNode > 0)
+                {
                     // Generate file content
-                    if (typeAndProperties.getFirst().equals(ContentModel.TYPE_CONTENT)) {
-                        ContentWriter writer = contentService.getWriter(childRef, ContentModel.PROP_CONTENT, true);
+                    if (typeAndProperties.getFirst().equals(ContentModel.TYPE_CONTENT))
+                    {
+                        final ContentWriter writer = GenerateNodes.this.contentService.getWriter(childRef, ContentModel.PROP_CONTENT, true);
                         writer.setMimetype(MimetypeMap.MIMETYPE_TEXT_PLAIN);
                         writer.setEncoding(StandardCharsets.UTF_8.name());
                         writer.putContent(generateFileContent(wordsPerNode));
@@ -377,6 +389,8 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         properties.put(DOUBLE_D, RN_JESUS.nextDouble());
         properties.put(DATE_E, generateDate());
         properties.put(DATE_F, generateDateTime());
+        properties.put(NODE_G, new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, UUID.randomUUID().toString()));
+        properties.put(QNAME_H, QName.createQName(NAMESPACES[RN_JESUS.nextInt(NAMESPACES.length)].getUri(), lorem.getWords(2)));
         properties.put(LOV_STRING, LOVS[RN_JESUS.nextInt(LOVS.length)]);
 
         return new Pair<>(ContentModel.TYPE_CONTENT, properties);
@@ -396,7 +410,8 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         return d;
     }
 
-    protected static String generateFileContent(int length) {
+    protected static String generateFileContent(final int length)
+    {
         return lorem.getWords(0, length);
     }
 }
