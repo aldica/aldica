@@ -217,7 +217,7 @@
                                             -Dsolr.base.url=${docker.tests.searchBaseUrl}
                                             -Dindex.subsystem.name=${docker.tests.searchSubsystem}
                                             -Dcsrf.filter.enabled=false
-                                            -Xms4g -Xmx4g
+                                            -Xms6g -Xmx6g
                                             -Daldica.core.enabled=false
                                         ]]></JAVA_OPTS>
                                     </env>
