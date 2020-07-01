@@ -34,6 +34,9 @@
         <appender-ref ref="ERROUT" />
     </root>
 
+    <logger name="${project.basePackage}.binary.TransactionalCacheRegionKeyBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
     <logger name="${project.basePackage}.binary.CacheRegionKeyBinarySerializerTests" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>

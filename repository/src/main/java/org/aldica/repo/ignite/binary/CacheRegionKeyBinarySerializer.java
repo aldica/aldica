@@ -6,6 +6,7 @@ package org.aldica.repo.ignite.binary;
 import java.lang.reflect.Field;
 
 import org.alfresco.repo.cache.lookup.CacheRegionKey;
+import org.alfresco.repo.cache.lookup.EntityLookupCache;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -15,11 +16,9 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
- * Instances of this class handle (de-)serialisations of {@link CacheRegionKey} instances into more efficient binary representations as
- * would be possible by using the default {@link BinaryMarshaller} by optimising away the hash code instance and reducing the average cost
- * of handling the (typically pre-defined / well-known) region names. Since cache region key instances are immutable and we currently do not
- * use any in-memory queries on cached data using the serial form, this serializer uses {@link BinaryRawWriter} and {@link BinaryRawReader}
- * to achieve an even more compact serial form.
+ * Instances of this class handle (de-)serialisations of {@link EntityLookupCache entity lookup} {@link CacheRegionKey cache region key}
+ * instances into more efficient binary representations as would be possible by using the default {@link BinaryMarshaller} by optimising
+ * away the hash code instance and reducing the average cost of handling the (typically pre-defined / well-known) region names.
  *
  * @author Axel Faust
  */

@@ -3,21 +3,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.repo.ignite.cache;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.alfresco.service.namespace.QName;
 import org.apache.ignite.marshaller.Marshaller;
 
 /**
- * Instances of this class are simply used to differentiate a node properties map inside a cache from any regular map for the purpose of
+ * Instances of this class are simply used to differentiate a node aspects set inside a cache from any regular set for the purpose of
  * {@link Marshaller marshalling}, and allows us to apply special serialisation handling based on this type.
  *
  * @author Axel Faust
  *
  */
-public class NodePropertiesCacheMap extends HashMap<QName, Serializable>
+public class NodeAspectsCacheSet extends HashSet<QName>
 {
 
     private static final long serialVersionUID = -5207020576251149198L;
@@ -26,20 +25,20 @@ public class NodePropertiesCacheMap extends HashMap<QName, Serializable>
      * Creates a new empty instance.
      *
      */
-    public NodePropertiesCacheMap()
+    public NodeAspectsCacheSet()
     {
         super();
     }
 
     /**
-     * Creates a new instance as the copy of an existing map.
+     * Creates a new instance as the copy of an existing set.
      *
-     * @param m
-     *            the map to copy
+     * @param s
+     *            the set to copy
      */
-    public NodePropertiesCacheMap(final Map<QName, Serializable> m)
+    public NodeAspectsCacheSet(final Set<QName> s)
     {
-        super(m);
+        super(s);
     }
 
 }

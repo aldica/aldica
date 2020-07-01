@@ -99,6 +99,11 @@
         </property>
     </bean>
 
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheRegionKey" abstract="true"
+        class="${project.basePackage}.binary.TransactionalCacheRegionKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.cacheKey.useRawSerial}" />
+    </bean>
+
     <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionKey" abstract="true"
         class="${project.basePackage}.binary.CacheRegionKeyBinarySerializer">
         <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.cacheKey.useRawSerial}" />
@@ -139,6 +144,12 @@
     <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedModuleVersionNumber" abstract="true"
         class="${project.basePackage}.binary.ModuleVersionNumberBinarySerializer">
         <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.moduleVersionNumber.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeAspects" abstract="true"
+        class="${project.basePackage}.binary.NodeAspectsBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.nodeAspects.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeAspects.useRawSerial}" />
     </bean>
 
     <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeProperties" abstract="true"

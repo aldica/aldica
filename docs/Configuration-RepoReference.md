@@ -49,7 +49,7 @@ These properties affect the management of off-heap storage regions for system in
 
 | Property | Default Value | Description |
 | --- | ---: | --- |
-| aldica.core.storage.pageSize | ``8192`` | Size (in bytes) for a single memory page size - should ideally be aligned with file system block sizes |
+| aldica.core.storage.pageSize | ``8192`` | Size (in bytes) for a single memory page size - should ideally be aligned with file system block sizes (allowed values: 1024, 2048, 4096, 8192, 16384) |
 | aldica.core.storage.systemInitialSize | ``20971520`` (20 MiB) | Initial size (in bytes) of the data region reserved for internal Ignite data structures / management of the Ignite data grid |
 | aldica.core.storage.systemMaxSize | ``41943040`` (40 MiB) | Maximum size (in bytes) of the data region reserved for internal Ignite data structures / management of the Ignite data grid |
 | aldica.core.storage.defaultStorageRegion.initialSize | ``1073741824`` (1 GiB) | Initial size (in bytes) of the primary data region used to back all Ignite-based caches unless individual caches have been configured to use dedicated data regions |
@@ -58,6 +58,44 @@ These properties affect the management of off-heap storage regions for system in
 | aldica.core.storage.region._&lt;name&gt;_.initialSize |  | Initial size (in bytes) of a dynamic, custom data region (identified by the _name_ fragment in the configuration property) - this property **cannot** be provided via JAVA\_OPTS _-D_ parameters|
 | aldica.core.storage.region._&lt;name&gt;_.maxSize |  | Maximum size (in bytes) of a dynamic, custom data region (identified by the _name_ fragment in the configuration property) - this property **cannot** be provided via JAVA\_OPTS _-D_ parameters| |
 | aldica.core.storage.region._&lt;name&gt;_.swapPath |  | Path to a file system directory in which the dynamic, custom data region (identified by the _name_ fragment in the configuration property) will swap if the available physical memory is not sufficient to handle the size of the data region - this property **cannot** be provided via JAVA\_OPTS _-D_ parameters| |
+
+### Serialisation Optimisation Properties
+
+These properties affect the various custom serialisation optimisations provided by the aldica module to try and reduce the memory footprint of serialised key / value objects.
+
+| Property | Default Value | Description |
+| --- | ---: | --- |
+| aldica.core.binary.optimisation.enabled | `true` | global enablement flag for non-trivial optimisations |
+| aldica.core.binary.optimisation.useRawSerial | `${aldica.core.binary.optimisation.enabled}` | global enablement flag for using raw serial form without structure metadata |
+| aldica.core.binary.optimisation.useIdsWhenReasonable | `${aldica.core.binary.optimisation.enabled}` | global enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` |
+| aldica.core.binary.optimisation.useIdsWhenPossible | `false` | global enablement flag for using dynamic value substitution for all types of complex entities that can be resolved via secondary caches, no matter the cost / overhead |
+| aldica.core.binary.optimisation.txnCacheKey.enabled | `true` | enablement flag for optimisations applied to `TransactionalCache$CacheRegionKey` instances |
+| aldica.core.binary.optimisation.txnCacheKey.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `TransactionalCache$CacheRegionKey` instances |
+| aldica.core.binary.optimisation.cacheKey.enabled | `true` | enablement flag for optimisations applied to `CacheRegionKey` instances |
+| aldica.core.binary.optimisation.cacheKey.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `CacheRegionKey` instances |
+| aldica.core.binary.optimisation.cacheValueKey.enabled | `true` | enablement flag for optimisations applied to `CacheRegionValueKey` instances |
+| aldica.core.binary.optimisation.cacheValueKey.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `CacheRegionValueKey` instances |
+| aldica.core.binary.optimisation.storeRef.enabled | `true` | enablement flag for optimisations applied to `StoreRef` instances |
+| aldica.core.binary.optimisation.storeRef.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `StoreRef` instances |
+| aldica.core.binary.optimisation.nodeRef.enabled | `true` | enablement flag for optimisations applied to `NodeRef` instances |
+| aldica.core.binary.optimisation.nodeRef.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `NodeRef` instances |
+| aldica.core.binary.optimisation.qname.enabled | `true` | enablement flag for optimisations applied to `QName` instances |
+| aldica.core.binary.optimisation.qname.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `QName` instances |
+| aldica.core.binary.optimisation.moduleVersionNumber.enabled | `true` | enablement flag for optimisations applied to `ModuleVersionNumber` instances |
+| aldica.core.binary.optimisation.moduleVersionNumber.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `ModuleVersionNumber` instances |
+| aldica.core.binary.optimisation.contentData.enabled | `true` | enablement flag for optimisations applied to `ContentData` / `ContentDataWithId` instances |
+| aldica.core.binary.optimisation.contentData.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `ContentData` / `ContentDataWithId` instances |
+| aldica.core.binary.optimisation.contentData.useIdsWhenReasonable | `${aldica.core.binary.optimisation.useIdsWhenReasonable}` | enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` on `ContentData` / `ContentDataWithId` instances |
+| aldica.core.binary.optimisation.mlText.enabled | `true` | enablement flag for optimisations applied to `MLText` instances |
+| aldica.core.binary.optimisation.mlText.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `MLText` instances |
+| aldica.core.binary.optimisation.mlText.useIdsWhenReasonable | `${aldica.core.binary.optimisation.useIdsWhenReasonable}` | enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` on `MLText` instances |
+| aldica.core.binary.optimisation.nodeAspects.enabled | `${aldica.core.binary.optimisation.enabled}` | enablement flag for optimisations applied to `NodeAspectsCacheSet` instances - this flag also toggles the use of a `TransactionalCache` sub-class which transparently converts a regular node aspects set into a `NodeAspectsCacheSet`, so that its serialisation can be targeted for optimisation |
+| aldica.core.binary.optimisation.nodeAspects.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `NodeAspectsCacheSet` instances |
+| aldica.core.binary.optimisation.nodeAspects.useIdsWhenReasonable | `${aldica.core.binary.optimisation.useIdsWhenReasonable}` | enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` on `NodeAspectsCacheSet` instances |
+| aldica.core.binary.optimisation.nodeProperties.enabled | `${aldica.core.binary.optimisation.enabled}` | enablement flag for optimisations applied to `NodePropertiesCacheMap` instances - this flag also toggles the use of a `TransactionalCache` sub-class which transparently converts a regular node properties map into a `NodePropertiesCacheMap`, so that its serialisation can be targeted for optimisation |
+| aldica.core.binary.optimisation.nodeProperties.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `NodePropertiesCacheMap` instances |
+| aldica.core.binary.optimisation.nodeProperties.useIdsWhenReasonable | `${aldica.core.binary.optimisation.useIdsWhenReasonable}` | enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` on `NodePropertiesCacheMap` instances |
+| aldica.core.binary.optimisation.nodeProperties.useIdsWhenPossible | `${aldica.core.binary.optimisation.useIdsWhenPossible}` | enablement flag for using dynamic value substitution for all entities backed by secondary Alfresco caches on `NodePropertiesCacheMap` instances |
 
 ### Internal Properties
 

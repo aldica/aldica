@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 
 import org.aldica.repo.ignite.cache.NodePropertiesCacheMap;
+import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.repo.domain.contentdata.ContentDataDAO;
 import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.repo.domain.qname.QNameDAO;
@@ -207,10 +208,12 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
             if (this.useIdsWhenReasonable)
             {
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(key);
-                if (qnamePair != null)
+                // technically may be null, but practically guaranteed to always be valid
+                if (qnamePair == null)
                 {
-                    keyId = qnamePair.getFirst();
+                    throw new AlfrescoRuntimeException("Cannot resolve " + key + " to DB ID");
                 }
+                keyId = qnamePair.getFirst();
 
                 if (this.useIdsWhenPossible)
                 {
@@ -222,7 +225,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
                     {
                         final long[] ids = new long[((List<?>) value).size()];
                         int idx = 0;
-                        boolean allIds = true;
+                        boolean allIds = !((List<?>) value).isEmpty();
                         for (final Object element : (List<?>) value)
                         {
                             if (element instanceof ContentDataWithId)
@@ -337,6 +340,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
             rawWriter.writeByte(TYPE_DATE);
             rawWriter.writeDate((Date) value);
         }
+        // TODO Support Locale (d:locale) via ID resolution
         else if (value != null)
         {
             rawWriter.writeByte(TYPE_DEFAULT);
