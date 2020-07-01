@@ -426,9 +426,6 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             NodePropertiesCacheMap cacheValue;
             ArrayList<NodeRef> categories;
 
-            // default Alfresco classes are inaccessible (package-protected visibility)
-            final FileContentUrlProvider urlProvider = () -> FileContentStore.STORE_PROTOCOL + "://" + UUID.randomUUID().toString();
-
             controlValue = new NodePropertiesCacheMap(Collections.emptyMap());
             controlValue.put(ContentModel.PROP_CREATOR, "admin");
             controlValue.put(ContentModel.PROP_CREATED,
@@ -447,28 +444,6 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             cache.put(1l, controlValue);
 
             cacheValue = cache.get(1l);
-
-            Assert.assertEquals(controlValue, cacheValue);
-            // check deep serialisation was actually involved (different value instances)
-            Assert.assertFalse(controlValue == cacheValue);
-
-            // test values not in any mocked DAOs
-            controlValue = new NodePropertiesCacheMap(Collections.emptyMap());
-            controlValue.put(ContentModel.PROP_AUTHOR, "author");
-            controlValue.put(ContentModel.PROP_ACCESSED,
-                    Date.from(LocalDateTime.of(2020, Month.APRIL, 20, 12, 34, 56).toInstant(ZoneOffset.UTC)));
-
-            controlValue.put(ContentModel.PROP_TAGSCOPE_CACHE, new ContentData(urlProvider.createNewFileStoreUrl(),
-                    MimetypeMap.MIMETYPE_EXCEL, 123l, StandardCharsets.US_ASCII.name(), Locale.GERMANY));
-
-            categories = new ArrayList<>();
-            categories.add(new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, UUID.randomUUID().toString()));
-            categories.add(new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, UUID.randomUUID().toString()));
-            controlValue.put(ContentModel.PROP_TAGS, categories);
-
-            cache.put(2l, controlValue);
-
-            cacheValue = cache.get(2l);
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved (different value instances)

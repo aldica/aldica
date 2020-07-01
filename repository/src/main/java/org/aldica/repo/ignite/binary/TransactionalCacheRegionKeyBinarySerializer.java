@@ -5,8 +5,8 @@ package org.aldica.repo.ignite.binary;
 
 import java.lang.reflect.Field;
 
-import org.alfresco.repo.cache.lookup.CacheRegionValueKey;
-import org.alfresco.repo.cache.lookup.EntityLookupCache;
+import org.alfresco.repo.cache.TransactionalCache;
+import org.alfresco.repo.cache.TransactionalCache.CacheRegionKey;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -16,24 +16,24 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
- * Instances of this class handle (de-)serialisations of {@link EntityLookupCache entity lookup} {@link CacheRegionValueKey cache region
- * value key} instances into more efficient binary representations as would be possible by using the default {@link BinaryMarshaller} by
- * optimising away the hash code instance and reducing the average cost of handling the (typically pre-defined / well-known) region names.
+ * Instances of this class handle (de-)serialisations of {@link TransactionalCache transactional cache} {@link CacheRegionKey region key}
+ * instances into more efficient binary representations as would be possible by using the default {@link BinaryMarshaller} by optimising
+ * away the hash code instance.
  *
  * @author Axel Faust
  */
-public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
+public class TransactionalCacheRegionKeyBinarySerializer implements BinarySerializer
 {
 
     private static final String CACHE_REGION_TYPE = "cacheRegionType";
 
     private static final String CACHE_REGION = "cacheRegion";
 
-    private static final String CACHE_VALUE_KEY = "cacheValueKey";
+    private static final String CACHE_KEY = "cacheKey";
 
     private static final Field CACHE_REGION_FIELD;
 
-    private static final Field CACHE_VALUE_KEY_FIELD;
+    private static final Field CACHE_KEY_FIELD;
 
     private static final Field HASH_CODE_FIELD;
 
@@ -41,12 +41,12 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
     {
         try
         {
-            CACHE_REGION_FIELD = CacheRegionValueKey.class.getDeclaredField(CACHE_REGION);
-            CACHE_VALUE_KEY_FIELD = CacheRegionValueKey.class.getDeclaredField(CACHE_VALUE_KEY);
-            HASH_CODE_FIELD = CacheRegionValueKey.class.getDeclaredField("hashCode");
+            CACHE_REGION_FIELD = CacheRegionKey.class.getDeclaredField(CACHE_REGION);
+            CACHE_KEY_FIELD = CacheRegionKey.class.getDeclaredField(CACHE_KEY);
+            HASH_CODE_FIELD = CacheRegionKey.class.getDeclaredField("hashCode");
 
             CACHE_REGION_FIELD.setAccessible(true);
-            CACHE_VALUE_KEY_FIELD.setAccessible(true);
+            CACHE_KEY_FIELD.setAccessible(true);
             HASH_CODE_FIELD.setAccessible(true);
         }
         catch (final NoSuchFieldException nsfe)
@@ -74,7 +74,7 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
     public void writeBinary(final Object obj, final BinaryWriter writer) throws BinaryObjectException
     {
         final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(CacheRegionValueKey.class))
+        if (!cls.equals(CacheRegionKey.class))
         {
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
@@ -82,7 +82,7 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
         try
         {
             final String cacheRegion = (String) CACHE_REGION_FIELD.get(obj);
-            final Object cacheValueKey = CACHE_VALUE_KEY_FIELD.get(obj);
+            final Object cacheKey = CACHE_KEY_FIELD.get(obj);
 
             final CacheRegion literal = CacheRegion.getLiteral(cacheRegion);
 
@@ -94,7 +94,7 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
                 {
                     rawWriter.writeString(cacheRegion);
                 }
-                rawWriter.writeObject(cacheValueKey);
+                rawWriter.writeObject(cacheKey);
             }
             else
             {
@@ -103,7 +103,7 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
                 {
                     writer.writeString(CACHE_REGION, cacheRegion);
                 }
-                writer.writeObject(CACHE_VALUE_KEY, cacheValueKey);
+                writer.writeObject(CACHE_KEY, cacheKey);
             }
         }
         catch (final IllegalAccessException iae)
@@ -120,14 +120,14 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
     public void readBinary(final Object obj, final BinaryReader reader) throws BinaryObjectException
     {
         final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(CacheRegionValueKey.class))
+        if (!cls.equals(CacheRegionKey.class))
         {
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
 
         String cacheRegion = null;
         CacheRegion literal;
-        Object cacheValueKey;
+        Object cacheKey;
 
         if (this.useRawSerialForm)
         {
@@ -139,7 +139,7 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
             {
                 cacheRegion = rawReader.readString();
             }
-            cacheValueKey = rawReader.readObject();
+            cacheKey = rawReader.readObject();
         }
         else
         {
@@ -149,7 +149,7 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
             {
                 cacheRegion = reader.readString(CACHE_REGION);
             }
-            cacheValueKey = reader.readObject(CACHE_VALUE_KEY);
+            cacheKey = reader.readObject(CACHE_KEY);
         }
 
         cacheRegion = cacheRegion != null ? cacheRegion : literal.getCacheRegionName();
@@ -157,10 +157,10 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
         try
         {
             CACHE_REGION_FIELD.set(obj, cacheRegion);
-            CACHE_VALUE_KEY_FIELD.set(obj, cacheValueKey);
+            CACHE_KEY_FIELD.set(obj, cacheKey);
             // reconstruct the hash code
-            HASH_CODE_FIELD.set(obj, Integer
-                    .valueOf((cacheRegion != null ? cacheRegion.hashCode() : 0) + (cacheValueKey != null ? cacheValueKey.hashCode() : 0)));
+            HASH_CODE_FIELD.set(obj,
+                    Integer.valueOf((cacheRegion != null ? cacheRegion.hashCode() : 0) + (cacheKey != null ? cacheKey.hashCode() : 0)));
         }
         catch (final IllegalAccessException iae)
         {
