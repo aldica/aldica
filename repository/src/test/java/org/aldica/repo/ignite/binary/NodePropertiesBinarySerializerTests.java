@@ -274,9 +274,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache6 = useAllIdGrid.getOrCreateCache(cacheConfig);
 
                 // ContentDataWithId is quite complex, so significant savings in addition to QName ID substitution if sparse metadata
-                // 40%
+                // 38%
                 this.efficiencyImpl(useQNameIdGrid, useAllIdGrid, referenceCache6, cache6, contentDataDAO,
-                        "aldica optimised (QName + ContentData ID substitution)", "aldica optimised (QName ID substitution)", 0.4);
+                        "aldica optimised (QName + ContentData ID substitution)", "aldica optimised (QName ID substitution)", 0.38);
             }
             finally
             {
