@@ -4,6 +4,7 @@ This folder contains detailed documentation sections concerning the alternative/
 - Concepts / High-Level
     - [Alfresco/Ignite and On-Heap vs Off-Heap Caches](./Concept-Caches.md)
     - [Grid Member Discovery](./Concept-GridMemberDiscovery.md)
+    - [Binary Serialisation Optimisations](./Concept-BinarySerialiser.md)
 - [Build](./Build.md)
 - Installation / Configuration
     - [Install via Alfresco SDK](./Installation-SDK4.md)
