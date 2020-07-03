@@ -19,7 +19,7 @@ Similarly, instances of the Alfresco class for qualified names, `org.alfresco.se
 In various value classes, components of the value object may typically fall within a very narrow range of values, which may potentially be well-known at development / compile time and not subject to be replaced by dynamic values at runtime most of the time. A prime example of this can again be found with the value class for node references. In any Alfresco system, the store component of the majority of node references comes down to six common values which are known in advance as a result of being initialised by the basic bootstrap of an Alfresco system. These stores are
 
 - `user://alfrescoUserStore`
-- `system://system``
+- `system://system`
 - `workspace://lightWeightVersionStore`
 - `workspace://version2Store`
 - `archive://SpacesStore`
