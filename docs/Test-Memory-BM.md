@@ -110,8 +110,9 @@ Concurrent threads: 6
 | `nodeAspectsCache` | 359 MiB | 200,2 MiB | 199,9 MiB | 331 MiB |
 | `nodePropertiesCache` | 1 GiB | 621,1 MiB | 480,9 MiB | 1,1 GiB |
 | `contentDataCache` | 175,9 MiB | 247,5 MiB | 247,5 MiB | 297 MiB |
-| Memory (total)* | 3 GiB | 2.35 GiB | 2,2 GiB | 3 GiB |
+| Memory (used)* | 3 GiB | 2.35 GiB | 2,2 GiB | 3 GiB |
 | Memory reduction (used) | N/A | 21% | 26% | 0% |
+| Memory (eff)* | 6 GiB | 5.05 GiB | 4.9 GiB | 5.71 GiB |
 | Memory reduction (eff)* | N/A | 16% | 18% | 5% |
 | Avg. throughput - initial load | 424/s | 427/s | 426/s | 442/s |
 | Peak avg. throughput - initial load | 441/s | 460/s | 443/s | 484/s |
@@ -119,8 +120,8 @@ Concurrent threads: 6
 | Peak avg. throughput - 2nd load | 1276/s | 1654/s | 1913/s | 1651/s |
 
 Notes:
-- Memory (total)*: Total comparable memory - heap and off-heap memory - excluding the aldica `contentUrl` data region, which holds data excluded from caching in Alfresco on-heap caches, as that cache is filled only once and never used again in the benchmark - cached data is only relevant for actual content access / download, which was out-of-scope
-- Memory reduction (eff)*: Effective memory reduction, taking into account maximum allocated heap memory at which both systems have a similar amount of remaining available heap for actual operations (3 GiB vs. 2.7 GiB)
+- Memory (used)*: Total comparable memory - heap and off-heap memory - excluding the aldica `contentUrl` data region, which holds data excluded from caching in Alfresco on-heap caches, as that cache is filled only once and never used again in the benchmark - cached data is only relevant for actual content access / download, which was out-of-scope
+- Memory (eff)*: Effective memory allocated, taking into account maximum allocated heap memory at which both systems have a similar amount of remaining available heap for actual operations (3 GiB vs. 2.7 GiB)
 
 ### Memory Analysis
 In the heap dump of both instances, the biggest object by retained heap memory is the `nodesSharedCache`, taking 980 MiB to 1,1 GiB of heap memory. Due to Alfresco design flaws (mutable state in cache entries and usage patterns relying on server-local object semantics), this cache cannot be supported by an Ignite-backed cache. The noticeable difference in cache size can be explained by value sharing between the on-heap `nodesSharedCache` and `nodePropertiesCache` instances in default - due to our test model having a single property of type `d:noderef`, the `NodeRefPropertyMethodInterceptor` is triggered, which performs an existence check on the node identified by the property value, causing a cache entry to be created in `nodesSharedCache` with a key used as a value in `nodePropertiesCache`, so both caches essentially split ownership and thus cost. In the aldica systems, this cannot occur due to serialisation in the off-heap `nodePropertiesCache`, so the `nodesSharedCache` bears the full heap cost..
