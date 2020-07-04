@@ -42,7 +42,7 @@ In Alfresco cache values, prime candidates for dynamic value substitution are th
 
 **Important**:
 - Using dynamic value substitution and reconstituting the value by performing an ID-based lookup will significantly skew hit/miss statistics of secondary caches.
-- Failure to ensure proper sizing of secondary caches can result in significant performance degradation due to the execution of nested, incremental DB lookups, which in case of complex value structures such as `propertiesSharedCache` or `aspectsSharedCache` may involve multiple lookups per cache entry
+- Failure to ensure proper sizing of secondary caches can result in performance degradation due to the execution of nested, incremental DB lookups, which in case of complex value structures such as `propertiesSharedCache` or `aspectsSharedCache` may involve multiple lookups per cache entry
 
 ### Serial Form without Structure Metadata
 
@@ -72,6 +72,6 @@ The optimisations can be configured on a high-level via `alfresco-global.propert
 - `aldica.core.binary.optimisation.enabled` - global enablement flag for non-trivial optimisations - defaults to `true`
 - `aldica.core.binary.optimisation.useRawSerial` - global enablement flag for using raw serial form without structure metadata - defaults to `aldica.core.binary.optimisation.enabled`
 - `aldica.core.binary.optimisation.useIdsWhenReasonable` - global enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` (`QName`, `Locale`, `Mimetype`, `Encoding`) - defaults to `aldica.core.binary.optimisation.enabled`
-- `aldica.core.binary.optimisation.useIdsWhenPossible` - global enablement flag for using dynamic value substitution for all types of complex entities that can be resolved via secondary caches, no matter the cost / overhead - defaults to `false`
+- `aldica.core.binary.optimisation.useIdsWhenPossible` - global enablement flag for using dynamic value substitution for all types of complex entities that can be resolved via secondary caches - defaults to `aldica.core.binary.optimisation.enabled`
 
 In addition, for each type-specific listing at the start of this section, there are low-level detailed configuration properties, which mostly inherit default settings from the high-level properites, unless a specific setting makes more sense than whatever is configured in 80+% of the cases.  

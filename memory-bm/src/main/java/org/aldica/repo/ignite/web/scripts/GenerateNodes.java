@@ -62,27 +62,27 @@ import com.thedeanda.lorem.LoremIpsum;
 public class GenerateNodes extends AbstractWebScript implements InitializingBean
 {
 
+    public static final QName INT_A = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "intA");
+
+    public static final QName LONG_B = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "longB");
+
+    public static final QName FLOAT_C = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "floatC");
+
+    public static final QName DOUBLE_D = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "doubleD");
+
+    public static final QName DATE_E = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "dateE");
+
+    public static final QName DATE_F = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "dateF");
+
+    public static final QName NODE_G = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "nodeG");
+
+    public static final QName QNAME_H = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "qnameH");
+
+    public static final QName LOV_STRING = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "lovString");
+
     private static final Namespace[] NAMESPACES = Namespace.values();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenerateNodes.class);
-
-    private static final QName INT_A = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "intA");
-
-    private static final QName LONG_B = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "longB");
-
-    private static final QName FLOAT_C = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "floatC");
-
-    private static final QName DOUBLE_D = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "doubleD");
-
-    private static final QName DATE_E = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "dateE");
-
-    private static final QName DATE_F = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "dateF");
-
-    private static final QName NODE_G = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "nodeG");
-
-    private static final QName QNAME_H = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "qnameH");
-
-    private static final QName LOV_STRING = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "lovString");
 
     private static final Random RN_JESUS = new SecureRandom();
 
