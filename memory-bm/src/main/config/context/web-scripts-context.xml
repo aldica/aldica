@@ -27,6 +27,7 @@
     <bean id="webscript.org.aldica.ignite.cacheNodes.get" class="${project.basePackage}.web.scripts.CacheNodes"
         parent="webscript">
         <property name="transactionService" ref="TransactionService" />
+        <property name="qnameDAO" ref="qnameDAO" />
         <property name="nodeService" ref="NodeService" />
         <property name="searchService" ref="SearchService" />
     </bean>
