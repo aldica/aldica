@@ -8,6 +8,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import javax.cache.configuration.Factory;
@@ -41,8 +42,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.util.PropertyPlaceholderHelper;
 
 /**
  * @author Axel Faust
@@ -81,6 +84,16 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     protected ApplicationContext applicationContext;
 
+    protected Properties properties;
+
+    protected String placeholderPrefix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX;
+
+    protected String placeholderSuffix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_SUFFIX;
+
+    protected String valueSeparator = PlaceholderConfigurerSupport.DEFAULT_VALUE_SEPARATOR;
+
+    protected PropertyPlaceholderHelper placeholderHelper;
+
     protected String instanceName;
 
     protected int partitionsCount = 32;
@@ -92,6 +105,18 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     protected boolean ignoreDefaultEvictionConfiguration;
 
     protected boolean disableAllStatistics;
+
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public void afterPropertiesSet()
+    {
+        PropertyCheck.mandatory(this, "instanceName", this.instanceName);
+
+        this.placeholderHelper = new PropertyPlaceholderHelper(this.placeholderPrefix, this.placeholderSuffix, this.valueSeparator, true);
+    }
 
     /**
      * {@inheritDoc}
@@ -107,9 +132,37 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
      * {@inheritDoc}
      */
     @Override
-    public void afterPropertiesSet()
+    public void setProperties(final Properties properties)
     {
-        PropertyCheck.mandatory(this, "instanceName", this.instanceName);
+        this.properties = properties;
+        super.setProperties(properties);
+    }
+
+    /**
+     * @param placeholderPrefix
+     *            the placeholderPrefix to set
+     */
+    public void setPlaceholderPrefix(final String placeholderPrefix)
+    {
+        this.placeholderPrefix = placeholderPrefix;
+    }
+
+    /**
+     * @param placeholderSuffix
+     *            the placeholderSuffix to set
+     */
+    public void setPlaceholderSuffix(final String placeholderSuffix)
+    {
+        this.placeholderSuffix = placeholderSuffix;
+    }
+
+    /**
+     * @param valueSeparator
+     *            the valueSeparator to set
+     */
+    public void setValueSeparator(final String valueSeparator)
+    {
+        this.valueSeparator = valueSeparator;
     }
 
     /**
@@ -325,7 +378,10 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     {
         // we look up our own configuration but use Alfresco / a simplified property as fallback / default value
         final String alfrescoOrSimplifiedValue = this.getProperty(cacheName, alfrescoOrSimplifiedProperty, defaultValue);
-        final String igniteValue = this.getProperty(cacheName, igniteProperty, alfrescoOrSimplifiedValue);
+        String igniteValue = this.getProperty(cacheName, igniteProperty, alfrescoOrSimplifiedValue);
+
+        // base implementation does not support placeholders
+        igniteValue = igniteValue != null ? this.placeholderHelper.replacePlaceholders(igniteValue, this.properties) : null;
 
         return igniteValue;
     }
@@ -338,7 +394,10 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         // (to allow for consistent naming in our simplified properties while Alfresco ones can still be used for fallback)
         final String alfrescoValue = this.getProperty(cacheName, alfrescoProperty, defaultValue);
         final String simplifiedValue = this.getProperty(cacheName, simplifiedProperty, alfrescoValue);
-        final String igniteValue = this.getProperty(cacheName, igniteProperty, simplifiedValue);
+        String igniteValue = this.getProperty(cacheName, igniteProperty, simplifiedValue);
+
+        // base implementation does not support placeholders
+        igniteValue = igniteValue != null ? this.placeholderHelper.replacePlaceholders(igniteValue, this.properties) : null;
 
         return igniteValue;
     }
