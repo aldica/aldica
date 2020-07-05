@@ -86,6 +86,8 @@
             -XX:+ScavengeBeforeFullGC
             -XX:+DisableExplicitGC
             -XX:+AlwaysPreTouch
+            -Dfile.encoding=UTF-8
+            -Djava.net.preferIPv4Stack=true
             -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
             -DIGNITE_QUIET=true
             -DIGNITE_NO_ASCII=true
