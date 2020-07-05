@@ -15,6 +15,7 @@ import org.alfresco.util.ParameterCheck;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
      */
     public static enum Mode
     {
+
         LOCAL(true, false, false),
         LOCAL_INVALIDATING_ON_CHANGE(true, true, false),
         LOCAL_INVALIDATING(true, true, true),
@@ -210,7 +212,9 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         if (this.cacheMode.isConsideredFullCache())
         {
             // local lookup is sufficient for local / replicated cache
-            this.backingCache.localEntries(CachePeekMode.ALL).forEach(entry -> {
+            // use withKeepBinary to avoid unnecessary deseralisation of values
+            final IgniteCache<K, ?> cache = this.backingCache.withKeepBinary();
+            cache.localEntries(CachePeekMode.ALL).forEach(entry -> {
                 final K key = entry.getKey();
                 keys.add(key);
             });
@@ -222,7 +226,8 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
 
             final Collection<Collection<K>> allCacheKeys = this.grid.compute(cacheNodes).broadcast(() -> {
                 final Collection<K> localKeys = new LinkedHashSet<>();
-                final IgniteCache<K, V> cache = Ignition.localIgnite().<K, V> getOrCreateCache(this.cacheName);
+                // use withKeepBinary to avoid unnecessary deseralisation of values
+                final IgniteCache<K, V> cache = Ignition.localIgnite().<K, V> getOrCreateCache(this.cacheName).withKeepBinary();
                 cache.localEntries(CachePeekMode.ALL).forEach(entry -> {
                     final K key = entry.getKey();
                     localKeys.add(key);
@@ -254,7 +259,7 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     {
         this.instanceLogger.debug("Getting value for key {}", key);
 
-        final V value = this.backingCache.get(key);
+        final V value = this.getImpl(key);
 
         this.instanceLogger.debug("Retrieved value {} for key {}", value, key);
 
@@ -301,7 +306,7 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         }
         else
         {
-            final V oldValue = this.backingCache.getAndPut(key, value);
+            final V oldValue = this.getAndPutImpl(key, value);
             invalidate = invalidate
                     || (this.cacheMode.isHandleInvalidations() && oldValue != null && !EqualsHelper.nullSafeEquals(oldValue, value));
         }
@@ -362,6 +367,62 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
     public int localSize()
     {
         return this.backingCache.localSize();
+    }
+
+    /**
+     * Performs the actual retrieval of a single value from the backing cache.
+     *
+     * @param key
+     *            the key to use in the lookup
+     * @return the resolved value
+     */
+    @SuppressWarnings("unchecked")
+    protected V getImpl(final K key)
+    {
+        // using withKeepBinary avoids and deserialisation happening in Ignite async threads, which might potentially block them with
+        // cascading lookups due to serialisation optimisations
+        final IgniteCache<K, Object> cache = this.backingCache.withKeepBinary();
+        final Object cacheValue = cache.get(key);
+
+        final V value;
+        if (cacheValue instanceof BinaryObject)
+        {
+            value = ((BinaryObject) cacheValue).deserialize();
+        }
+        else
+        {
+            value = (V) cacheValue;
+        }
+        return value;
+    }
+
+    /**
+     * Performs the actual retrieval and update of a single entry in the backing cache.
+     *
+     * @param key
+     *            the key to use in the update
+     * @param newValue
+     *            the new value to store for the key
+     * @return the resolved previous value, may be {@code null} if no entry existed
+     */
+    @SuppressWarnings("unchecked")
+    protected V getAndPutImpl(final K key, final V newValue)
+    {
+        // using withKeepBinary avoids and deserialisation happening in Ignite async threads, which might potentially block them with
+        // cascading lookups due to serialisation optimisations
+        final IgniteCache<K, Object> cache = this.backingCache.withKeepBinary();
+        final Object cacheValue = cache.getAndPut(key, newValue);
+
+        final V oldValue;
+        if (cacheValue instanceof BinaryObject)
+        {
+            oldValue = ((BinaryObject) cacheValue).deserialize();
+        }
+        else
+        {
+            oldValue = (V) cacheValue;
+        }
+        return oldValue;
     }
 
     protected void sendInvalidationMessage(final String topic, final Object msg)

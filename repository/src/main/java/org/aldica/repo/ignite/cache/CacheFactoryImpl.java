@@ -569,6 +569,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         if (!EVICTION_POLICY_NONE.equals(evictionPolicy) && (maxMemory > 0 || maxItems > 0))
         {
             cacheConfig.setOnheapCacheEnabled(true);
+            cacheConfig.setCopyOnRead(false);
 
             final int batchEvictionItems = Integer
                     .parseInt(this.getProperty(cacheName, "ignite.heap.batchEvictionItems", "heap.batchEvictionItems", "0"));
