@@ -64,6 +64,7 @@
         </property>
 
         <property name="publicThreadPoolSize" value="\${${moduleId}.core.publicThreadPoolSize}" />
+        <property name="stripedPoolSize" value="\${${moduleId}.core.stripedThreadPoolSize}" />
         <property name="serviceThreadPoolSize" value="\${${moduleId}.core.serviceThreadPoolSize}" />
         <property name="systemThreadPoolSize" value="\${${moduleId}.core.systemThreadPoolSize}" />
         <property name="asyncCallbackPoolSize" value="\${${moduleId}.core.asyncCallbackThreadPoolSize}" />

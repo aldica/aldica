@@ -297,6 +297,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
                         <argLine><![CDATA[
+                            -Xmx512M
                             -Dfile.encoding=UTF-8
                             -Djava.net.preferIPv4Stack=true
                             -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
@@ -335,6 +336,23 @@
                             <artifactId>maven-surefire-plugin</artifactId>
                             <configuration>
                                 <excludedGroups>${project.basePackage}.ExpensiveTestCategory</excludedGroups>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+
+        <profile>
+            <id>surefireSuppression</id>
+
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-surefire-plugin</artifactId>
+                            <configuration>
+                                <skipTests>true</skipTests>
                             </configuration>
                         </plugin>
                     </plugins>
