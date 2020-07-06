@@ -23,7 +23,7 @@ fi
 docker-compose -f target/docker/start-stop-test-compose.yml up -d keepAlive01
 sleep 10
 
-docker-compose -f target/docker/start-stop-test-compose.yml logs --tail 6 keepAlive01 | grep -o "Ignite instance repositoryGrid currently has 2 active nodes"
+docker-compose -f target/docker/start-stop-test-compose.yml logs --tail 10 keepAlive01 | grep -o "Ignite instance repositoryGrid currently has 2 active nodes"
 
 if [[ ! $? -eq 0 ]]
 then
@@ -35,7 +35,7 @@ fi
 docker-compose -f target/docker/start-stop-test-compose.yml stop repository01
 sleep 10
 
-docker-compose -f target/docker/start-stop-test-compose.yml logs --tail 15 keepAlive01 | grep -o "Ignite instance repositoryGrid currently has 1 active nodes"
+docker-compose -f target/docker/start-stop-test-compose.yml logs --tail 20 keepAlive01 | grep -o "Ignite instance repositoryGrid currently has 1 active nodes"
 
 if [[ ! $? -eq 0 ]]
 then
@@ -47,7 +47,7 @@ fi
 docker-compose -f target/docker/start-stop-test-compose.yml up -d keepAlive02
 sleep 10
 
-docker-compose -f target/docker/start-stop-test-compose.yml logs --tail 6 keepAlive01 | grep -o "Ignite instance repositoryGrid currently has 2 active nodes"
+docker-compose -f target/docker/start-stop-test-compose.yml logs --tail 10 keepAlive01 | grep -o "Ignite instance repositoryGrid currently has 2 active nodes"
 
 if [[ ! $? -eq 0 ]]
 then
@@ -68,7 +68,7 @@ then
    exit 1
 fi
 
-docker-compose -f target/docker/start-stop-test-compose.yml logs --tail 6 keepAlive01 | grep -o "Ignite instance repositoryGrid currently has 3 active nodes"
+docker-compose -f target/docker/start-stop-test-compose.yml logs --tail 10 keepAlive01 | grep -o "Ignite instance repositoryGrid currently has 3 active nodes"
 
 if [[ ! $? -eq 0 ]]
 then

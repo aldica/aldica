@@ -383,11 +383,34 @@
                                     </assembly>
                                     <workdir>/maven</workdir>
                                     <cmd> 
-                                        <shell>java -Xms512M -Xmx512M -jar ${project.build.finalName}.jar</shell>
+                                        <shell>java -Xms512M -Xmx512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${docker.tests.repositoryDebugPort2} -Dfile.encoding=UTF-8 -Djava.net.preferIPv4Stack=true -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true -DIGNITE_QUIET=true -DIGNITE_NO_ASCII=true -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true -jar ${project.build.finalName}.jar</shell>
                                     </cmd>
                                 </build>
+                                <run>
+                                    <ports>
+                                        <port>${docker.tests.repositoryDebugPort2}:${docker.tests.repositoryDebugPort2}</port>
+                                    </ports>
+                                </run>
                             </image>
                         </images>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <!-- Note: IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK is hopefully temporary until https://github.com/aldica/aldica/issues/39 is fixed upstream -->
+                        <argLine><![CDATA[
+                            -Xmx512M
+                            -Dfile.encoding=UTF-8
+                            -Djava.net.preferIPv4Stack=true
+                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                            -DIGNITE_QUIET=true
+                            -DIGNITE_NO_ASCII=true
+                            -DIGNITE_UPDATE_NOTIFIER=false
+                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                            -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+                        ]]></argLine>
                     </configuration>
                 </plugin>
             </plugins>
