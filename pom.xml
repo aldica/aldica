@@ -148,12 +148,12 @@
 
     <distributionManagement>
         <repository>
-            <id>acosix-nexus</id>
-            <url>http://acosix.de/nexus/content/repositories/releases/</url>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
         <snapshotRepository>
-            <id>acosix-nexus</id>
-            <url>http://acosix.de/nexus/content/repositories/snapshots/</url>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
