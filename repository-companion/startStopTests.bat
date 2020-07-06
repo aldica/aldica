@@ -24,7 +24,7 @@ IF ERRORLEVEL 1 (
 CALL docker-compose -f target\docker\start-stop-test-compose.yml up -d keepAlive01
 timeout /T 10 /nobreak
 
-CALL docker-compose -f target\docker\start-stop-test-compose.yml logs --tail 6 keepAlive01 | find /i "Ignite instance repositoryGrid currently has 2 active nodes"
+CALL docker-compose -f target\docker\start-stop-test-compose.yml logs --tail 10 keepAlive01 | find /i "Ignite instance repositoryGrid currently has 2 active nodes"
 IF ERRORLEVEL 1 (
    ECHO Repository01 and KeepAlive01 did not connect
    CALL docker-compose -f target\docker\start-stop-test-compose.yml down -v
@@ -34,7 +34,7 @@ IF ERRORLEVEL 1 (
 CALL docker-compose -f target\docker\start-stop-test-compose.yml stop repository01
 timeout /T 10 /nobreak
 
-CALL docker-compose -f target\docker\start-stop-test-compose.yml logs --tail 6 keepAlive01 | find /i "Ignite instance repositoryGrid currently has 1 active nodes"
+CALL docker-compose -f target\docker\start-stop-test-compose.yml logs --tail 20 keepAlive01 | find /i "Ignite instance repositoryGrid currently has 1 active nodes"
 IF ERRORLEVEL 1 (
    ECHO KeepAlive01 did not handle disconnect
    CALL docker-compose -f target\docker\start-stop-test-compose.yml down -v
@@ -44,7 +44,7 @@ IF ERRORLEVEL 1 (
 CALL docker-compose -f target\docker\start-stop-test-compose.yml up -d keepAlive02
 timeout /T 10 /nobreak
 
-CALL docker-compose -f target\docker\start-stop-test-compose.yml logs --tail 6 keepAlive01 | find /i "Ignite instance repositoryGrid currently has 2 active nodes"
+CALL docker-compose -f target\docker\start-stop-test-compose.yml logs --tail 10 keepAlive01 | find /i "Ignite instance repositoryGrid currently has 2 active nodes"
 IF ERRORLEVEL 1 (
    ECHO KeepAlive01 and KeepAlive02 did not connect
    CALL docker-compose -f target\docker\start-stop-test-compose.yml down -v
@@ -64,7 +64,7 @@ IF ERRORLEVEL 1 (
    EXIT /b 1
 )
 
-CALL docker-compose -f target\docker\start-stop-test-compose.yml logs --tail 6 keepAlive01 | find /i "Ignite instance repositoryGrid currently has 3 active nodes"
+CALL docker-compose -f target\docker\start-stop-test-compose.yml logs --tail 10 keepAlive01 | find /i "Ignite instance repositoryGrid currently has 3 active nodes"
 
 IF ERRORLEVEL 1 (
    ECHO Repository02 and KeepAlive nodes did not connect
