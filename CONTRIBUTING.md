@@ -20,7 +20,7 @@ too much, we'll simply rebase and squash your commits if/when we merge your pull
 
 ## Quick Start
 
-- Fork this [project][homepage]
+- Fork this project
 - Checkout your fork on your dev machine
 - Add this project as a remote named upstream 
   `git remote add upstream git@github.com:aldica/aldica.git`

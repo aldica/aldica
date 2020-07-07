@@ -1,11 +1,12 @@
 # Documentation Index
 This folder contains detailed documentation sections concerning the alternative/Alfresco distributed caching (aldica) module. Each Markdown document represents an individual, cohesive section / topic of documentation, though may reference other sections which provide either more detailed information in a sub-topic or aggregate partial information bits from multiple sections (e.g. configuration reference sections).
 
-- Concepts / High-Level
-    - [Alfresco/Ignite and On-Heap vs Off-Heap Caches](./Concept-Caches.md)
-    - [Grid Member Discovery](./Concept-GridMemberDiscovery.md)
-    - [Binary Serialisation Optimisations](./Concept-BinarySerialiser.md)
 - [Build](./Build.md)
+- Getting Started
+    - [ACS configuration scenarios](./GettingStarted-ACS-Scenarios.md)
+    - [Share configuration scenarios](./GettingStarted-Share-Scenarios.md)
+    - [Repository companion application](./GettingStarted-Companion-App.md) 
+    - [Tomcat](./GettingStarted-Tomcat.md) (to be reviewed / updated)
 - Installation / Configuration
     - [Install via Alfresco SDK](./Installation-SDK4.md)
     - [Install via Docker Build](./Installation-Docker.md)
@@ -13,8 +14,10 @@ This folder contains detailed documentation sections concerning the alternative/
     - [Java Virtual Machine (JVM) Properties](./Configuration-JVMProperties.md)
     - [Repository Configuration Reference](./Configuration-RepoReference.md)
     - [Share Configuration Reference](./Configuration-ShareReference.md)
-- Cluster setup
-    - [Getting started with Tomcat](./GettingStarted-Tomcat.md)
+- Concepts / High-Level
+    - [Alfresco/Ignite and On-Heap vs Off-Heap Caches](./Concept-Caches.md)
+    - [Grid Member Discovery](./Concept-GridMemberDiscovery.md)
+    - [Binary Serialisation Optimisations](./Concept-BinarySerialiser.md)
 - Verification / Tests
     - [K6 Benchmark](./Test-K6.md)
     - [Memory Benchmark](./Test-Memory-BM.md)
