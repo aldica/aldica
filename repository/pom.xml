@@ -348,23 +348,6 @@
                 </pluginManagement>
             </build>
         </profile>
-
-        <profile>
-            <id>surefireSuppression</id>
-
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <artifactId>maven-surefire-plugin</artifactId>
-                            <configuration>
-                                <skipTests>true</skipTests>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
     </profiles>
 
 </project>
