@@ -28,6 +28,7 @@
                 <thead>
                     <tr>
                         <th title="${msg("ignite.regions.attr.grid.title")?xml}">${msg("ignite.regions.attr.grid.label")?html}</th>
+                        <th title="${msg("ignite.regions.attr.node.title")?xml}">${msg("ignite.regions.attr.node.label")?html}</th>
                         <th title="${msg("ignite.regions.attr.name.title")?xml}">${msg("ignite.regions.attr.name.label")?html}</th>
                         <th title="${msg("ignite.regions.attr.pageSize.title")?xml}">${msg("ignite.regions.attr.pageSize.label")?html}</th>
                         <th title="${msg("ignite.regions.attr.allocatedPages.title")?xml}">${msg("ignite.regions.attr.allocatedPages.label")?html}</th>
@@ -35,28 +36,37 @@
                         <th title="${msg("ignite.regions.attr.allocationRate.title")?xml}">${msg("ignite.regions.attr.allocationRate.label")?html}</th>
                         <th title="${msg("ignite.regions.attr.evictionRate.title")?xml}">${msg("ignite.regions.attr.evictionRate.label")?html}</th>
                         <th title="${msg("ignite.regions.attr.pageFillFactor.title")?xml}">${msg("ignite.regions.attr.pageFillFactor.label")?html}</th>
-                        <th title="${msg("ignite.regions.attr.physicalMemoryPages.title")?xml}">${msg("ignite.regions.attr.physicalMemoryPages.label")?html}</th>
-                        <th title="${msg("ignite.regions.attr.physicalMemorySize.title")?xml}">${msg("ignite.regions.attr.physicalMemorySize.label")?html}</th>
-                        <th title="${msg("ignite.regions.attr.offHeapSize.title")?xml}">${msg("ignite.regions.attr.offHeapSize.label")?html}</th>
-                        <th title="${msg("ignite.regions.attr.offHeapUsedSize.title")?xml}">${msg("ignite.regions.attr.offHeapUsedSize.label")?html}</th>
+                        <th title="${msg("ignite.regions.attr.usedPages.title")?xml}">${msg("ignite.regions.attr.usedPages.label")?html}</th>
+                        <th title="${msg("ignite.regions.attr.usedSize.title")?xml}">${msg("ignite.regions.attr.usedSize.label")?html}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <#list regionInfos as regionInfo>
-                        <tr>
-                            <td>${regionInfo.grid?html}</td>
-                            <td>${regionInfo.name?html}</td>
-                            <td title="${regionInfo.metrics.pageSize?c}">${formatSize(regionInfo.metrics.pageSize)?html}</td>
-                            <td>${regionInfo.metrics.totalAllocatedPages?c}</td>
-                            <td title="${regionInfo.metrics.totalAllocatedSize?c}">${formatSize(regionInfo.metrics.totalAllocatedSize)?html}</td>
-                            <td>${regionInfo.metrics.allocationRate?string('0.##')}</td>
-                            <td>${regionInfo.metrics.evictionRate?string('0.##')}</td>
-                            <td>${regionInfo.metrics.pagesFillFactor?string('0.##')}</td>
-                            <td>${regionInfo.metrics.physicalMemoryPages?c}</td>
-                            <td title="${regionInfo.metrics.physicalMemorySize?c}">${formatSize(regionInfo.metrics.physicalMemorySize)?html}</td>
-                            <td title="${regionInfo.metrics.offHeapSize?c}">${formatSize(regionInfo.metrics.offHeapSize)?html}</td>
-                            <td title="${regionInfo.metrics.offheapUsedSize?c}">${formatSize(regionInfo.metrics.offheapUsedSize)?html}</td>
-                        </tr>
+                    <#list gridRegionMetrics as gridRegionMetricModel>
+                        <#list gridRegionMetricModel.gridNodeRegionMetrics as gridNodeRegionMetric>
+                            <#list gridNodeRegionMetric.dataRegionMetrics as regionMetrics>
+                                <tr>
+                                    <td>${gridRegionMetricModel.grid?html}</td>
+                                    <td>${(gridNodeRegionMetric.node.consistentId()!gridNodeRegionMetric.node.id())?html}</td>
+                                    <td>${regionMetrics.name?html}</td>
+                                    <#if regionMetrics.pageSize != 0>
+                                        <td title="${regionMetrics.pageSize?c}">${formatSize(regionMetrics.pageSize)?html}</td>
+                                    <#else>
+                                        <td title="${(regionMetrics.totalAllocatedSize / regionMetrics.totalAllocatedPages)?c}">${formatSize(regionMetrics.totalAllocatedSize / regionMetrics.totalAllocatedPages)?html}</td>
+                                    </#if>
+                                    <td>${regionMetrics.totalAllocatedPages?c}</td>
+                                    <td title="${regionMetrics.totalAllocatedSize?c}">${formatSize(regionMetrics.totalAllocatedSize)?html}</td>
+                                    <td><#if regionMetrics.pagesFillFactor != 0>${regionMetrics.allocationRate?string('0.##')}</#if></td>
+                                    <td><#if regionMetrics.pagesFillFactor != 0>${regionMetrics.evictionRate?string('0.##')}</#if></td>
+                                    <td><#if regionMetrics.pagesFillFactor != 0>${regionMetrics.pagesFillFactor?string('0.##')}</#if></td>
+                                    <td>${regionMetrics.totalUsedPages?c}</td>
+                                    <#if regionMetrics.pageSize != 0>
+                                        <td title="${(regionMetrics.totalUsedPages * regionMetrics.pageSize)?c}">${formatSize(regionMetrics.totalUsedPages * regionMetrics.pageSize)?html}</td>
+                                    <#else>
+                                        <td title="${(regionMetrics.totalUsedPages / regionMetrics.totalAllocatedPages * regionMetrics.totalAllocatedSize)?c}">${formatSize(regionMetrics.totalUsedPages / regionMetrics.totalAllocatedPages * regionMetrics.totalAllocatedSize)?html}</td>
+                                    </#if>
+                                </tr>
+                            </#list>
+                        </#list>
                     </#list>
                 </tbody>
             </table>

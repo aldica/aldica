@@ -72,6 +72,7 @@
         <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
 
         <acosix.utility.version>1.2.2-SNAPSHOT</acosix.utility.version>
+        <ootbee.support-tools.version>1.1.0.0</ootbee.support-tools.version>
         <apache.ignite.version>2.8.1</apache.ignite.version>
         <easymock.version>4.2</easymock.version>
 
@@ -228,6 +229,20 @@
                 <artifactId>de.acosix.alfresco.utility.core.share</artifactId>
                 <version>${acosix.utility.version}</version>
                 <classifier>installable</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.orderofthebee.support-tools</groupId>
+                <artifactId>support-tools-repo</artifactId>
+                <version>${ootbee.support-tools.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.orderofthebee.support-tools</groupId>
+                <artifactId>support-tools-share</artifactId>
+                <version>${ootbee.support-tools.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

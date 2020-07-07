@@ -80,7 +80,7 @@ function buildPropertyGetter(ctxt)
         {
             propertyValue = placeholderHelper.replacePlaceholders(propertyValue, globalProperties);
         }
-        
+
         return propertyValue;
     };
 
@@ -107,7 +107,7 @@ function buildInstances()
 function buildCaches()
 {
     var ctxt, propertyGetter, ArrayList, instances, allInstances, cacheInfos, i, cacheNames, j, cache;
-    
+
     ctxt = Packages.org.springframework.web.context.ContextLoader.getCurrentWebApplicationContext();
     propertyGetter = buildPropertyGetter(ctxt);
 
@@ -138,8 +138,9 @@ function buildCaches()
             cacheInfos.push(buildCacheInfo(instances[i].name(), cache, propertyGetter));
         }
     }
-    
-    cacheInfos.sort(function (a, b){
+
+    cacheInfos.sort(function(a, b)
+    {
         var result;
         result = a.grid.localeCompare(b.grid);
         if (result === 0)
@@ -155,49 +156,44 @@ function buildCaches()
 /* exported buildRegions */
 function buildRegions()
 {
-    var instances, allInstances, i, regionInfos, regionMetrics, regionMetricsIter, regionMetric;
+    /* global gridRegionMetrics: false */
+    var instances, allInstances, i, localGridRegionMetrics, gridRegionMetricsModel, localNodeRegionMetricsModel;
 
-    if (args.instance !== undefined && args.instance !== null && String(args.instance) !== '')
+    if (gridRegionMetrics)
     {
-        instances = [ Packages.org.apache.ignite.Ignition.ignite(args.instance) ];
+        model.gridRegionMetrics = gridRegionMetrics;
     }
     else
     {
-        allInstances = Packages.org.apache.ignite.Ignition.allGrids();
-        instances = [];
-        for (i = 0; i < allInstances.size(); i++)
+        if (args.instance !== undefined && args.instance !== null && String(args.instance) !== '')
         {
-            instances.push(allInstances.get(i));
+            instances = [ Packages.org.apache.ignite.Ignition.ignite(args.instance) ];
         }
-    }
-
-    regionInfos = [];
-    for (i = 0; i < instances.length; i++)
-    {
-        regionMetrics = instances[i].dataRegionMetrics();
-        regionMetricsIter = regionMetrics.iterator();
-
-        while (regionMetricsIter.hasNext())
+        else
         {
-            regionMetric = regionMetricsIter.next();
-            regionInfos.push({
+            allInstances = Packages.org.apache.ignite.Ignition.allGrids();
+            instances = [];
+            for (i = 0; i < allInstances.size(); i++)
+            {
+                instances.push(allInstances.get(i));
+            }
+        }
+
+        localGridRegionMetrics = [];
+        for (i = 0; i < instances.length; i++)
+        {
+            gridRegionMetricsModel = {
                 grid : instances[i].name(),
-                name : regionMetric.name,
-                metrics : regionMetric
-            });
+                gridNodeRegionMetrics : []
+            };
+
+            localNodeRegionMetricsModel = {
+                node : instances[i].cluster().localNode(),
+                dataRegionMetrics : instances[i].dataRegionMetrics()
+            };
+            gridRegionMetricsModel.gridNodeRegionMetrics.push(localNodeRegionMetricsModel);
+            localGridRegionMetrics.push(gridRegionMetricsModel);
         }
+        model.gridRegionMetrics = localGridRegionMetrics;
     }
-
-    regionInfos.sort(function(a, b)
-    {
-        var result;
-        result = a.grid.localeCompare(b.grid);
-        if (result === 0)
-        {
-            result = a.name.localeCompare(b.name);
-        }
-        return result;
-    });
-
-    model.regionInfos = regionInfos;
 }
