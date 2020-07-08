@@ -12,7 +12,7 @@ services:
     alfresco:
         build:
           context: ..
-          dockerfile: docker/Dockerfile.repo
+          dockerfile: docker/Dockerfile.repo.build
         mem_limit: 1500m
         environment:
             JAVA_OPTS: "
@@ -94,7 +94,7 @@ services:
     share:
         build:
           context: ..
-          dockerfile: docker/Dockerfile.share
+          dockerfile: docker/Dockerfile.share.build
         mem_limit: 1g
         environment:
             REPO_HOST: "alfresco"

@@ -1,19 +1,19 @@
 Alfresco Community Open Grid
-Copyright 2019 Acosix GmbH
-Copyright 2019 MAGENTA ApS
+Copyright 2020 Acosix GmbH
+Copyright 2020 MAGENTA ApS
 
 
 This software includes code from Apache Ignite
-Copyright 2019 The Apache Software Foundation
+Copyright 2020 The Apache Software Foundation
 https://ignite.apache.org/
 Licensed under Apache License, Version 2.0
-https://search.maven.org/artifact/org.apache.ignite/ignite-core/2.7.5/jar
-https://search.maven.org/artifact/org.apache.ignite/ignite-web/2.7.5/jar
-https://search.maven.org/artifact/org.apache.ignite/ignite-slf4j/2.7.5/jar
+https://search.maven.org/artifact/org.apache.ignite/ignite-core/2.8.1/jar
+https://search.maven.org/artifact/org.apache.ignite/ignite-web/2.8.1/jar
+https://search.maven.org/artifact/org.apache.ignite/ignite-slf4j/2.8.1/jar
 
 
 This software includes code from IntelliJ IDEA Community Edition
 Copyright (C) JetBrains s.r.o.
 https://www.jetbrains.com/idea/
 Licensed under Apache License, Version 2.0
-https://search.maven.org/artifact/org.jetbrains/annotations/13.0/jar
+https://search.maven.org/artifact/org.jetbrains/annotations/16.0.3/jar

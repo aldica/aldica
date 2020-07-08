@@ -8,9 +8,8 @@
 
     <parent>
         <groupId>de.acosix.alfresco.maven</groupId>
-        <!-- <artifactId>de.acosix.alfresco.maven.project.parent-6.2.0</artifactId> -->
         <artifactId>de.acosix.alfresco.maven.project.parent-6.1.2</artifactId>
-        <version>1.3.1</version>
+        <version>1.3.2</version>
     </parent>
 
     <groupId>org.aldica</groupId>
@@ -21,8 +20,7 @@
     <name>Alternative/Alfresco Distributed Cache - Parent</name>
     <description>Addon providing distributed caching and data grid capabilities to Alfresco Content Services and Share</description>
 
-    <!-- temporary details pending completion of open sourcing process -->
-    <url>https://github.com/AFaust/alfresco-community-open-grid</url>
+    <url>https://github.com/aldica/aldica</url>
 
     <licenses>
         <license>
@@ -32,9 +30,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git@github.com:AFaust/alfresco-community-open-grid.git</connection>
-        <developerConnection>scm:git:git@github.com:AFaust/alfresco-community-open-grid.git</developerConnection>
-        <url>git@github.com:AFaust/alfresco-community-open-grid.git</url>
+        <connection>scm:git:git@github.com:aldica/aldica.git</connection>
+        <developerConnection>scm:git:git@github.com:aldica/aldica.git</developerConnection>
+        <url>git@github.com:aldica/aldica.git</url>
     </scm>
 
     <developers>
@@ -71,7 +69,7 @@
         <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
         <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
 
-        <acosix.utility.version>1.2.2-SNAPSHOT</acosix.utility.version>
+        <acosix.utility.version>1.2.2</acosix.utility.version>
         <ootbee.support-tools.version>1.1.0.0</ootbee.support-tools.version>
         <apache.ignite.version>2.8.1</apache.ignite.version>
         <easymock.version>4.2</easymock.version>
