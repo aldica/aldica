@@ -50,8 +50,24 @@
                 <twitter>twitter.com/ReluctantBird83</twitter>
             </properties>
         </developer>
-        
-        <!-- TODO Add details of Magenta Apps collaborators -->
+        <developer>
+            <id>andreaskring</id>
+            <name>Andreas Kring</name>
+            <email>andreas@magenta.dk</email>
+            <organization>Magenta ApS</organization>
+            <roles>
+                <role>Developer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>skeen</id>
+            <name>Emil Madsen</name>
+            <email>emil@magenta.dk</email>
+            <organization>Magenta ApS</organization>
+            <roles>
+                <role>Developer</role>
+            </roles>
+        </developer>
     </developers>
 
     <properties>
