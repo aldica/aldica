@@ -64,7 +64,7 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
     @Override
     public String copyright()
     {
-        return "Copyright 2019 Acosix GmbH, Copyright 2019 MAGENTA ApS";
+        return "Copyright 2020 Acosix GmbH, Copyright 2020 MAGENTA ApS";
     }
 
     /**

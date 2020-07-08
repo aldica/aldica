@@ -98,9 +98,9 @@ In order to test the various levels of [binary serialisation optimisations](./Co
 
 ### Collected Metrics
 
-Date of benchmark: 2020-06-30 / 2020-07-01
-System: Lenovo T460p, Intel Core i7-6700HQ @ 2.60 GHz, 4 Core, 32 GiB RAM, Windows 10, Docker for Desktop (2 CPU, 14 GiB RAM assigned), SAMSUNG MZ7LN512HMJP 512 GiB SSD
-Concurrent threads: 6
+- Date of benchmark: 2020-06-30 / 2020-07-01
+- System: Lenovo T460p, Intel Core i7-6700HQ @ 2.60 GHz, 4 Core, 32 GiB RAM, Windows 10, Docker for Desktop (2 CPU, 14 GiB RAM assigned), SAMSUNG MZ7LN512HMJP 512 GiB SSD
+- Concurrent threads: 6
 
 | Measure | Alfresco 6.1.2 | aldica (medium opt) | aldica (default / max opt) | aldica (min opt) |
 | :--- | ---: | ---: | ---: | ---: |
