@@ -308,6 +308,18 @@
                             <exclude>**/integration/*.java</exclude>
                             <exclude>**/integration/**/*.java</exclude>
                         </excludes>
+                        <!-- Note: IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK is hopefully temporary until https://github.com/aldica/aldica/issues/39 is fixed upstream -->
+                        <argLine><![CDATA[
+                            -Xmx512M
+                            -Dfile.encoding=UTF-8
+                            -Djava.net.preferIPv4Stack=true
+                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                            -DIGNITE_QUIET=true
+                            -DIGNITE_NO_ASCII=true
+                            -DIGNITE_UPDATE_NOTIFIER=false
+                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                            -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+                        ]]></argLine>
                     </configuration>
                 </plugin>
 
@@ -398,24 +410,6 @@
                                 </run>
                             </image>
                         </images>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <!-- Note: IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK is hopefully temporary until https://github.com/aldica/aldica/issues/39 is fixed upstream -->
-                        <argLine><![CDATA[
-                            -Xmx512M
-                            -Dfile.encoding=UTF-8
-                            -Djava.net.preferIPv4Stack=true
-                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
-                            -DIGNITE_QUIET=true
-                            -DIGNITE_NO_ASCII=true
-                            -DIGNITE_UPDATE_NOTIFIER=false
-                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
-                            -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
-                        ]]></argLine>
                     </configuration>
                 </plugin>
             </plugins>
