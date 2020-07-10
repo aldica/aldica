@@ -66,7 +66,7 @@ The documentation is maintained as part of the source code of the alternative/Al
     - [Repository Configuration Reference](./docs/Configuration-RepoReference.md)
     - [Share Configuration Reference](./docs/Configuration-ShareReference.md)
 - Concepts / High-Level
-    - [Alfresco/Ignite and On-Heap vs Off-Heap Caches](./Concept-Caches.md)
+    - [Alfresco/Ignite and On-Heap vs Off-Heap Caches](./docs/Concept-Caches.md)
     - [Grid Member Discovery](./docs/Concept-GridMemberDiscovery.md)
     - [Binary Serialisation Optimisations](./docs/Concept-BinarySerialiser.md)
 - Verification / Tests
