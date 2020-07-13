@@ -50,8 +50,10 @@
                                     <td>${regionMetrics.name?html}</td>
                                     <#if regionMetrics.pageSize != 0>
                                         <td title="${regionMetrics.pageSize?c}">${formatSize(regionMetrics.pageSize)?html}</td>
+                                    <#elseif regionMetrics.totalAllocatedPages != 0>
+                                        <td title="${((regionMetrics.totalAllocatedSize / regionMetrics.totalAllocatedPages / 1024)?floor * 1024)?c}">${formatSize((regionMetrics.totalAllocatedSize / regionMetrics.totalAllocatedPages / 1024)?floor * 1024)?html}</td>
                                     <#else>
-                                        <td title="${(regionMetrics.totalAllocatedSize / regionMetrics.totalAllocatedPages)?c}">${formatSize(regionMetrics.totalAllocatedSize / regionMetrics.totalAllocatedPages)?html}</td>
+                                        <td></td>
                                     </#if>
                                     <td>${regionMetrics.totalAllocatedPages?c}</td>
                                     <td title="${regionMetrics.totalAllocatedSize?c}">${formatSize(regionMetrics.totalAllocatedSize)?html}</td>
@@ -61,8 +63,10 @@
                                     <td>${regionMetrics.totalUsedPages?c}</td>
                                     <#if regionMetrics.pageSize != 0>
                                         <td title="${(regionMetrics.totalUsedPages * regionMetrics.pageSize)?c}">${formatSize(regionMetrics.totalUsedPages * regionMetrics.pageSize)?html}</td>
-                                    <#else>
+                                    <#elseif regionMetrics.totalAllocatedPages != 0>
                                         <td title="${(regionMetrics.totalUsedPages / regionMetrics.totalAllocatedPages * regionMetrics.totalAllocatedSize)?c}">${formatSize(regionMetrics.totalUsedPages / regionMetrics.totalAllocatedPages * regionMetrics.totalAllocatedSize)?html}</td>
+                                    <#else>
+                                        <td></td>
                                     </#if>
                                 </tr>
                             </#list>
