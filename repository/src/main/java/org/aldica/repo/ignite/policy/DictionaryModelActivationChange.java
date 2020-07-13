@@ -244,7 +244,7 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
                 affectedTenants.addAll(pendingDeactivation.stream().map(nodeTenantMapper).collect(Collectors.toSet()));
 
                 LOGGER.debug("Sending message about dictionary model (de)activations in tenants {} to grid servers {}", affectedTenants,
-                        remotes.node());
+                        remotes.nodes());
 
                 affectedTenants.forEach(tenant -> ignite.message(remotes).send(DictionaryModelActivationChange.class.getName(), tenant));
             }
