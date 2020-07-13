@@ -698,6 +698,12 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                 if ("afterInstanceStartup".equals(methodName) && args.length == 1
                         && EqualsHelper.nullSafeEquals(CacheFactoryImpl.this.instanceName, args[0]))
                 {
+                    // cannot rely on lifecycle call ordering based on some inherent Spring order, so forward to factory itself
+                    if (!CacheFactoryImpl.this.instanceStarted)
+                    {
+                        CacheFactoryImpl.this.afterInstanceStartup(CacheFactoryImpl.this.instanceName);
+                    }
+
                     if (!this.swapped)
                     {
                         final SimpleCache newCache = CacheFactoryImpl.this.createCache(this.cacheName, false);
