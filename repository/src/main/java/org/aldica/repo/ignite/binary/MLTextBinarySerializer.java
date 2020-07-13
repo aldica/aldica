@@ -3,7 +3,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.repo.ignite.binary;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -11,12 +10,12 @@ import java.util.Map.Entry;
 
 import org.alfresco.repo.domain.locale.LocaleDAO;
 import org.alfresco.service.cmr.repository.MLText;
+import org.alfresco.service.cmr.repository.datatype.DefaultTypeConverter;
 import org.alfresco.util.Pair;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -33,16 +32,20 @@ import org.springframework.context.ApplicationContextAware;
  *
  * @author Axel Faust
  */
-public class MLTextBinarySerializer implements BinarySerializer, ApplicationContextAware
+public class MLTextBinarySerializer extends AbstractCustomBinarySerializer implements ApplicationContextAware
 {
+
+    private static final String VALUES = "values";
+
+    private static final byte FLAG_LOCALE_ID = 1;
+
+    private static final byte FLAG_VALUE_NULL = 2;
 
     protected ApplicationContext applicationContext;
 
     protected LocaleDAO localeDAO;
 
     protected boolean useIdsWhenReasonable = false;
-
-    protected boolean useRawSerialForm = false;
 
     /**
      * {@inheritDoc}
@@ -60,15 +63,6 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
     public void setUseIdsWhenReasonable(final boolean useIdsWhenReasonable)
     {
         this.useIdsWhenReasonable = useIdsWhenReasonable;
-    }
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
     }
 
     /**
@@ -93,30 +87,40 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
         if (this.useRawSerialForm)
         {
             final BinaryRawWriter rawWriter = writer.rawWriter();
-            rawWriter.writeInt(mlText.size());
+            this.write(mlText.size(), true, rawWriter);
 
             for (final Entry<Locale, String> entry : mlText.entrySet())
             {
                 final Locale key = entry.getKey();
                 final String value = entry.getValue();
+
+                final byte flags = value != null ? 0 : FLAG_VALUE_NULL;
+
                 if (this.useIdsWhenReasonable)
                 {
                     final Pair<Long, Locale> localePair = this.localeDAO.getLocalePair(key);
-                    rawWriter.writeBoolean(localePair != null);
+
                     if (localePair != null)
                     {
-                        rawWriter.writeLong(localePair.getFirst());
+                        rawWriter.writeByte((byte) (flags | FLAG_LOCALE_ID));
+                        this.writeDbId(localePair.getFirst(), rawWriter);
                     }
                     else
                     {
-                        rawWriter.writeObject(key);
+                        rawWriter.writeByte(flags);
+                        this.write(key.toString(), rawWriter);
                     }
                 }
                 else
                 {
-                    rawWriter.writeObject(key);
+                    rawWriter.writeByte(flags);
+                    this.write(key.toString(), rawWriter);
                 }
-                rawWriter.writeString(value);
+
+                if (value != null)
+                {
+                    this.write(value, rawWriter);
+                }
             }
         }
         else
@@ -126,15 +130,17 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
                 final Map<Object, String> values = new HashMap<>();
                 mlText.forEach((l, s) -> {
                     final Pair<Long, Locale> localePair = this.localeDAO.getLocalePair(l);
-                    values.put(localePair != null ? localePair.getFirst() : l, s);
+                    values.put(localePair != null ? localePair.getFirst() : l.toString(), s);
                 });
-                writer.writeMap("values", values);
+                writer.writeMap(VALUES, values);
             }
             else
             {
-                // must be wrapped otherwise it would be written as self-referential handle
-                // effectively preventing ANY values from being written
-                writer.writeMap("values", Collections.unmodifiableMap(mlText));
+                final Map<Object, String> values = new HashMap<>();
+                mlText.forEach((l, s) -> {
+                    values.put(l.toString(), s);
+                });
+                writer.writeMap(VALUES, values);
             }
         }
     }
@@ -161,64 +167,76 @@ public class MLTextBinarySerializer implements BinarySerializer, ApplicationCont
         if (this.useRawSerialForm)
         {
             final BinaryRawReader rawReader = reader.rawReader();
-            final int size = rawReader.readInt();
+            final int size = this.readInt(true, rawReader);
 
             for (int idx = 0; idx < size; idx++)
             {
+                final byte flags = rawReader.readByte();
                 Locale key;
-                if (this.useIdsWhenReasonable)
+
+                if (!this.useIdsWhenReasonable && ((FLAG_LOCALE_ID) & flags) != 0)
                 {
-                    final boolean isId = rawReader.readBoolean();
-                    if (isId)
+                    throw new BinaryObjectException("Serializer is not configured to use IDs in place of Locale");
+                }
+
+                if (this.useIdsWhenReasonable && ((FLAG_LOCALE_ID) & flags) != 0)
+                {
+                    final long id = this.readDbId(rawReader);
+                    final Pair<Long, Locale> localePair = this.localeDAO.getLocalePair(id);
+                    if (localePair == null)
                     {
-                        final long id = rawReader.readLong();
-                        final Pair<Long, Locale> localePair = this.localeDAO.getLocalePair(id);
-                        if (localePair == null)
-                        {
-                            throw new BinaryObjectException("Cannot resolve Locale for ID " + id);
-                        }
-                        key = localePair.getSecond();
+                        throw new BinaryObjectException("Cannot resolve Locale for ID " + id);
                     }
-                    else
-                    {
-                        key = rawReader.readObject();
-                    }
+                    key = localePair.getSecond();
                 }
                 else
                 {
-                    key = rawReader.readObject();
+                    final String localeStr = this.readString(rawReader);
+                    // we know there is at least a default converter for Locale, maybe even an optimised (caching) one
+                    key = DefaultTypeConverter.INSTANCE.convert(Locale.class, localeStr);
                 }
-                final String value = rawReader.readObject();
+
+                final String value;
+                if ((flags & FLAG_VALUE_NULL) != 0)
+                {
+                    value = null;
+                }
+                else
+                {
+                    value = this.readString(rawReader);
+                }
                 mlText.addValue(key, value);
             }
         }
         else
         {
-            final Map<Object, String> values = reader.readMap("values");
-            if (this.useIdsWhenReasonable)
-            {
-                values.forEach((k, v) -> {
-                    Locale k2;
-                    if (k instanceof Long)
+            final Map<Object, String> values = reader.readMap(VALUES);
+            values.forEach((k, v) -> {
+                Locale k2;
+                if (k instanceof Long)
+                {
+                    if (!this.useIdsWhenReasonable)
                     {
-                        final Pair<Long, Locale> localePair = this.localeDAO.getLocalePair((Long) k);
-                        if (localePair == null)
-                        {
-                            throw new BinaryObjectException("Cannot resolve Locale for ID " + k);
-                        }
-                        k2 = localePair.getSecond();
+                        throw new BinaryObjectException("Serializer is not configured to use IDs in place of Locale");
                     }
-                    else
+                    final Pair<Long, Locale> localePair = this.localeDAO.getLocalePair((Long) k);
+                    if (localePair == null)
                     {
-                        k2 = (Locale) k;
+                        throw new BinaryObjectException("Cannot resolve Locale for ID " + k);
                     }
-                    mlText.addValue(k2, v);
-                });
-            }
-            else
-            {
-                values.forEach((k, v) -> mlText.addValue((Locale) k, v));
-            }
+                    k2 = localePair.getSecond();
+                }
+                else if (k instanceof String)
+                {
+                    // we know there is at least a default converter for Locale, maybe even an optimised (caching) one
+                    k2 = DefaultTypeConverter.INSTANCE.convert(Locale.class, k);
+                }
+                else
+                {
+                    k2 = (Locale) k;
+                }
+                mlText.addValue(k2, v);
+            });
         }
     }
 

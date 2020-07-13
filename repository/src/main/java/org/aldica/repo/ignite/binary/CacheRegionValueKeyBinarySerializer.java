@@ -11,7 +11,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 
@@ -22,7 +21,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
  *
  * @author Axel Faust
  */
-public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
+public class CacheRegionValueKeyBinarySerializer extends AbstractCustomBinarySerializer
 {
 
     private static final String CACHE_REGION_TYPE = "cacheRegionType";
@@ -55,17 +54,6 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
         }
     }
 
-    protected boolean useRawSerialForm = false;
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
-    }
-
     /**
      *
      * {@inheritDoc}
@@ -92,7 +80,7 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
                 rawWriter.writeByte((byte) literal.ordinal());
                 if (literal == CacheRegion.CUSTOM)
                 {
-                    rawWriter.writeString(cacheRegion);
+                    this.write(cacheRegion, rawWriter);
                 }
                 rawWriter.writeObject(cacheValueKey);
             }
@@ -137,7 +125,7 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
             literal = CacheRegion.values()[literalOrdinal];
             if (literal == CacheRegion.CUSTOM)
             {
-                cacheRegion = rawReader.readString();
+                cacheRegion = this.readString(rawReader);
             }
             cacheValueKey = rawReader.readObject();
         }

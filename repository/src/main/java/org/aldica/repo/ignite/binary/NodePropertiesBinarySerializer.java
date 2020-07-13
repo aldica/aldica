@@ -26,7 +26,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -46,7 +45,7 @@ import org.springframework.context.ApplicationContextAware;
  *
  * @author Axel Faust
  */
-public class NodePropertiesBinarySerializer implements BinarySerializer, ApplicationContextAware
+public class NodePropertiesBinarySerializer extends AbstractCustomBinarySerializer implements ApplicationContextAware
 {
 
     private static final String VALUES = "values";
@@ -73,15 +72,21 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
 
     private static final byte TYPE_INTEGER = 4;
 
-    private static final byte TYPE_LONG = 5;
+    private static final byte TYPE_INTEGER_OPT = 5;
 
-    private static final byte TYPE_FLOAT = 6;
+    private static final byte TYPE_LONG = 6;
 
-    private static final byte TYPE_DOUBLE = 7;
+    private static final byte TYPE_LONG_OPT = 7;
 
-    private static final byte TYPE_STRING = 8;
+    private static final byte TYPE_FLOAT = 8;
 
-    private static final byte TYPE_DATE = 9;
+    private static final byte TYPE_DOUBLE = 9;
+
+    private static final byte TYPE_STRING = 10;
+
+    private static final byte TYPE_DATE = 11;
+
+    private static final byte TYPE_DATE_OPT = 12;
 
     protected ApplicationContext applicationContext;
 
@@ -92,8 +97,6 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
     protected boolean useIdsWhenReasonable = false;
 
     protected boolean useIdsWhenPossible = false;
-
-    protected boolean useRawSerialForm = false;
 
     /**
      * {@inheritDoc}
@@ -120,15 +123,6 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
     public void setUseIdsWhenPossible(final boolean useIdsWhenPossible)
     {
         this.useIdsWhenPossible = useIdsWhenPossible;
-    }
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
     }
 
     /**
@@ -188,7 +182,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
     protected void writePropertiesRawSerialForm(final NodePropertiesCacheMap properties, final BinaryRawWriter rawWriter)
     {
         final int size = properties.size();
-        rawWriter.writeInt(size);
+        this.write(size, true, rawWriter);
 
         for (final Entry<QName, Serializable> entry : properties.entrySet())
         {
@@ -261,7 +255,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
             rawWriter.writeByte(flags);
             if (keyId != null)
             {
-                rawWriter.writeLong(keyId);
+                this.writeDbId(keyId, rawWriter);
             }
             else
             {
@@ -272,11 +266,15 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
             {
                 if ((flags & FLAG_MULTI_VALUED) == FLAG_MULTI_VALUED)
                 {
-                    rawWriter.writeLongArray(valueIds);
+                    this.write(valueIds.length, true, rawWriter);
+                    for (final Long valueId : valueIds)
+                    {
+                        this.writeDbId(valueId, rawWriter);
+                    }
                 }
                 else
                 {
-                    rawWriter.writeLong(valueIds[0]);
+                    this.writeDbId(valueIds[0], rawWriter);
                 }
             }
             else if (value != null)
@@ -302,7 +300,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
         {
             rawWriter.writeByte(TYPE_LIST);
             final List<?> list = (List<?>) value;
-            rawWriter.writeInt(list.size());
+            this.write(list.size(), true, rawWriter);
             for (final Object element : list)
             {
                 this.writeValueRawSerialForm(element, rawWriter);
@@ -315,13 +313,31 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
         }
         else if (value instanceof Integer)
         {
-            rawWriter.writeByte(TYPE_INTEGER);
-            rawWriter.writeInt((Integer) value);
+            final int val = ((Integer) value).intValue();
+            if (val < INT_AS_BYTE_SIGNED_NEGATIVE_MAX || val > INT_AS_BYTE_SIGNED_POSITIVE_MAX)
+            {
+                rawWriter.writeByte(TYPE_INTEGER);
+                rawWriter.writeInt(val);
+            }
+            else
+            {
+                rawWriter.writeByte(TYPE_INTEGER_OPT);
+                this.write(val, false, rawWriter);
+            }
         }
         else if (value instanceof Long)
         {
-            rawWriter.writeByte(TYPE_LONG);
-            rawWriter.writeLong((Long) value);
+            final long val = ((Long) value).longValue();
+            if (val < LONG_AS_BYTE_SIGNED_NEGATIVE_MAX || val > LONG_AS_BYTE_SIGNED_POSITIVE_MAX)
+            {
+                rawWriter.writeByte(TYPE_LONG);
+                rawWriter.writeLong(val);
+            }
+            else
+            {
+                rawWriter.writeByte(TYPE_LONG_OPT);
+                this.write(val, false, rawWriter);
+            }
         }
         else if (value instanceof Float)
         {
@@ -336,12 +352,21 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
         else if (value instanceof String)
         {
             rawWriter.writeByte(TYPE_STRING);
-            rawWriter.writeString((String) value);
+            this.write((String) value, rawWriter);
         }
         else if (value instanceof Date)
         {
-            rawWriter.writeByte(TYPE_DATE);
-            rawWriter.writeDate((Date) value);
+            final long time = ((Date) value).getTime();
+            if (time < LONG_AS_BYTE_SIGNED_NEGATIVE_MAX || time > LONG_AS_BYTE_SIGNED_POSITIVE_MAX)
+            {
+                rawWriter.writeByte(TYPE_DATE);
+                rawWriter.writeLong(time);
+            }
+            else
+            {
+                rawWriter.writeByte(TYPE_DATE_OPT);
+                this.write(time, false, rawWriter);
+            }
         }
         // TODO Support Locale (d:locale) via ID resolution
         else if (value != null)
@@ -358,7 +383,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
     protected void readPropertiesRawSerialForm(final NodePropertiesCacheMap properties, final BinaryRawReader rawReader)
             throws BinaryObjectException
     {
-        final int size = rawReader.readInt();
+        final int size = this.readInt(true, rawReader);
 
         for (int idx = 0; idx < size; idx++)
         {
@@ -376,7 +401,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
             final QName key;
             if ((flags & FLAG_QNAME_ID) == FLAG_QNAME_ID)
             {
-                final long id = rawReader.readLong();
+                final long id = this.readDbId(rawReader);
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(id);
                 if (qnamePair == null)
                 {
@@ -396,29 +421,20 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
                 {
                     if ((flags & FLAG_CONTENT_DATA_VALUE_ID) == FLAG_CONTENT_DATA_VALUE_ID)
                     {
-                        final long[] ids = rawReader.readLongArray();
-                        if (ids != null)
+                        final int length = this.readInt(true, rawReader);
+                        final ContentData[] cds = new ContentData[length];
+                        for (int i = 0; i < length; i++)
                         {
-                            final ContentData[] cds = new ContentData[ids.length];
-                            idx = 0;
-
-                            for (final long id : ids)
+                            final long id = this.readDbId(rawReader);
+                            final Pair<Long, ContentData> contentDataPair = this.contentDataDAO.getContentData(id);
+                            if (contentDataPair == null)
                             {
-                                final Pair<Long, ContentData> contentDataPair = this.contentDataDAO.getContentData(id);
-                                if (contentDataPair == null)
-                                {
-                                    throw new BinaryObjectException("Cannot resolve ContentData for ID " + id);
-                                }
-                                cds[idx++] = contentDataPair.getSecond();
+                                throw new BinaryObjectException("Cannot resolve ContentData for ID " + id);
                             }
+                            cds[idx++] = contentDataPair.getSecond();
+                        }
 
-                            value = new ArrayList<>(Arrays.asList(cds));
-                        }
-                        // else should never occur, but technically can
-                        else
-                        {
-                            value = new ArrayList<>();
-                        }
+                        value = new ArrayList<>(Arrays.asList(cds));
                     }
                     else
                     {
@@ -429,7 +445,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
                 {
                     if ((flags & FLAG_CONTENT_DATA_VALUE_ID) == FLAG_CONTENT_DATA_VALUE_ID)
                     {
-                        final long id = rawReader.readLong();
+                        final long id = this.readDbId(rawReader);
                         final Pair<Long, ContentData> contentDataPair = this.contentDataDAO.getContentData(id);
                         if (contentDataPair == null)
                         {
@@ -461,7 +477,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
         switch (type)
         {
             case TYPE_LIST:
-                final int size = rawReader.readInt();
+                final int size = this.readInt(true, rawReader);
                 final ArrayList<Serializable> list = new ArrayList<>(size);
                 for (int idx = 0; idx < size; idx++)
                 {
@@ -475,8 +491,14 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
             case TYPE_INTEGER:
                 result = rawReader.readInt();
                 break;
+            case TYPE_INTEGER_OPT:
+                result = this.readInt(false, rawReader);
+                break;
             case TYPE_LONG:
                 result = rawReader.readLong();
+                break;
+            case TYPE_LONG_OPT:
+                result = this.readLong(false, rawReader);
                 break;
             case TYPE_FLOAT:
                 result = rawReader.readFloat();
@@ -485,10 +507,13 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
                 result = rawReader.readDouble();
                 break;
             case TYPE_STRING:
-                result = rawReader.readString();
+                result = this.readString(rawReader);
                 break;
             case TYPE_DATE:
-                result = rawReader.readDate();
+                result = new Date(rawReader.readLong());
+                break;
+            case TYPE_DATE_OPT:
+                result = new Date(this.readLong(false, rawReader));
                 break;
             case TYPE_DEFAULT:
                 result = rawReader.readObject();

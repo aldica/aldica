@@ -46,6 +46,8 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
         binaryTypeConfigurationForCacheRegionKey.setTypeName(CacheRegionKey.class.getName());
         final TransactionalCacheRegionKeyBinarySerializer serializer = new TransactionalCacheRegionKeyBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseOptimisedString(serialForm);
+        serializer.setUseVariableLengthPrimitives(serialForm);
         binaryTypeConfigurationForCacheRegionKey.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForCacheRegionKey));
@@ -136,8 +138,8 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
             final IgniteCache<Long, CacheRegionKey> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, CacheRegionKey> cache1 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.02);
+            // saving potential is limited - 3%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.03);
         }
         finally
         {

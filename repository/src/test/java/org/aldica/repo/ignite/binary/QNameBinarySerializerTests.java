@@ -74,6 +74,8 @@ public class QNameBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForQName.setTypeName(QName.class.getName());
         final QNameBinarySerializer serializer = new QNameBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseOptimisedString(serialForm);
+        serializer.setUseVariableLengthPrimitives(serialForm);
         binaryTypeConfigurationForQName.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForQName));
@@ -163,8 +165,8 @@ public class QNameBinarySerializerTests extends GridTestsBase
             final IgniteCache<Long, QName> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, QName> cache1 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.02);
+            // saving potential is limited - 4%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.04);
         }
         finally
         {

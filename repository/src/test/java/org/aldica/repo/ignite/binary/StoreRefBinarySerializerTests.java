@@ -56,6 +56,8 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForStoreRef.setTypeName(StoreRef.class.getName());
         final StoreRefBinarySerializer serializer = new StoreRefBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseOptimisedString(serialForm);
+        serializer.setUseVariableLengthPrimitives(serialForm);
         binaryTypeConfigurationForStoreRef.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForStoreRef));
@@ -155,18 +157,18 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
             cacheConfig.setDataRegionName("fullyRandom");
             final IgniteCache<Long, StoreRef> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, StoreRef> cache1 = grid.getOrCreateCache(cacheConfig);
-            // saving potential is limited - 3%
+            // saving potential is limited - 6%
             this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", MODE_FULLY_RANDOM,
-                    0.03);
+                    0.06);
 
             cacheConfig.setName("randomId");
             cacheConfig.setDataRegionName("randomId");
             final IgniteCache<Long, StoreRef> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, StoreRef> cache2 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2% (fewer fields optimised away than in fully random case)
+            // saving potential is limited - 4% (fewer fields optimised away than in fully random case)
             this.efficiencyImpl(referenceGrid, grid, referenceCache2, cache2, "aldica raw serial", "aldica optimised", MODE_RANDOM_ID,
-                    0.02);
+                    0.04);
         }
         finally
         {

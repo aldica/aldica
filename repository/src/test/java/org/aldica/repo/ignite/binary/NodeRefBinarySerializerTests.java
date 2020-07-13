@@ -64,6 +64,8 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForNodeRef.setTypeName(NodeRef.class.getName());
         final NodeRefBinarySerializer serializer = new NodeRefBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseOptimisedString(serialForm);
+        serializer.setUseVariableLengthPrimitives(serialForm);
         binaryTypeConfigurationForNodeRef.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForNodeRef));
@@ -174,27 +176,27 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
             final IgniteCache<Long, NodeRef> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, NodeRef> cache1 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 4%
+            // saving potential is limited - 8%
             this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", MODE_FULLY_RANDOM,
-                    0.03);
+                    0.08);
 
             cacheConfig.setName("randomNodeRefsKnownStore");
             cacheConfig.setDataRegionName("randomNodeRefsKnownStore");
             final IgniteCache<Long, NodeRef> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, NodeRef> cache2 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 3%
+            // saving potential is limited - 6%
             this.efficiencyImpl(referenceGrid, grid, referenceCache2, cache2, "aldica raw serial", "aldica optimised",
-                    MODE_RANDOM_STORE_AND_NODE_ID, 0.03);
+                    MODE_RANDOM_STORE_AND_NODE_ID, 0.06);
 
             cacheConfig.setName("knownStoreRandomId");
             cacheConfig.setDataRegionName("knownStoreRandomId");
             final IgniteCache<Long, NodeRef> referenceCache3 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, NodeRef> cache3 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2%
+            // saving potential is limited - 4%
             this.efficiencyImpl(referenceGrid, grid, referenceCache3, cache3, "aldica raw serial", "aldica optimised",
-                    MODE_KNOWN_STORE_AND_RANDOM_NODE_ID, 0.02);
+                    MODE_KNOWN_STORE_AND_RANDOM_NODE_ID, 0.04);
         }
         finally
         {

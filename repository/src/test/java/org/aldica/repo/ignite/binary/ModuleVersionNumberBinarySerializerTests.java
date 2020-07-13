@@ -45,6 +45,8 @@ public class ModuleVersionNumberBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForModuleVersionNumber.setTypeName(ModuleVersionNumber.class.getName());
         final ModuleVersionNumberBinarySerializer serializer = new ModuleVersionNumberBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseOptimisedString(serialForm);
+        serializer.setUseVariableLengthPrimitives(serialForm);
         binaryTypeConfigurationForModuleVersionNumber.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForModuleVersionNumber));
@@ -134,9 +136,9 @@ public class ModuleVersionNumberBinarySerializerTests extends GridTestsBase
             final IgniteCache<Long, ModuleVersionNumber> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, ModuleVersionNumber> cache1 = grid.getOrCreateCache(cacheConfig);
 
-            // for objects with a single field, there is no benefit in raw serial form - -0.4%
-            // though serial form saves a byte, it looses out due to extra offset position value (int) being written
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", -0.004);
+            // for objects with a single field, there is typically no benefit in raw serial form
+            // but optimised String with variable length primitives for length does provide some benefit - 4%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.04);
         }
         finally
         {

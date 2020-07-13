@@ -46,6 +46,8 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForCacheRegionKey.setTypeName(CacheRegionKey.class.getName());
         final CacheRegionKeyBinarySerializer serializer = new CacheRegionKeyBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseOptimisedString(serialForm);
+        serializer.setUseVariableLengthPrimitives(serialForm);
         binaryTypeConfigurationForCacheRegionKey.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForCacheRegionKey));
@@ -191,7 +193,7 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
         final SecureRandom rnJesus = new SecureRandom();
         for (int idx = 0; idx < 100000; idx++)
         {
-            final String region = regions[rnJesus.nextInt(regions.length - 1)].getCacheRegionName();
+            final String region = regions[rnJesus.nextInt(regions.length - 2)].getCacheRegionName();
             final CacheRegionKey value = new CacheRegionKey(region, UUID.randomUUID().toString());
 
             referenceCache.put(Long.valueOf(idx), value);

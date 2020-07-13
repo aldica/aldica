@@ -125,6 +125,8 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
         serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseIdsWhenPossible(idsWhenPossible);
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseOptimisedString(serialForm);
+        serializer.setUseVariableLengthPrimitives(serialForm);
 
         final BinaryTypeConfiguration binaryTypeConfigurationForNodePropertiesCacheMap = new BinaryTypeConfiguration();
         binaryTypeConfigurationForNodePropertiesCacheMap.setTypeName(NodePropertiesCacheMap.class.getName());
@@ -223,9 +225,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
                 // default uses HashMap.writeObject and Serializable all the way through, which is already very efficient
-                // without ID substitution, our serialisation cannot come close
+                // without ID substitution, our serialisation cannot come close - -73%
                 this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, contentDataDAO, "aldica optimised",
-                        "Ignite default", -0.75);
+                        "Ignite default", -0.73);
 
                 cacheConfig.setName("comparison2");
                 cacheConfig.setDataRegionName("comparison2");
@@ -233,9 +235,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache2 = useQNameIdGrid.getOrCreateCache(cacheConfig);
 
                 // replacing full QName with ID saves a lot and overcomes base disadvantage
-                // 20%
+                // 23%
                 this.efficiencyImpl(referenceGrid, useQNameIdGrid, referenceCache2, cache2, contentDataDAO,
-                        "aldica optimised (QName ID substitution)", "Ignite default", 0.2);
+                        "aldica optimised (QName ID substitution)", "Ignite default", 0.23);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
@@ -243,9 +245,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache3 = useQNameIdGrid.getOrCreateCache(cacheConfig);
 
                 // savings are more pronounced compared to our own base
-                // 53%
+                // 55%
                 this.efficiencyImpl(defaultGrid, useQNameIdGrid, referenceCache3, cache3, contentDataDAO,
-                        "aldica optimised (QName ID substitution)", "aldica optimised", 0.53);
+                        "aldica optimised (QName ID substitution)", "aldica optimised", 0.55);
 
                 cacheConfig.setName("comparison4");
                 cacheConfig.setDataRegionName("comparison4");
@@ -264,9 +266,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache5 = useAllIdGrid.getOrCreateCache(cacheConfig);
 
                 // savings are extremely more pronounced compared to our own base
-                // 72%
+                // 73%
                 this.efficiencyImpl(defaultGrid, useAllIdGrid, referenceCache5, cache5, contentDataDAO,
-                        "aldica optimised (QName + ContentData ID substitution)", "aldica optimised", 0.72);
+                        "aldica optimised (QName + ContentData ID substitution)", "aldica optimised", 0.73);
 
                 cacheConfig.setName("comparison6");
                 cacheConfig.setDataRegionName("comparison6");
@@ -274,9 +276,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache6 = useAllIdGrid.getOrCreateCache(cacheConfig);
 
                 // ContentDataWithId is quite complex, so significant savings in addition to QName ID substitution if sparse metadata
-                // 38%
+                // 39%
                 this.efficiencyImpl(useQNameIdGrid, useAllIdGrid, referenceCache6, cache6, contentDataDAO,
-                        "aldica optimised (QName + ContentData ID substitution)", "aldica optimised (QName ID substitution)", 0.38);
+                        "aldica optimised (QName + ContentData ID substitution)", "aldica optimised (QName ID substitution)", 0.39);
             }
             finally
             {
@@ -364,18 +366,18 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache2 = useQNameIdGrid.getOrCreateCache(cacheConfig);
 
                 // QNames are expensive due to namespace + local name
-                // 54%
+                // 61%
                 this.efficiencyImpl(referenceGrid, useQNameIdGrid, referenceCache2, cache2, contentDataDAO,
-                        "aldica raw serial (ID substitution)", "aldica optimised", 0.54);
+                        "aldica raw serial (ID substitution)", "aldica optimised", 0.61);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
                 final IgniteCache<Long, NodePropertiesCacheMap> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, NodePropertiesCacheMap> cache3 = useQNameIdGrid.getOrCreateCache(cacheConfig);
 
-                // 54%
+                // 61%
                 this.efficiencyImpl(defaultGrid, useQNameIdGrid, referenceCache3, cache3, contentDataDAO,
-                        "aldica raw serial (ID substitution)", "aldica raw serial", 0.54);
+                        "aldica raw serial (ID substitution)", "aldica raw serial", 0.61);
 
                 cacheConfig.setName("comparison4");
                 cacheConfig.setDataRegionName("comparison4");
@@ -383,18 +385,18 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache4 = useAllIdGrid.getOrCreateCache(cacheConfig);
 
                 // savings should be more pronounced with both QName and ContentDataWithId replaced
-                // 72%
+                // 81%
                 this.efficiencyImpl(referenceGrid, useAllIdGrid, referenceCache4, cache4, contentDataDAO,
-                        "aldica raw serial (QName + ContentData ID substitution)", "aldica optimised", 0.72);
+                        "aldica raw serial (QName + ContentData ID substitution)", "aldica optimised", 0.81);
 
                 cacheConfig.setName("comparison5");
                 cacheConfig.setDataRegionName("comparison5");
                 final IgniteCache<Long, NodePropertiesCacheMap> referenceCache5 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, NodePropertiesCacheMap> cache5 = useAllIdGrid.getOrCreateCache(cacheConfig);
 
-                // 72%
+                // 81%
                 this.efficiencyImpl(defaultGrid, useAllIdGrid, referenceCache5, cache5, contentDataDAO,
-                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial", 0.72);
+                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial", 0.81);
 
                 cacheConfig.setName("comparison6");
                 cacheConfig.setDataRegionName("comparison6");
@@ -402,9 +404,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache6 = useAllIdGrid.getOrCreateCache(cacheConfig);
 
                 // ContentDataWithId is quite complex, so significant savings in addition to QName ID substitution if sparse metadata
-                // 42%
+                // 52%
                 this.efficiencyImpl(useQNameIdGrid, useAllIdGrid, referenceCache6, cache6, contentDataDAO,
-                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial (QName ID substitution)", 0.42);
+                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial (QName ID substitution)", 0.52);
             }
             finally
             {

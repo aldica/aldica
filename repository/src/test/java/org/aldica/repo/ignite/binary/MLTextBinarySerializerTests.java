@@ -41,7 +41,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
 {
 
     private static final Locale[] LOCALES = { Locale.ENGLISH, Locale.GERMAN, Locale.FRENCH, Locale.CHINESE, Locale.JAPANESE, Locale.ITALIAN,
-            Locale.SIMPLIFIED_CHINESE };
+            Locale.SIMPLIFIED_CHINESE, Locale.US, Locale.UK, Locale.GERMANY };
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MLTextBinarySerializerTests.class);
 
@@ -80,6 +80,8 @@ public class MLTextBinarySerializerTests extends GridTestsBase
         serializer.setApplicationContext(applicationContext);
         serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseOptimisedString(serialForm);
+        serializer.setUseVariableLengthPrimitives(serialForm);
         binaryTypeConfigurationForMLText.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForMLText));
@@ -149,27 +151,29 @@ public class MLTextBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, MLText> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-                // default serialisation is slightly more efficient due to simplified schema of map-derived objects - -1%
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", -0.01);
+                // since our optimised serialisation replaces Locale with textual representation, we can provide a significant benefit - 27%
+                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", 0.27);
 
                 cacheConfig.setName("comparison2");
                 cacheConfig.setDataRegionName("comparison2");
                 final IgniteCache<Long, MLText> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache2 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // ID substitution provides main benefit (more for shorter texts) - 20%
+                // ID substitution should have roughly similar benefit when language AND country variant are used - 27%
                 this.efficiencyImpl(referenceGrid, useIdGrid, referenceCache2, cache2, "aldica optimised (ID substitution)",
-                        "Ignite default", 0.2);
+                        "Ignite default", 0.27);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
                 final IgniteCache<Long, MLText> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache3 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // ID substitution provides main benefit (more for shorter texts) - 20%
+                // since switching Locale for its textual representation in default optimisation
+                // ID substitution provides equal benefits for Locale instances with language AND country variant
+                // ID substitution provides less benefits for Locale instances with only language
                 this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3,
                         "aldica optimised (ID substitution)",
-                        "aldica optimised", 0.2);
+                        "aldica optimised", -0.01);
             }
             finally
             {
@@ -221,29 +225,28 @@ public class MLTextBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, MLText> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-                // for objects with a single field, there is no benefit in raw serial form - 0%
-                // though serial form saves a few bytes of map field metadata , it equalises due to extra offset position value (int) being
-                // written
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0);
+                // normally, for objects with a single field, there is no benefit in raw serial form
+                // but MLText is able to use String optimisations via variable length primitives - 9%
+                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.09);
 
                 cacheConfig.setName("comparison2");
                 cacheConfig.setDataRegionName("comparison2");
                 final IgniteCache<Long, MLText> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache2 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // 24%
+                // aldica default already provides decent improvements by using Locale textual representation
+                // serial form with ID substitution can still provide benefits via variable length primitives for ID substitution - 13%
                 this.efficiencyImpl(referenceGrid, useIdGrid, referenceCache2, cache2, "aldica raw serial (ID substitution)",
-                        "aldica optimised", 0.24);
+                        "aldica optimised", 0.13);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
                 final IgniteCache<Long, MLText> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache3 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // 24%
-                this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3,
-                        "aldica raw serial (ID substitution)",
-                        "aldica raw serial", 0.24);
+                // only benefit comes from variable length primitive long being more efficient than short text - 4%
+                this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3, "aldica raw serial (ID substitution)",
+                        "aldica raw serial", 0.04);
             }
             finally
             {
@@ -300,8 +303,9 @@ public class MLTextBinarySerializerTests extends GridTestsBase
 
         for (int idx = 0; idx < 100000; idx++)
         {
-            final MLText value = new MLText(Locale.ENGLISH, UUID.randomUUID().toString());
-            value.addValue(Locale.GERMAN, UUID.randomUUID().toString());
+            final MLText value = new MLText(Locale.US, UUID.randomUUID().toString());
+            value.addValue(Locale.GERMANY, UUID.randomUUID().toString());
+            value.addValue(Locale.UK, UUID.randomUUID().toString());
 
             referenceCache.put(Long.valueOf(idx), value);
             cache.put(Long.valueOf(idx), value);
