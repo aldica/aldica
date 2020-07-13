@@ -12,6 +12,7 @@ import java.util.Map;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.springframework.extensions.webscripts.Cache;
 import org.springframework.extensions.webscripts.DeclarativeWebScript;
@@ -70,15 +71,18 @@ public class DataRegionsGet extends DeclarativeWebScript
 
             gridNodeRegionMetrics.add(localNodeRegionMetrics);
 
-            grid.compute(grid.cluster().forRemotes()).broadcast(() -> {
-                final Map<String, Object> remoteNodeRegionMetrics = new HashMap<>();
-                final Ignite localIgnite = Ignition.localIgnite();
-                remoteNodeRegionMetrics.put("node", localIgnite.cluster().localNode());
-                remoteNodeRegionMetrics.put("dataRegionMetrics", localIgnite.dataRegionMetrics());
+            final ClusterGroup remotes = grid.cluster().forRemotes();
+            if (!remotes.nodes().isEmpty())
+            {
+                grid.compute(remotes).broadcast(() -> {
+                    final Map<String, Object> remoteNodeRegionMetrics = new HashMap<>();
+                    final Ignite localIgnite = Ignition.localIgnite();
+                    remoteNodeRegionMetrics.put("node", localIgnite.cluster().localNode());
+                    remoteNodeRegionMetrics.put("dataRegionMetrics", localIgnite.dataRegionMetrics());
 
-                return remoteNodeRegionMetrics;
-            }).forEach(gridNodeRegionMetrics::add);
-
+                    return remoteNodeRegionMetrics;
+                }).forEach(gridNodeRegionMetrics::add);
+            }
         });
         model.put("gridRegionMetrics", gridRegionMetrics);
 
