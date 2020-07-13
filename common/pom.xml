@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.aldica</groupId>
         <artifactId>aldica-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>aldica-common-ignite</artifactId>
