@@ -64,8 +64,7 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForNodeRef.setTypeName(NodeRef.class.getName());
         final NodeRefBinarySerializer serializer = new NodeRefBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
         binaryTypeConfigurationForNodeRef.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForNodeRef));

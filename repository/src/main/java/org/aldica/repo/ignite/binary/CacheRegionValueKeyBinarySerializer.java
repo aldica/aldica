@@ -77,12 +77,30 @@ public class CacheRegionValueKeyBinarySerializer extends AbstractCustomBinarySer
             if (this.useRawSerialForm)
             {
                 final BinaryRawWriter rawWriter = writer.rawWriter();
-                rawWriter.writeByte((byte) literal.ordinal());
+                byte flag = (byte) literal.ordinal();
+
+                // in 5 out of 20 core uses of EntityLookupCache, the value key is a long String
+                // one case of those, it may be a content URL
+                // well-known cache regions are not numerous enough so can use top 2 bits to encode type
+                if (cacheValueKey instanceof String)
+                {
+                    flag = (byte) (flag | 0x80);
+                    // TODO content URL handling once there is special serialisation support
+                }
+
+                rawWriter.writeByte(flag);
                 if (literal == CacheRegion.CUSTOM)
                 {
                     this.write(cacheRegion, rawWriter);
                 }
-                rawWriter.writeObject(cacheValueKey);
+                if (cacheValueKey instanceof String)
+                {
+                    this.write((String) cacheValueKey, rawWriter);
+                }
+                else
+                {
+                    rawWriter.writeObject(cacheValueKey);
+                }
             }
             else
             {
@@ -121,13 +139,22 @@ public class CacheRegionValueKeyBinarySerializer extends AbstractCustomBinarySer
         {
             final BinaryRawReader rawReader = reader.rawReader();
 
-            final byte literalOrdinal = rawReader.readByte();
+            final byte flag = rawReader.readByte();
+            final int literalOrdinal = flag & 0x3f;
             literal = CacheRegion.values()[literalOrdinal];
             if (literal == CacheRegion.CUSTOM)
             {
                 cacheRegion = this.readString(rawReader);
             }
-            cacheValueKey = rawReader.readObject();
+
+            if ((flag & 0x80) != 0)
+            {
+                cacheValueKey = this.readString(rawReader);
+            }
+            else
+            {
+                cacheValueKey = rawReader.readObject();
+            }
         }
         else
         {

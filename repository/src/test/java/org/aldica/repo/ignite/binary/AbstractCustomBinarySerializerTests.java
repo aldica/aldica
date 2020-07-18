@@ -4,6 +4,7 @@
 package org.aldica.repo.ignite.binary;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -69,7 +70,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthPrimitives(true);
+                serialiser.setUseVariableLengthIntegers(true);
 
                 int positionOffset = 0;
 
@@ -134,7 +135,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
             serialiser.write(AbstractCustomBinarySerializer.LONG_AS_BYTE_UNSIGNED_MAX + 1, true, brw);
@@ -151,7 +152,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
 
             serialiser.write(1l, true, brw);
 
@@ -170,7 +171,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
             serialiser.write(AbstractCustomBinarySerializer.LONG_AS_BYTE_SIGNED_POSITIVE_MAX + 1, false, brw);
@@ -187,7 +188,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
             serialiser.write(AbstractCustomBinarySerializer.LONG_AS_BYTE_SIGNED_NEGATIVE_MAX - 1, false, brw);
@@ -208,7 +209,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthPrimitives(false);
+                serialiser.setUseVariableLengthIntegers(false);
 
                 int positionOffset = 0;
 
@@ -270,7 +271,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthPrimitives(true);
+                serialiser.setUseVariableLengthIntegers(true);
                 serialiser.setHandleNegativeIds(false);
 
                 int positionOffset = 0;
@@ -308,7 +309,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthPrimitives(true);
+                serialiser.setUseVariableLengthIntegers(true);
                 serialiser.setHandleNegativeIds(true);
 
                 int positionOffset = 0;
@@ -358,7 +359,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
             serialiser.setHandleNegativeIds(false);
 
             this.exEx.expect(BinaryObjectException.class);
@@ -380,7 +381,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthPrimitives(false);
+                serialiser.setUseVariableLengthIntegers(false);
 
                 int positionOffset = 0;
 
@@ -445,7 +446,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
             serialiser.write(AbstractCustomBinarySerializer.INT_AS_BYTE_UNSIGNED_MAX + 1, true, brw);
@@ -462,7 +463,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
 
             serialiser.write(1, true, brw);
 
@@ -481,7 +482,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
             serialiser.write(AbstractCustomBinarySerializer.INT_AS_BYTE_SIGNED_POSITIVE_MAX + 1, false, brw);
@@ -498,7 +499,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
             serialiser.write(AbstractCustomBinarySerializer.INT_AS_BYTE_SIGNED_NEGATIVE_MAX - 1, false, brw);
@@ -519,7 +520,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthPrimitives(false);
+                serialiser.setUseVariableLengthIntegers(false);
 
                 int positionOffset = 0;
 
@@ -581,7 +582,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthPrimitives(true);
+                serialiser.setUseVariableLengthIntegers(true);
                 serialiser.setHandle128PiBFileSizes(false);
                 serialiser.setHandle2EiBFileSizes(false);
 
@@ -619,7 +620,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthPrimitives(true);
+                serialiser.setUseVariableLengthIntegers(true);
                 serialiser.setHandle128PiBFileSizes(true);
                 serialiser.setHandle2EiBFileSizes(false);
 
@@ -657,7 +658,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthPrimitives(true);
+                serialiser.setUseVariableLengthIntegers(true);
                 serialiser.setHandle128PiBFileSizes(false);
                 serialiser.setHandle2EiBFileSizes(true);
 
@@ -714,7 +715,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
             serialiser.setHandle128PiBFileSizes(false);
             serialiser.setHandle2EiBFileSizes(false);
 
@@ -733,7 +734,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
             serialiser.setHandle128PiBFileSizes(true);
             serialiser.setHandle2EiBFileSizes(false);
 
@@ -752,7 +753,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
             serialiser.setHandle128PiBFileSizes(true);
             serialiser.setHandle2EiBFileSizes(true);
 
@@ -770,7 +771,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
             serialiser.setHandle128PiBFileSizes(false);
             serialiser.setHandle2EiBFileSizes(false);
 
@@ -789,7 +790,7 @@ public class AbstractCustomBinarySerializerTests
             final BinaryRawWriter brw = bw.rawWriter();
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthPrimitives(true);
+            serialiser.setUseVariableLengthIntegers(true);
             serialiser.setHandle128PiBFileSizes(true);
             serialiser.setHandle2EiBFileSizes(false);
 
@@ -799,9 +800,9 @@ public class AbstractCustomBinarySerializerTests
     }
 
     @Test
-    public void testOptimisedStringWithVariableLengthPrimitive() throws IOException
+    public void testStringWithVariableLengthInteger() throws IOException
     {
-        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(10240);
+        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(40960);
         final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
 
         try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
@@ -812,8 +813,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseOptimisedString(true);
-                serialiser.setUseVariableLengthPrimitives(true);
+                serialiser.setUseVariableLengthIntegers(true);
 
                 int positionOffset = 0;
                 String testStr;
@@ -861,9 +861,9 @@ public class AbstractCustomBinarySerializerTests
     }
 
     @Test
-    public void testOptimisedStringWithNonVariableLengthPrimitive() throws IOException
+    public void testStringWithNonVariableLengthInteger() throws IOException
     {
-        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(40960);
+        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(1024);
         final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
 
         try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
@@ -874,8 +874,7 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseOptimisedString(true);
-                serialiser.setUseVariableLengthPrimitives(false);
+                serialiser.setUseVariableLengthIntegers(false);
 
                 int positionOffset = 0;
                 String testStr;
@@ -923,9 +922,9 @@ public class AbstractCustomBinarySerializerTests
     }
 
     @Test
-    public void testNonOptimisedString() throws IOException
+    public void testLocaleWithVariableLengthInteger() throws IOException
     {
-        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(10240);
+        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(1024);
         final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
 
         try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
@@ -936,50 +935,74 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawReader brr = br.rawReader();
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseOptimisedString(false);
-                serialiser.setUseVariableLengthPrimitives(false);
+                serialiser.setUseVariableLengthIntegers(true);
 
                 int positionOffset = 0;
-                String testStr;
+                Locale testLocale;
 
-                // empty string
-                testStr = "";
-                serialiser.write(testStr, brw);
-                positionOffset += testStr.length() + 5;
+                // simple language locale
+                testLocale = Locale.ENGLISH;
+                serialiser.write(testLocale, brw);
+                positionOffset += 2 + 1;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
 
-                // simple String where length fits in 7 bits
-                testStr = "Test";
-                serialiser.write(testStr, brw);
-                positionOffset += testStr.length() + 5;
+                // language + country locale
+                testLocale = Locale.GERMANY;
+                serialiser.write(testLocale, brw);
+                positionOffset += 5 + 1;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
 
-                final StringBuilder longStrBuilder = new StringBuilder(256);
-                // String with length between 7 and 14 bits
-                for (int it = 0; it < 16; it++)
-                {
-                    longStrBuilder.append("0123456789ABCDEF");
-                }
-
-                testStr = longStrBuilder.toString();
-                serialiser.write(testStr, brw);
-                positionOffset += testStr.length() + 5;
+                // language + country + variant locale
+                testLocale = new Locale("de", "DE", "1901");
+                serialiser.write(testLocale, brw);
+                positionOffset += 10 + 1;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
+            }
+        }
+    }
 
-                // String with exceeding 14 bits
-                for (int it = 0; it < 1024; it++)
-                {
-                    longStrBuilder.append("0123456789ABCDEF");
-                }
+    @Test
+    public void testLocaleWithNonVariableLengthInteger() throws IOException
+    {
+        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(40960);
+        final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
 
-                testStr = longStrBuilder.toString();
-                serialiser.write(testStr, brw);
-                positionOffset += testStr.length() + 5;
+        try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
+        {
+            try (final BinaryReaderExImpl br = new BinaryReaderExImpl(null, bis, null, false))
+            {
+                final BinaryRawWriter brw = bw.rawWriter();
+                final BinaryRawReader brr = br.rawReader();
+
+                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
+                serialiser.setUseVariableLengthIntegers(false);
+
+                int positionOffset = 0;
+                Locale testLocale;
+
+                // simple language locale
+                testLocale = Locale.ENGLISH;
+                serialiser.write(testLocale, brw);
+                positionOffset += 2 + 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
+
+                // language + country locale
+                testLocale = Locale.GERMANY;
+                serialiser.write(testLocale, brw);
+                positionOffset += 5 + 4;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
+
+                // language + country + variant locale
+                testLocale = new Locale("de", "DE", "1901");
+                serialiser.write(testLocale, brw);
+                positionOffset += 10 + 4;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
             }
         }
     }

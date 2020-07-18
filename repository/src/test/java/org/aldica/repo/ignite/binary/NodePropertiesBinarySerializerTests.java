@@ -125,8 +125,7 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
         serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseIdsWhenPossible(idsWhenPossible);
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
 
         final BinaryTypeConfiguration binaryTypeConfigurationForNodePropertiesCacheMap = new BinaryTypeConfiguration();
         binaryTypeConfigurationForNodePropertiesCacheMap.setTypeName(NodePropertiesCacheMap.class.getName());

@@ -117,8 +117,7 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
         serializer.setApplicationContext(applicationContext);
         serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
 
         final BinaryTypeConfiguration binaryTypeConfigurationForContentData = new BinaryTypeConfiguration();
         binaryTypeConfigurationForContentData.setTypeName(ContentData.class.getName());

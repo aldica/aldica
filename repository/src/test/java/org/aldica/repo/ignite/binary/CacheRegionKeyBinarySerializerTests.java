@@ -4,6 +4,7 @@
 package org.aldica.repo.ignite.binary;
 
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -46,8 +47,7 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForCacheRegionKey.setTypeName(CacheRegionKey.class.getName());
         final CacheRegionKeyBinarySerializer serializer = new CacheRegionKeyBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
         binaryTypeConfigurationForCacheRegionKey.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForCacheRegionKey));
@@ -138,8 +138,8 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
             final IgniteCache<Long, CacheRegionKey> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, CacheRegionKey> cache1 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.02);
+            // saving potential is limited - 4%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.04);
         }
         finally
         {
@@ -159,6 +159,7 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
             CacheRegionKey controlValue;
             CacheRegionKey cacheValue;
 
+            // default region + String key
             controlValue = new CacheRegionKey(CacheRegion.DEFAULT.getCacheRegionName(), "value1");
             cache.put(1l, controlValue);
 
@@ -168,11 +169,51 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
             // check deep serialisation was actually involved
             Assert.assertFalse(controlValue == cacheValue);
 
-            // random instead of well known region
-            controlValue = new CacheRegionKey(UUID.randomUUID().toString(), "value2");
+            // default region + Long key
+            controlValue = new CacheRegionKey(CacheRegion.DEFAULT.getCacheRegionName(), Long.valueOf(1234));
             cache.put(2l, controlValue);
 
             cacheValue = cache.get(2l);
+
+            Assert.assertEquals(controlValue, cacheValue);
+            // check deep serialisation was actually involved
+            Assert.assertFalse(controlValue == cacheValue);
+
+            // default region + arbitrary key
+            controlValue = new CacheRegionKey(CacheRegion.DEFAULT.getCacheRegionName(), Instant.now());
+            cache.put(3l, controlValue);
+
+            cacheValue = cache.get(3l);
+
+            Assert.assertEquals(controlValue, cacheValue);
+            // check deep serialisation was actually involved
+            Assert.assertFalse(controlValue == cacheValue);
+
+            // random region + String key
+            controlValue = new CacheRegionKey(UUID.randomUUID().toString(), "value2");
+            cache.put(4l, controlValue);
+
+            cacheValue = cache.get(4l);
+
+            Assert.assertEquals(controlValue, cacheValue);
+            // check deep serialisation was actually involved
+            Assert.assertFalse(controlValue == cacheValue);
+
+            // random region + Long key
+            controlValue = new CacheRegionKey(UUID.randomUUID().toString(), Long.valueOf(1234));
+            cache.put(5l, controlValue);
+
+            cacheValue = cache.get(5l);
+
+            Assert.assertEquals(controlValue, cacheValue);
+            // check deep serialisation was actually involved
+            Assert.assertFalse(controlValue == cacheValue);
+
+            // random region + arbitrary key
+            controlValue = new CacheRegionKey(UUID.randomUUID().toString(), Instant.now());
+            cache.put(6l, controlValue);
+
+            cacheValue = cache.get(6l);
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved

@@ -11,7 +11,6 @@ import org.alfresco.repo.domain.locale.LocaleDAO;
 import org.alfresco.repo.domain.mimetype.MimetypeDAO;
 import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.service.cmr.repository.ContentData;
-import org.alfresco.service.cmr.repository.datatype.DefaultTypeConverter;
 import org.alfresco.util.Pair;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -258,9 +257,7 @@ public class ContentDataBinarySerializer extends AbstractCustomBinarySerializer 
         }
         else if (locale != null)
         {
-            // locale inlining one String should always be more efficient that handling Locale as complex object
-            // Java locale serialisation will write 5 String fragments and dummy hashCode integer, plus metadata
-            this.write(locale.toString(), rawWriter);
+            this.write(locale, rawWriter);
         }
     }
 
@@ -449,9 +446,7 @@ public class ContentDataBinarySerializer extends AbstractCustomBinarySerializer 
         }
         else if ((flags & FLAG_LOCALE_NULL) == 0)
         {
-            final String localeStr = this.readString(rawReader);
-            // we know there is at least a default converter for Locale, maybe even an optimised (caching) one
-            locale = DefaultTypeConverter.INSTANCE.convert(Locale.class, localeStr);
+            locale = this.readLocale(rawReader);
         }
 
         try

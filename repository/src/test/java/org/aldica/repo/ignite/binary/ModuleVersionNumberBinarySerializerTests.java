@@ -45,8 +45,7 @@ public class ModuleVersionNumberBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForModuleVersionNumber.setTypeName(ModuleVersionNumber.class.getName());
         final ModuleVersionNumberBinarySerializer serializer = new ModuleVersionNumberBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
         binaryTypeConfigurationForModuleVersionNumber.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForModuleVersionNumber));

@@ -80,8 +80,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
         serializer.setApplicationContext(applicationContext);
         serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
         binaryTypeConfigurationForMLText.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForMLText));

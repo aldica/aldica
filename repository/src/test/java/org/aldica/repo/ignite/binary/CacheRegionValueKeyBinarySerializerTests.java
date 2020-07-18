@@ -4,6 +4,7 @@
 package org.aldica.repo.ignite.binary;
 
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -46,8 +47,7 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForCacheRegionValueKey.setTypeName(CacheRegionValueKey.class.getName());
         final CacheRegionValueKeyBinarySerializer serializer = new CacheRegionValueKeyBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
         binaryTypeConfigurationForCacheRegionValueKey.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForCacheRegionValueKey));
@@ -138,8 +138,8 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
             final IgniteCache<Long, CacheRegionValueKey> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, CacheRegionValueKey> cache1 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.02);
+            // saving potential is limited - 4%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.04);
         }
         finally
         {
@@ -159,6 +159,7 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
             CacheRegionValueKey controlValue;
             CacheRegionValueKey cacheValue;
 
+            // default region + String key
             controlValue = new CacheRegionValueKey(CacheRegion.DEFAULT.getCacheRegionName(), "value1");
             cache.put(1l, controlValue);
 
@@ -168,11 +169,31 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
             // check deep serialisation was actually involved
             Assert.assertFalse(controlValue == cacheValue);
 
-            // random instead of well known region
-            controlValue = new CacheRegionValueKey(UUID.randomUUID().toString(), "value2");
+            // default region + arbitrary key
+            controlValue = new CacheRegionValueKey(CacheRegion.DEFAULT.getCacheRegionName(), Instant.now());
             cache.put(2l, controlValue);
 
             cacheValue = cache.get(2l);
+
+            Assert.assertEquals(controlValue, cacheValue);
+            // check deep serialisation was actually involved
+            Assert.assertFalse(controlValue == cacheValue);
+
+            // random region + String key
+            controlValue = new CacheRegionValueKey(UUID.randomUUID().toString(), "value2");
+            cache.put(3l, controlValue);
+
+            cacheValue = cache.get(3l);
+
+            Assert.assertEquals(controlValue, cacheValue);
+            // check deep serialisation was actually involved
+            Assert.assertFalse(controlValue == cacheValue);
+
+            // random region + arbitrary key
+            controlValue = new CacheRegionValueKey(UUID.randomUUID().toString(), Instant.now());
+            cache.put(4l, controlValue);
+
+            cacheValue = cache.get(4l);
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved

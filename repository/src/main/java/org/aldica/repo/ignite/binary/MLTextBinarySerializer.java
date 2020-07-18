@@ -108,7 +108,7 @@ public class MLTextBinarySerializer extends AbstractCustomBinarySerializer imple
                     else
                     {
                         rawWriter.writeByte(flags);
-                        this.write(key.toString(), rawWriter);
+                        this.write(key, rawWriter);
                     }
                 }
                 else
@@ -191,9 +191,7 @@ public class MLTextBinarySerializer extends AbstractCustomBinarySerializer imple
                 }
                 else
                 {
-                    final String localeStr = this.readString(rawReader);
-                    // we know there is at least a default converter for Locale, maybe even an optimised (caching) one
-                    key = DefaultTypeConverter.INSTANCE.convert(Locale.class, localeStr);
+                    key = this.readLocale(rawReader);
                 }
 
                 final String value;

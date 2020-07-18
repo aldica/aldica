@@ -4,12 +4,13 @@
 package org.aldica.repo.ignite.binary;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
+import org.alfresco.service.cmr.repository.datatype.DefaultTypeConverter;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -49,9 +50,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
 
     protected boolean useRawSerialForm;
 
-    protected boolean useOptimisedString;
-
-    protected boolean useVariableLengthPrimitives;
+    protected boolean useVariableLengthIntegers;
 
     protected boolean handleNegativeIds;
 
@@ -73,35 +72,21 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
     }
 
     /**
-     * Specifies whether this instance should use a minor optimisation when writing non-null String values in the raw serialised form of an
-     * object. This optimisation will drop the {@link GridBinaryMarshaller#STRING extra byte} that Ignite uses to differentiate Strings from
-     * other objects and {@code null} values, and - if enabled - will use a {@link #setUseVariableLengthPrimitives(boolean) variable length
-     * primitive} for encoding the length of the String.
+     * Specifies whether this instance should use/handle variable length integers when dealing with objects in a raw serialised form.
      *
-     * @param useOptimisedString
-     *            {@code true} if non-null Strings should be optimised
+     * @param useVariableLengthIntegers
+     *            {@code true} if variable length integers should be be used
      */
-    public void setUseOptimisedString(final boolean useOptimisedString)
+    public void setUseVariableLengthIntegers(final boolean useVariableLengthIntegers)
     {
-        this.useOptimisedString = useOptimisedString;
-    }
-
-    /**
-     * Specifies whether this instance should use/handle variable length primitives when dealing with objects in a raw serialised form.
-     *
-     * @param useVariableLengthPrimitives
-     *            {@code true} if variable length primitives should be be used
-     */
-    public void setUseVariableLengthPrimitives(final boolean useVariableLengthPrimitives)
-    {
-        this.useVariableLengthPrimitives = useVariableLengthPrimitives;
+        this.useVariableLengthIntegers = useVariableLengthIntegers;
     }
 
     /**
      * Specifies whether this instance must support negative database IDs when dealing with objects in a raw serialised form. Alfresco by
      * default uses auto-incrementing database IDs starting from {@code 0}, so unless manual manipulation is performed at the database
      * level, negative IDs should not need to be supported and the sign bit could be used to optimise
-     * {@link #setUseVariableLengthPrimitives(boolean) variable length primitives}.
+     * {@link #setUseVariableLengthIntegers(boolean) variable length integers}.
      *
      * @param handleNegativeIds
      *            {@code true} if negative database IDs must be supported
@@ -170,7 +155,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
     protected final void writeFileSize(final long size, @NotNull final BinaryRawWriter rawWriter)
     {
 
-        if (this.handle2EiBFileSizes || !this.useVariableLengthPrimitives)
+        if (this.handle2EiBFileSizes || !this.useVariableLengthIntegers)
         {
             rawWriter.writeLong(size);
         }
@@ -178,13 +163,13 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
         {
             if (size < 0)
             {
-                throw new BinaryObjectException("Cannot write negative long value as unsigned long in variable length primitive mode");
+                throw new BinaryObjectException("Cannot write negative long value as unsigned long in variable length integer mode");
             }
 
             if (size > LONG_AS_SHORT_UNSIGNED_MAX)
             {
                 throw new BinaryObjectException(
-                        "File size exceeds value range in variable length primitive mode with [128 PiB, 2EiB) file size support");
+                        "File size exceeds value range in variable length integer mode with [128 PiB, 2EiB) file size support");
             }
 
             if (size == 0)
@@ -214,7 +199,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
     protected final long readFileSize(@NotNull final BinaryRawReader rawReader)
     {
         long fileSize;
-        if (this.handle2EiBFileSizes || !this.useVariableLengthPrimitives)
+        if (this.handle2EiBFileSizes || !this.useVariableLengthIntegers)
         {
             fileSize = rawReader.readLong();
         }
@@ -239,20 +224,13 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      */
     protected final void write(@NotNull final String value, @NotNull final BinaryRawWriter rawWriter)
     {
-        if (!this.useOptimisedString)
+        final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        this.write(bytes.length, true, rawWriter);
+        if (bytes.length != 0)
         {
-            rawWriter.writeString(value);
-        }
-        else
-        {
-            final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-            this.write(bytes.length, true, rawWriter);
-            if (bytes.length != 0)
+            for (final byte b : bytes)
             {
-                for (final byte b : bytes)
-                {
-                    rawWriter.writeByte(b);
-                }
+                rawWriter.writeByte(b);
             }
         }
     }
@@ -267,22 +245,44 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
     @NotNull
     protected final String readString(@NotNull final BinaryRawReader rawReader)
     {
-        final String value;
-        if (!this.useOptimisedString)
+        final int size = this.readInt(true, rawReader);
+        final byte[] bytes = new byte[size];
+        for (int idx = 0; idx < size; idx++)
         {
-            value = rawReader.readString();
+            bytes[idx] = rawReader.readByte();
         }
-        else
-        {
-            final int size = this.readInt(true, rawReader);
-            final byte[] bytes = new byte[size];
-            for (int idx = 0; idx < size; idx++)
-            {
-                bytes[idx] = rawReader.readByte();
-            }
 
-            value = new String(bytes, StandardCharsets.UTF_8);
-        }
+        final String value = new String(bytes, StandardCharsets.UTF_8);
+        return value;
+    }
+
+    /**
+     * Writes a non-null {@link Locale} value to a raw serialised form of an object.
+     *
+     * @param value
+     *            the value to write
+     * @param rawWriter
+     *            the writer to use to write to the raw serialised form
+     */
+    protected final void write(@NotNull final Locale value, @NotNull final BinaryRawWriter rawWriter)
+    {
+        final String valueStr = value.toString();
+        this.write(valueStr, rawWriter);
+    }
+
+    /**
+     * Reads a non-null {@link Locale} value from a raw serialised form of an object.
+     *
+     * @param rawReader
+     *            the reader to use to read from the raw serialised form
+     * @return the {@link Locale} value
+     */
+    @NotNull
+    protected final Locale readLocale(@NotNull final BinaryRawReader rawReader)
+    {
+        final String valueStr = this.readString(rawReader);
+        // we know there is at least a default converter for Locale, maybe even an optimised (caching) one
+        final Locale value = DefaultTypeConverter.INSTANCE.convert(Locale.class, valueStr);
         return value;
     }
 
@@ -293,18 +293,18 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *            the value to write
      * @param nonNegativeOnly
      *            {@code true} if the value can always be expected to hold non-negative values and will be read the same - this is an
-     *            important input into handling {@link #setUseVariableLengthPrimitives(boolean) variable length primitives}
+     *            important input into handling {@link #setUseVariableLengthIntegers(boolean) variable length integers}
      * @param rawWriter
      *            the writer to use to write to the raw serialised form
      * @throws BinaryObjectException
-     *             if the long value cannot be written, e.g. if {@link #setUseVariableLengthPrimitives(boolean) variable length primitives}
+     *             if the long value cannot be written, e.g. if {@link #setUseVariableLengthIntegers(boolean) variable length integers}
      *             are enabled and the value exceeds the supported (reduced) value space for long values
      */
     protected final void write(final long value, final boolean nonNegativeOnly,
             @NotNull final BinaryRawWriter rawWriter)
             throws BinaryObjectException
     {
-        if (!this.useVariableLengthPrimitives)
+        if (!this.useVariableLengthIntegers)
         {
             rawWriter.writeLong(value);
         }
@@ -312,7 +312,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
         {
             if (nonNegativeOnly && value < 0)
             {
-                throw new BinaryObjectException("Cannot write negative long value as unsigned long in variable length primitive mode");
+                throw new BinaryObjectException("Cannot write negative long value as unsigned long in variable length integer mode");
             }
 
             if (value == 0)
@@ -325,7 +325,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
                 if (value > LONG_AS_BYTE_UNSIGNED_MAX)
                 {
                     throw new BinaryObjectException(
-                            "Long value exceeds value range for non-negative values in variable length primitive mode");
+                            "Long value exceeds value range for non-negative values in variable length integer mode");
                 }
 
                 this.writeVariableLengthRemainder(value, 7, rawWriter);
@@ -334,7 +334,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
             {
                 if (value > LONG_AS_BYTE_SIGNED_POSITIVE_MAX || value < LONG_AS_BYTE_SIGNED_NEGATIVE_MAX)
                 {
-                    throw new BinaryObjectException("Long value exceeds value range for signed values in variable length primitive mode");
+                    throw new BinaryObjectException("Long value exceeds value range for signed values in variable length integer mode");
                 }
 
                 long remainder = value;
@@ -364,7 +364,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *
      * @param nonNegativeOnly
      *            {@code true} if the value can always be expected to hold non-negative values and will be read the same - this is an
-     *            important input into handling {@link #setUseVariableLengthPrimitives(boolean) variable length primitives}
+     *            important input into handling {@link #setUseVariableLengthIntegers(boolean) variable length integers}
      * @param rawReader
      *            the reader to use to read from the raw serialised form
      * @return
@@ -373,7 +373,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
     protected final long readLong(final boolean nonNegativeOnly, @NotNull final BinaryRawReader rawReader)
     {
         long value;
-        if (!this.useVariableLengthPrimitives)
+        if (!this.useVariableLengthIntegers)
         {
             value = rawReader.readLong();
         }
@@ -411,19 +411,18 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *            the value to write
      * @param nonNegativeOnly
      *            {@code true} if the value can always be expected to hold non-negative values and will be read the same - this is an
-     *            important input into handling {@link #setUseVariableLengthPrimitives(boolean) variable length primitives}
+     *            important input into handling {@link #setUseVariableLengthIntegers(boolean) variable length integers}
      * @param rawWriter
      *            the writer to use to write to the raw serialised form
      * @throws BinaryObjectException
-     *             if the integer value cannot be written, e.g. if {@link #setUseVariableLengthPrimitives(boolean) variable length
-     *             primitives}
+     *             if the integer value cannot be written, e.g. if {@link #setUseVariableLengthIntegers(boolean) variable length integers}
      *             are enabled and the value exceeds the supported (reduced) value space for long values
      */
     protected final void write(final int value, final boolean nonNegativeOnly,
             @NotNull final BinaryRawWriter rawWriter)
             throws BinaryObjectException
     {
-        if (!this.useVariableLengthPrimitives)
+        if (!this.useVariableLengthIntegers)
         {
             rawWriter.writeInt(value);
         }
@@ -431,8 +430,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
         {
             if (nonNegativeOnly && value < 0)
             {
-                throw new BinaryObjectException(
-                        "Cannot write negative integer value as unsigned integer in variable length primitive mode");
+                throw new BinaryObjectException("Cannot write negative integer value as unsigned integer in variable length integer mode");
             }
 
             if (value == 0)
@@ -445,7 +443,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
                 if (value > INT_AS_BYTE_UNSIGNED_MAX)
                 {
                     throw new BinaryObjectException(
-                            "Integer value exceeds value range for non-negative values in variable length primitive mode");
+                            "Integer value exceeds value range for non-negative values in variable length integer mode");
                 }
 
                 this.writeVariableLengthRemainder(value, 3, rawWriter);
@@ -454,8 +452,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
             {
                 if (value > INT_AS_BYTE_SIGNED_POSITIVE_MAX || value < INT_AS_BYTE_SIGNED_NEGATIVE_MAX)
                 {
-                    throw new BinaryObjectException(
-                            "Integer value exceeds value range for signed values in variable length primitive mode");
+                    throw new BinaryObjectException("Integer value exceeds value range for signed values in variable length integer mode");
                 }
 
                 int remainder = value;
@@ -484,7 +481,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *
      * @param nonNegativeOnly
      *            {@code true} if the value can always be expected to hold non-negative values and will be read the same - this is an
-     *            important input into handling {@link #setUseVariableLengthPrimitives(boolean) variable length primitives}
+     *            important input into handling {@link #setUseVariableLengthIntegers(boolean) variable length integers}
      * @param rawReader
      *            the reader to use to read from the raw serialised form
      * @return
@@ -493,7 +490,7 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
     protected final int readInt(final boolean nonNegativeOnly, @NotNull final BinaryRawReader rawReader)
     {
         int value;
-        if (!this.useVariableLengthPrimitives)
+        if (!this.useVariableLengthIntegers)
         {
             value = rawReader.readInt();
         }

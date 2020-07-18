@@ -46,8 +46,7 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
         binaryTypeConfigurationForCacheRegionKey.setTypeName(CacheRegionKey.class.getName());
         final TransactionalCacheRegionKeyBinarySerializer serializer = new TransactionalCacheRegionKeyBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
         binaryTypeConfigurationForCacheRegionKey.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForCacheRegionKey));

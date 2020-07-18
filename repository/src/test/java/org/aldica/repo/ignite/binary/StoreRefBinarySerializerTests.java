@@ -56,8 +56,7 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForStoreRef.setTypeName(StoreRef.class.getName());
         final StoreRefBinarySerializer serializer = new StoreRefBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
         binaryTypeConfigurationForStoreRef.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForStoreRef));

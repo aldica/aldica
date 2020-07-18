@@ -74,8 +74,7 @@ public class QNameBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForQName.setTypeName(QName.class.getName());
         final QNameBinarySerializer serializer = new QNameBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
-        serializer.setUseOptimisedString(serialForm);
-        serializer.setUseVariableLengthPrimitives(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
         binaryTypeConfigurationForQName.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForQName));
