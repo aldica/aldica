@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.aldica.common.ignite.GridTestsBase;
+import org.aldica.repo.ignite.ExpensiveTestCategory;
 import org.alfresco.service.cmr.repository.StoreRef;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
@@ -25,6 +26,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +90,7 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
         this.correctnessImpl(conf);
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void defaultFormEfficiency()
     {
@@ -137,6 +140,7 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
         this.correctnessImpl(conf);
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void rawSerialFormEfficiency()
     {

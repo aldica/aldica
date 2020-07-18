@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 import org.aldica.common.ignite.GridTestsBase;
+import org.aldica.repo.ignite.ExpensiveTestCategory;
 import org.alfresco.repo.domain.locale.LocaleDAO;
 import org.alfresco.repo.domain.locale.ibatis.LocaleDAOImpl;
 import org.alfresco.service.cmr.repository.MLText;
@@ -29,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -122,6 +124,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
         }
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void defaultFormEfficiency()
     {
@@ -198,6 +201,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
         }
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void rawSerialFormEfficiency()
     {

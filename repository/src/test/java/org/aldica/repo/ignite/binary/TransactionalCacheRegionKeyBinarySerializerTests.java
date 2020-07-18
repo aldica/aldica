@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.aldica.common.ignite.GridTestsBase;
+import org.aldica.repo.ignite.ExpensiveTestCategory;
 import org.alfresco.repo.cache.TransactionalCache.CacheRegionKey;
 import org.alfresco.repo.tenant.TenantService;
 import org.apache.ignite.DataRegionMetrics;
@@ -25,6 +26,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +80,7 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
         this.correctnessImpl(conf);
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void defaultFormEfficiency()
     {
@@ -117,6 +120,7 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
         this.correctnessImpl(conf);
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void rawSerialFormEfficiency()
     {
