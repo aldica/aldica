@@ -229,7 +229,7 @@ public class ContentDataBinarySerializer extends AbstractCustomBinarySerializer 
 
         if (contentUrl != null)
         {
-            this.write(contentUrl, rawWriter);
+            this.writeContentURL(contentUrl, rawWriter);
         }
         this.writeFileSize(contentData.getSize(), rawWriter);
 
@@ -391,7 +391,7 @@ public class ContentDataBinarySerializer extends AbstractCustomBinarySerializer 
 
         if ((flags & FLAG_CONTENT_URL_NULL) == 0)
         {
-            contentUrl = this.readString(rawReader);
+            contentUrl = this.readContentURL(rawReader);
         }
         final long size = this.readFileSize(rawReader);
 

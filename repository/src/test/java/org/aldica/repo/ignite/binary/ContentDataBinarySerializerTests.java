@@ -113,6 +113,7 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
         serializer.setApplicationContext(applicationContext);
         serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseOptimisedContentURL(serialForm);
         serializer.setUseVariableLengthIntegers(serialForm);
 
         final BinaryTypeConfiguration binaryTypeConfigurationForContentData = new BinaryTypeConfiguration();
@@ -170,10 +171,10 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
                 this.efficiencyImpl(referenceGrid, defaultGrid, "aldica optimised", "Ignite default", 0);
 
                 // replacing 3 non-trivial fields with IDs is substantial - 32%
-                this.efficiencyImpl(referenceGrid, useIdGrid, "aldica optimised (ID substitution)", "Ignite default", 0.22);
+                this.efficiencyImpl(referenceGrid, useIdGrid, "aldica optimised (ID substitution)", "Ignite default", 0.32);
 
                 // replacing 3 non-trivial fields with IDs is substantial - 32%
-                this.efficiencyImpl(defaultGrid, useIdGrid, "aldica optimised (ID substitution)", "aldica optimised", 0.22);
+                this.efficiencyImpl(defaultGrid, useIdGrid, "aldica optimised (ID substitution)", "aldica optimised", 0.32);
             }
             finally
             {
@@ -218,11 +219,11 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
                 final Ignite defaultGrid = Ignition.start(defaultConf);
                 final Ignite useIdGrid = Ignition.start(useIdConf);
 
-                // saving potential is significant due to variable length primitives - 33%
-                this.efficiencyImpl(referenceGrid, defaultGrid, "aldica raw serial", "aldica optimised", 0.33);
+                // saving potential is significant due to variable length primitives and special content URL handling - 32%
+                this.efficiencyImpl(referenceGrid, defaultGrid, "aldica raw serial", "aldica optimised", 0.32);
 
-                // using an ID with variable length primitives is even more substantial - 52%
-                this.efficiencyImpl(referenceGrid, useIdGrid, "aldica raw serial (ID substitution)", "aldica optimised", 0.52);
+                // using an ID with variable length primitives is even more substantial - 51%
+                this.efficiencyImpl(referenceGrid, useIdGrid, "aldica raw serial (ID substitution)", "aldica optimised", 0.51);
 
                 // ID substitution with variable length primitives still saves a lot compared to default serial form with variable length
                 // primitives - 27%

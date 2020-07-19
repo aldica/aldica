@@ -5,7 +5,12 @@ package org.aldica.repo.ignite.binary;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.alfresco.repo.content.ContentStore;
+import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.service.cmr.repository.datatype.DefaultTypeConverter;
 import org.alfresco.util.ParameterCheck;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -45,9 +50,42 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
 
     public static final int INT_AS_BYTE_SIGNED_NEGATIVE_MAX = 0x9fffffff;
 
+    private static final String CONTENT_URL_BIN_SUFFIX = ".bin";
+
+    // match for all variations of TimeBasedFileContentUrlProvider / VolumeAwareContentUrlProvider URLs
+    // support optional volumes and buckets in value range of 0-255 (fits well with optional byte)
+    // 256 buckets would mean one bucket is created every ~235ms
+    private static final Pattern OPTIMISABLE_CONTENT_URL_PATH_PATTERN = Pattern.compile(
+            "^(?:([^/]+)/)?([0-9]|[1-3][0-9]{1,3}|40[0-8][0-9]|409[0-5])/([1-9]|1[0-2])/([1-9]|[12][0-9]|3[01])/(1?[0-9]|2[0-3])/([1-5]?[0-9])(?:/([1-9]?[0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))?$");
+
+    // match a GUID-based file name which can be encoded in raw bytes rather than expensive characters
+    private static final Pattern OPTIMISABLE_CONTENT_URL_GUID_PATTERN = Pattern
+            .compile("^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$");
+
+    private static final byte FLAG_CONTENT_URL_DEFAULT_PROTOCOL = (byte) 0x80;
+
+    private static final byte FLAG_CONTENT_URL_SUPPORTED_PATH = (byte) 0x40;
+
+    private static final byte FLAG_CONTENT_URL_PATH_WITH_VOLUMES = (byte) 0x20;
+
+    private static final byte FLAG_CONTENT_URL_PATH_WITH_BUCKETS = (byte) 0x10;
+
+    private static final byte FLAG_CONTENT_URL_GUID_NAME = (byte) 0x08;
+
+    private static final byte FLAG_CONTENT_URL_BIN_SUFFIX = (byte) 0x04;
+
+    private static final byte FLAG_CONTENT_URL_NO_PATH = (byte) 0x02;
+
+    private static final byte FLAG_CONTENT_URL_NO_SUFFIX = (byte) 0x01;
+
+    private static final byte FLAG_CONTENT_URL_ANY_OPTIMISATION = FLAG_CONTENT_URL_DEFAULT_PROTOCOL | FLAG_CONTENT_URL_SUPPORTED_PATH
+            | FLAG_CONTENT_URL_GUID_NAME | FLAG_CONTENT_URL_BIN_SUFFIX;
+
     protected boolean useRawSerialForm;
 
     protected boolean useVariableLengthIntegers;
+
+    protected boolean useOptimisedContentURL;
 
     protected boolean handleNegativeIds;
 
@@ -75,6 +113,17 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
     public void setUseVariableLengthIntegers(final boolean useVariableLengthIntegers)
     {
         this.useVariableLengthIntegers = useVariableLengthIntegers;
+    }
+
+    /**
+     * Specifies whether this instance should use an optimised content URL serialisation when dealing with objects in a raw serialised form.
+     *
+     * @param useOptimisedContentURL
+     *            {@code true} if optimised content URL serialisation should be be used
+     */
+    public void setUseOptimisedContentURL(final boolean useOptimisedContentURL)
+    {
+        this.useOptimisedContentURL = useOptimisedContentURL;
     }
 
     /**
@@ -172,6 +221,348 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
             fileSize = this.readUnsignedLong(rawReader);
         }
         return fileSize;
+    }
+
+    /**
+     * Checks whether the provided String value is a supported content URL that can be {@link #writeContentURL(String, BinaryRawWriter)
+     * written in an optimised form}.
+     *
+     * @param contentURL
+     *            the potential content URL to check
+     * @return {@code true} if the value is a supported content URL, {@code false} otherwise
+     */
+    protected final boolean isSupportedContentUrl(@NotNull final String contentURL)
+    {
+        ParameterCheck.mandatory("contentUrl", contentURL);
+
+        final String trimmedContentURL = contentURL.trim();
+        boolean supported = !trimmedContentURL.isEmpty();
+
+        if (supported)
+        {
+            final int protDelIdx = trimmedContentURL.indexOf(ContentStore.PROTOCOL_DELIMITER);
+            final int lastSlashIdx = trimmedContentURL.lastIndexOf('/');
+            final int lastDotIdx = trimmedContentURL.lastIndexOf('.');
+
+            supported = protDelIdx > 0;
+
+            if (supported)
+            {
+                // at this point we can only be sure we have some kind of URL
+                if (!(trimmedContentURL.substring(0, protDelIdx).equals(FileContentStore.STORE_PROTOCOL)
+                        || trimmedContentURL.endsWith(CONTENT_URL_BIN_SUFFIX) || (lastSlashIdx > protDelIdx + 3
+                                && (OPTIMISABLE_CONTENT_URL_PATH_PATTERN
+                                .matcher(trimmedContentURL.substring(protDelIdx + 3, lastSlashIdx)).matches()))
+                        || (lastSlashIdx > protDelIdx + 3 && OPTIMISABLE_CONTENT_URL_GUID_PATTERN
+                                .matcher(lastDotIdx > lastSlashIdx ? trimmedContentURL.substring(lastSlashIdx + 1, lastDotIdx)
+                                        : trimmedContentURL.substring(lastSlashIdx + 1))
+                                .matches())))
+                {
+                    // at this point we are sure we cannot reasonably optimise the string value
+                    supported = false;
+                }
+                // else if only one element of the well known content URL pattern matches, we can optimise away at least a few bytes
+            }
+        }
+
+        return supported;
+    }
+
+    /**
+     * Writes a non-null content URL value to a raw serialised form of an object. Callers are expected to have
+     * {@link #isSupportedContentUrl(String) checked whether the content URL is supported for optimisation} before calling this operation.
+     *
+     * @param contentURL
+     *            the content URL to write
+     * @param rawWriter
+     *            the writer to use to write to the raw serialised form
+     */
+    protected final void writeContentURL(@NotNull final String contentURL, @NotNull final BinaryRawWriter rawWriter)
+    {
+        ParameterCheck.mandatory("contentUrl", contentURL);
+
+        if (!this.useOptimisedContentURL)
+        {
+            this.write(contentURL, rawWriter);
+        }
+        else
+        {
+            final String trimmedContentURL = contentURL.trim();
+            final int protDelIdx = trimmedContentURL.indexOf(ContentStore.PROTOCOL_DELIMITER);
+            final int lastSlashIdx = trimmedContentURL.lastIndexOf('/');
+            final int lastDotIdx = trimmedContentURL.lastIndexOf('.');
+
+            byte flags = 0;
+
+            String protocol = null;
+            String volume = null;
+            String path = null;
+            int pathVal = 0;
+            byte bucketVal = 0;
+            String name = null;
+            long guidMostSignificantBits = 0;
+            long guidLeastSignificantBits = 0;
+            String suffix = null;
+
+            if (protDelIdx > 0)
+            {
+                protocol = trimmedContentURL.substring(0, protDelIdx);
+                if (FileContentStore.STORE_PROTOCOL.equals(protocol))
+                {
+                    flags |= FLAG_CONTENT_URL_DEFAULT_PROTOCOL;
+                    protocol = null;
+                }
+
+                if (trimmedContentURL.endsWith(CONTENT_URL_BIN_SUFFIX))
+                {
+                    flags |= FLAG_CONTENT_URL_BIN_SUFFIX;
+                }
+                else if (lastDotIdx > lastSlashIdx)
+                {
+                    suffix = trimmedContentURL.substring(lastDotIdx + 1);
+                }
+                else
+                {
+                    flags |= FLAG_CONTENT_URL_NO_SUFFIX;
+                }
+
+                if (lastSlashIdx > protDelIdx + 3)
+                {
+                    path = trimmedContentURL.substring(protDelIdx + 3, lastSlashIdx);
+
+                    final Matcher pathMatcher = OPTIMISABLE_CONTENT_URL_PATH_PATTERN.matcher(path);
+                    if (pathMatcher.matches())
+                    {
+                        flags |= FLAG_CONTENT_URL_SUPPORTED_PATH;
+
+                        path = null;
+                        volume = pathMatcher.group(1);
+                        if (volume != null)
+                        {
+                            flags |= FLAG_CONTENT_URL_PATH_WITH_VOLUMES;
+                        }
+
+                        final String year = pathMatcher.group(2);
+                        final String month = pathMatcher.group(3);
+                        final String day = pathMatcher.group(4);
+                        final String hour = pathMatcher.group(5);
+                        final String minute = pathMatcher.group(6);
+
+                        final int yearI = Integer.parseInt(year);
+                        final int monthI = Integer.parseInt(month);
+                        final int dayI = Integer.parseInt(day);
+                        final int hourI = Integer.parseInt(hour);
+                        final int minuteI = Integer.parseInt(minute);
+
+                        // all date time related path elements fit nicely in 32 bit since we restrict years to 0-4095 range
+                        pathVal |= yearI << 20;
+                        // left shift cannot shift into sign bit
+                        if (yearI >= 2048)
+                        {
+                            pathVal |= 0x80000000;
+                        }
+                        pathVal |= monthI << 16;
+                        pathVal |= dayI << 11;
+                        pathVal |= hourI << 6;
+                        pathVal |= minuteI;
+
+                        final String bucket = pathMatcher.group(7);
+                        if (bucket != null)
+                        {
+                            flags |= FLAG_CONTENT_URL_PATH_WITH_BUCKETS;
+
+                            // some manual handling to fill bucketVal as if it were an unsigned byte (0-255)
+                            final int bucketValI = Integer.parseInt(bucket);
+                            bucketVal = (byte) (bucketValI & 0x7f);
+                            if ((bucketValI & 0x80) != 0)
+                            {
+                                bucketVal |= 0x80;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    flags |= FLAG_CONTENT_URL_NO_PATH;
+                }
+
+                name = lastDotIdx > lastSlashIdx ? trimmedContentURL.substring(lastSlashIdx + 1, lastDotIdx)
+                        : trimmedContentURL.substring(lastSlashIdx + 1);
+                final Matcher guidMatcher = OPTIMISABLE_CONTENT_URL_GUID_PATTERN.matcher(name);
+                if (guidMatcher.matches())
+                {
+                    flags |= FLAG_CONTENT_URL_GUID_NAME;
+
+                    final String hex = name.replace("-", "");
+                    guidMostSignificantBits = Long.parseUnsignedLong(hex.substring(0, 16), 16);
+                    guidLeastSignificantBits = Long.parseUnsignedLong(hex.substring(16), 16);
+                    name = null;
+                }
+            }
+
+            rawWriter.writeByte(flags);
+            if ((flags & FLAG_CONTENT_URL_ANY_OPTIMISATION) == 0)
+            {
+                this.write(contentURL, rawWriter);
+            }
+            else
+            {
+                if (protocol != null)
+                {
+                    this.write(protocol, rawWriter);
+                }
+                if (path != null)
+                {
+                    this.write(path, rawWriter);
+                }
+                else
+                {
+                    if (volume != null)
+                    {
+                        this.write(volume, rawWriter);
+                    }
+                    if ((flags & FLAG_CONTENT_URL_NO_PATH) == 0)
+                    {
+                        rawWriter.writeInt(pathVal);
+                    }
+                    if ((flags & FLAG_CONTENT_URL_PATH_WITH_BUCKETS) != 0)
+                    {
+                        rawWriter.writeByte(bucketVal);
+                    }
+                }
+
+                if (name != null)
+                {
+                    this.write(name, rawWriter);
+                }
+                else
+                {
+                    rawWriter.writeLong(guidMostSignificantBits);
+                    rawWriter.writeLong(guidLeastSignificantBits);
+                }
+
+                if (suffix != null)
+                {
+                    this.write(suffix, rawWriter);
+                }
+            }
+        }
+    }
+
+    /**
+     * Reads a non-null content URL value from a raw serialised form of an object.
+     *
+     * @param rawReader
+     *            the reader to use to read from the raw serialised form
+     * @return the content URL value
+     */
+    @NotNull
+    protected final String readContentURL(@NotNull final BinaryRawReader rawReader)
+    {
+        ParameterCheck.mandatory("rawReader", rawReader);
+
+        String contentURL;
+
+        if (!this.useOptimisedContentURL)
+        {
+            contentURL = this.readString(rawReader);
+        }
+        else
+        {
+            final byte flags = rawReader.readByte();
+            if ((flags & FLAG_CONTENT_URL_ANY_OPTIMISATION) == 0)
+            {
+                contentURL = this.readString(rawReader);
+            }
+            else
+            {
+                final StringBuilder contentURLBuilder = new StringBuilder(128);
+
+                String protocol;
+                if ((flags & FLAG_CONTENT_URL_DEFAULT_PROTOCOL) != 0)
+                {
+                    protocol = FileContentStore.STORE_PROTOCOL;
+                }
+                else
+                {
+                    protocol = this.readString(rawReader);
+                }
+                contentURLBuilder.append(protocol).append(ContentStore.PROTOCOL_DELIMITER);
+
+                if ((flags & FLAG_CONTENT_URL_SUPPORTED_PATH) != 0)
+                {
+                    if ((flags & FLAG_CONTENT_URL_PATH_WITH_VOLUMES) != 0)
+                    {
+                        final String volume = this.readString(rawReader);
+                        contentURLBuilder.append(volume).append('/');
+                    }
+
+                    final int pathVal = rawReader.readInt();
+                    int year = (pathVal & 0x7ff00000) >> 20;
+                    if ((pathVal & 0x80000000) == 0x80000000)
+                    {
+                        year |= 0x0800;
+                    }
+                    final int month = (pathVal & 0x000f0000) >> 16;
+                    final int day = (pathVal & 0xf800) >> 11;
+                    final int hour = (pathVal & 0x07c0) >> 6;
+                    final int minute = (pathVal & 0x3f);
+
+                    contentURLBuilder.append(year).append('/');
+                    contentURLBuilder.append(month).append('/');
+                    contentURLBuilder.append(day).append('/');
+                    contentURLBuilder.append(hour).append('/');
+                    contentURLBuilder.append(minute).append('/');
+
+                    if ((flags & FLAG_CONTENT_URL_PATH_WITH_BUCKETS) != 0)
+                    {
+                        final byte bucketVal = rawReader.readByte();
+                        int bucketValI = bucketVal & 0x7f;
+                        if ((bucketVal & 0x80) == 0x80)
+                        {
+                            bucketValI |= 0x80;
+                        }
+                        contentURLBuilder.append(bucketValI).append('/');
+                    }
+                }
+                else if ((flags & FLAG_CONTENT_URL_NO_PATH) == 0)
+                {
+                    final String path = this.readString(rawReader);
+                    contentURLBuilder.append(path);
+                }
+
+                if (contentURLBuilder.charAt(contentURLBuilder.length() - 1) != '/')
+                {
+                    contentURLBuilder.append('/');
+                }
+                if ((flags & FLAG_CONTENT_URL_GUID_NAME) != 0)
+                {
+                    final long guidMostSignificantBits = rawReader.readLong();
+                    final long guidLeastSignificantBits = rawReader.readLong();
+
+                    contentURLBuilder.append(new UUID(guidMostSignificantBits, guidLeastSignificantBits));
+                }
+                else
+                {
+                    final String name = this.readString(rawReader);
+                    contentURLBuilder.append(name);
+                }
+
+                if ((flags & FLAG_CONTENT_URL_BIN_SUFFIX) != 0)
+                {
+                    contentURLBuilder.append(CONTENT_URL_BIN_SUFFIX);
+                }
+                else if ((flags & FLAG_CONTENT_URL_NO_SUFFIX) == 0)
+                {
+                    final String suffix = this.readString(rawReader);
+                    contentURLBuilder.append('.').append(suffix);
+                }
+
+                contentURL = contentURLBuilder.toString();
+            }
+        }
+
+        return contentURL;
     }
 
     /**

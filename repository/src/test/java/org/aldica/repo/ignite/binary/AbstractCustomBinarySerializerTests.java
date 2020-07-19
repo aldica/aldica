@@ -4,8 +4,14 @@
 package org.aldica.repo.ignite.binary;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.Locale;
+import java.util.UUID;
 
+import org.alfresco.repo.content.ContentStore;
+import org.alfresco.repo.content.filestore.FileContentStore;
+import org.alfresco.util.GUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -69,57 +75,57 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(true);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(true);
 
                 int positionOffset = 0;
 
                 // test unsigned positive values
-                serialiser.write(0l, true, brw);
+                serializer.write(0l, true, brw);
                 positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readLong(true, brr));
+                Assert.assertEquals(0, serializer.readLong(true, brr));
                 for (int shorts = 1; shorts < 5; shorts++)
                 {
                     final int bits = shorts * 16 - 2;
                     final long value = (0x01l << bits) - 1;
 
-                    serialiser.write(value, true, brw);
+                    serializer.write(value, true, brw);
                     positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readLong(true, brr));
+                    Assert.assertEquals(value, serializer.readLong(true, brr));
                 }
 
                 // test signed positive values
-                serialiser.write(1l, false, brw);
+                serializer.write(1l, false, brw);
                 positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(1, serialiser.readLong(false, brr));
+                Assert.assertEquals(1, serializer.readLong(false, brr));
                 for (int shorts = 1; shorts < 5; shorts++)
                 {
                     final int bits = shorts * 16 - 3;
                     final long value = (0x01l << bits) - 1;
 
-                    serialiser.write(value, false, brw);
+                    serializer.write(value, false, brw);
                     positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readLong(false, brr));
+                    Assert.assertEquals(value, serializer.readLong(false, brr));
                 }
 
                 // test signed negative values
-                serialiser.write(-1l, false, brw);
+                serializer.write(-1l, false, brw);
                 positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(-1, serialiser.readLong(false, brr));
+                Assert.assertEquals(-1, serializer.readLong(false, brr));
                 for (int shorts = 1; shorts < 5; shorts++)
                 {
                     final int bits = shorts * 16 - 3;
                     final long value = -(0x01l << bits);
 
-                    serialiser.write(value, false, brw);
+                    serializer.write(value, false, brw);
                     positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readLong(false, brr));
+                    Assert.assertEquals(value, serializer.readLong(false, brr));
                 }
             }
         }
@@ -134,11 +140,11 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_UNSIGNED_MAX + 1, true, brw);
+            serializer.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_UNSIGNED_MAX + 1, true, brw);
         }
     }
 
@@ -151,13 +157,13 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
 
-            serialiser.write(1l, true, brw);
+            serializer.write(1l, true, brw);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(-1l, true, brw);
+            serializer.write(-1l, true, brw);
         }
     }
 
@@ -170,11 +176,11 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_SIGNED_POSITIVE_MAX + 1, false, brw);
+            serializer.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_SIGNED_POSITIVE_MAX + 1, false, brw);
         }
     }
 
@@ -187,11 +193,11 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_SIGNED_NEGATIVE_MAX - 1, false, brw);
+            serializer.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_SIGNED_NEGATIVE_MAX - 1, false, brw);
         }
     }
 
@@ -208,16 +214,16 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(false);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(false);
 
                 int positionOffset = 0;
 
                 // test signed positive values
-                serialiser.write(0l, true, brw);
+                serializer.write(0l, true, brw);
                 positionOffset += 8;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readLong(true, brr));
+                Assert.assertEquals(0, serializer.readLong(true, brr));
                 for (int bytes = 1; bytes < 9; bytes++)
                 {
                     int bits = Math.min(63, bytes * 8);
@@ -227,17 +233,17 @@ public class AbstractCustomBinarySerializerTests
                         value += 0x01l << bits;
                     }
 
-                    serialiser.write(value, true, brw);
+                    serializer.write(value, true, brw);
                     positionOffset += 8;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readLong(true, brr));
+                    Assert.assertEquals(value, serializer.readLong(true, brr));
                 }
 
                 // test signed negative values
-                serialiser.write(-1l, false, brw);
+                serializer.write(-1l, false, brw);
                 positionOffset += 8;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(-1, serialiser.readLong(false, brr));
+                Assert.assertEquals(-1, serializer.readLong(false, brr));
                 for (int bytes = 1; bytes < 9; bytes++)
                 {
                     int bits = Math.min(63, bytes * 8);
@@ -248,10 +254,10 @@ public class AbstractCustomBinarySerializerTests
                     }
                     value = -value - 1;
 
-                    serialiser.write(value, false, brw);
+                    serializer.write(value, false, brw);
                     positionOffset += 8;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readLong(false, brr));
+                    Assert.assertEquals(value, serializer.readLong(false, brr));
                 }
             }
         }
@@ -270,26 +276,26 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(true);
-                serialiser.setHandleNegativeIds(false);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(true);
+                serializer.setHandleNegativeIds(false);
 
                 int positionOffset = 0;
 
                 // test unsigned positive values
-                serialiser.writeDbId(0l, brw);
+                serializer.writeDbId(0l, brw);
                 positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readLong(true, brr));
+                Assert.assertEquals(0, serializer.readLong(true, brr));
                 for (int shorts = 1; shorts < 5; shorts++)
                 {
                     final int bits = shorts * 16 - 2;
                     final long value = (0x01l << bits) - 1;
 
-                    serialiser.writeDbId(value, brw);
+                    serializer.writeDbId(value, brw);
                     positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readLong(true, brr));
+                    Assert.assertEquals(value, serializer.readLong(true, brr));
                 }
             }
         }
@@ -308,42 +314,42 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(true);
-                serialiser.setHandleNegativeIds(true);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(true);
+                serializer.setHandleNegativeIds(true);
 
                 int positionOffset = 0;
 
                 // test signed positive values
-                serialiser.writeDbId(0l, brw);
+                serializer.writeDbId(0l, brw);
                 positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readLong(false, brr));
+                Assert.assertEquals(0, serializer.readLong(false, brr));
                 for (int shorts = 1; shorts < 5; shorts++)
                 {
                     final int bits = shorts * 16 - 3;
                     final long value = (0x01l << bits) - 1;
 
-                    serialiser.writeDbId(value, brw);
+                    serializer.writeDbId(value, brw);
                     positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readLong(false, brr));
+                    Assert.assertEquals(value, serializer.readLong(false, brr));
                 }
 
                 // test signed negative values
-                serialiser.writeDbId(-1l, brw);
+                serializer.writeDbId(-1l, brw);
                 positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(-1, serialiser.readLong(false, brr));
+                Assert.assertEquals(-1, serializer.readLong(false, brr));
                 for (int shorts = 1; shorts < 5; shorts++)
                 {
                     final int bits = shorts * 16 - 3;
                     final long value = -(0x01l << bits);
 
-                    serialiser.writeDbId(value, brw);
+                    serializer.writeDbId(value, brw);
                     positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readLong(false, brr));
+                    Assert.assertEquals(value, serializer.readLong(false, brr));
                 }
             }
         }
@@ -358,12 +364,12 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
-            serialiser.setHandleNegativeIds(false);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
+            serializer.setHandleNegativeIds(false);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.writeDbId(-1, brw);
+            serializer.writeDbId(-1, brw);
         }
     }
 
@@ -380,57 +386,57 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(false);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(false);
 
                 int positionOffset = 0;
 
                 // test unsigned positive values
-                serialiser.write(0, true, brw);
+                serializer.write(0, true, brw);
                 positionOffset += 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readInt(true, brr));
+                Assert.assertEquals(0, serializer.readInt(true, brr));
                 for (int bytes = 1; bytes < 5; bytes++)
                 {
                     final int bits = bytes * 8 - Math.min(3, bytes);
                     final int value = (0x01 << bits) - 1;
 
-                    serialiser.write(value, true, brw);
+                    serializer.write(value, true, brw);
                     positionOffset += 4;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readInt(true, brr));
+                    Assert.assertEquals(value, serializer.readInt(true, brr));
                 }
 
                 // test signed positive values
-                serialiser.write(0, false, brw);
+                serializer.write(0, false, brw);
                 positionOffset += 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readInt(false, brr));
+                Assert.assertEquals(0, serializer.readInt(false, brr));
                 for (int bytes = 1; bytes < 5; bytes++)
                 {
                     final int bits = bytes * 8 - (1 + Math.min(3, bytes));
                     final int value = (0x01 << bits) - 1;
 
-                    serialiser.write(value, false, brw);
+                    serializer.write(value, false, brw);
                     positionOffset += 4;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readInt(false, brr));
+                    Assert.assertEquals(value, serializer.readInt(false, brr));
                 }
 
                 // test signed negative values
-                serialiser.write(-1, false, brw);
+                serializer.write(-1, false, brw);
                 positionOffset += 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(-1, serialiser.readInt(false, brr));
+                Assert.assertEquals(-1, serializer.readInt(false, brr));
                 for (int bytes = 1; bytes < 5; bytes++)
                 {
                     final int bits = bytes * 8 - (1 + Math.min(3, bytes));
                     final int value = -(0x01 << bits);
 
-                    serialiser.write(value, false, brw);
+                    serializer.write(value, false, brw);
                     positionOffset += 4;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readInt(false, brr));
+                    Assert.assertEquals(value, serializer.readInt(false, brr));
                 }
             }
         }
@@ -445,11 +451,11 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.INT_AS_BYTE_UNSIGNED_MAX + 1, true, brw);
+            serializer.write(AbstractCustomBinarySerializer.INT_AS_BYTE_UNSIGNED_MAX + 1, true, brw);
         }
     }
 
@@ -462,13 +468,13 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
 
-            serialiser.write(1, true, brw);
+            serializer.write(1, true, brw);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(-1, true, brw);
+            serializer.write(-1, true, brw);
         }
     }
 
@@ -481,11 +487,11 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.INT_AS_BYTE_SIGNED_POSITIVE_MAX + 1, false, brw);
+            serializer.write(AbstractCustomBinarySerializer.INT_AS_BYTE_SIGNED_POSITIVE_MAX + 1, false, brw);
         }
     }
 
@@ -498,11 +504,11 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.INT_AS_BYTE_SIGNED_NEGATIVE_MAX - 1, false, brw);
+            serializer.write(AbstractCustomBinarySerializer.INT_AS_BYTE_SIGNED_NEGATIVE_MAX - 1, false, brw);
         }
     }
 
@@ -519,16 +525,16 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(false);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(false);
 
                 int positionOffset = 0;
 
                 // test signed positive values
-                serialiser.write(0, true, brw);
+                serializer.write(0, true, brw);
                 positionOffset += 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readInt(true, brr));
+                Assert.assertEquals(0, serializer.readInt(true, brr));
                 for (int bytes = 1; bytes < 3; bytes++)
                 {
                     int bits = Math.min(31, bytes * 8);
@@ -538,17 +544,17 @@ public class AbstractCustomBinarySerializerTests
                         value += 0x01 << bits;
                     }
 
-                    serialiser.write(value, true, brw);
+                    serializer.write(value, true, brw);
                     positionOffset += 4;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readInt(true, brr));
+                    Assert.assertEquals(value, serializer.readInt(true, brr));
                 }
 
                 // test signed negative values
-                serialiser.write(-1, false, brw);
+                serializer.write(-1, false, brw);
                 positionOffset += 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(-1, serialiser.readInt(false, brr));
+                Assert.assertEquals(-1, serializer.readInt(false, brr));
                 for (int bytes = 1; bytes < 3; bytes++)
                 {
                     int bits = Math.min(31, bytes * 8);
@@ -559,10 +565,10 @@ public class AbstractCustomBinarySerializerTests
                     }
                     value = -value - 1;
 
-                    serialiser.write(value, false, brw);
+                    serializer.write(value, false, brw);
                     positionOffset += 4;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readInt(false, brr));
+                    Assert.assertEquals(value, serializer.readInt(false, brr));
                 }
             }
         }
@@ -581,25 +587,25 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(true);
-                serialiser.setHandle4EiBFileSizes(false);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(true);
+                serializer.setHandle4EiBFileSizes(false);
 
                 int positionOffset = 0;
 
-                serialiser.writeFileSize(0l, brw);
+                serializer.writeFileSize(0l, brw);
                 positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readFileSize(brr));
+                Assert.assertEquals(0, serializer.readFileSize(brr));
                 for (int shorts = 1; shorts < 5; shorts++)
                 {
                     final int bits = shorts * 16 - 2;
                     final long value = (0x01l << bits) - 1;
 
-                    serialiser.writeFileSize(value, brw);
+                    serializer.writeFileSize(value, brw);
                     positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readFileSize(brr));
+                    Assert.assertEquals(value, serializer.readFileSize(brr));
                 }
             }
         }
@@ -618,16 +624,16 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(true);
-                serialiser.setHandle4EiBFileSizes(true);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(true);
+                serializer.setHandle4EiBFileSizes(true);
 
                 int positionOffset = 0;
 
-                serialiser.writeFileSize(0l, brw);
+                serializer.writeFileSize(0l, brw);
                 positionOffset += 8;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readFileSize(brr));
+                Assert.assertEquals(0, serializer.readFileSize(brr));
                 for (int bytes = 1; bytes < 9; bytes++)
                 {
                     int bits = Math.min(63, bytes * 8);
@@ -637,10 +643,10 @@ public class AbstractCustomBinarySerializerTests
                         value += 0x01l << bits;
                     }
 
-                    serialiser.writeFileSize(value, brw);
+                    serializer.writeFileSize(value, brw);
                     positionOffset += 8;
                     Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readFileSize(brr));
+                    Assert.assertEquals(value, serializer.readFileSize(brr));
                 }
             }
         }
@@ -655,12 +661,12 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
-            serialiser.setHandle4EiBFileSizes(false);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
+            serializer.setHandle4EiBFileSizes(false);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.writeFileSize(-1, brw);
+            serializer.writeFileSize(-1, brw);
         }
     }
 
@@ -673,11 +679,11 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
-            serialiser.setHandle4EiBFileSizes(true);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
+            serializer.setHandle4EiBFileSizes(true);
 
-            serialiser.writeFileSize(-1, brw);
+            serializer.writeFileSize(-1, brw);
         }
     }
 
@@ -690,12 +696,12 @@ public class AbstractCustomBinarySerializerTests
         {
             final BinaryRawWriter brw = bw.rawWriter();
 
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
-            serialiser.setHandle4EiBFileSizes(false);
+            final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+            serializer.setUseVariableLengthIntegers(true);
+            serializer.setHandle4EiBFileSizes(false);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.writeFileSize(AbstractCustomBinarySerializer.LONG_AS_SHORT_UNSIGNED_MAX + 1, brw);
+            serializer.writeFileSize(AbstractCustomBinarySerializer.LONG_AS_SHORT_UNSIGNED_MAX + 1, brw);
         }
     }
 
@@ -712,18 +718,18 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(true);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(true);
 
                 int positionOffset = 0;
                 String testStr;
 
                 // empty string
                 testStr = "";
-                serialiser.write(testStr, brw);
+                serializer.write(testStr, brw);
                 positionOffset += testStr.length() + 1;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testStr, serializer.readString(brr));
 
                 final StringBuilder longStrBuilder = new StringBuilder(4096);
                 // String with length fitting in 6 bits
@@ -732,10 +738,10 @@ public class AbstractCustomBinarySerializerTests
                     longStrBuilder.append("0123456789ABCDEF");
                 }
                 longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
-                serialiser.write(testStr, brw);
+                serializer.write(testStr, brw);
                 positionOffset += testStr.length() + 1;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testStr, serializer.readString(brr));
 
                 // String with length fitting in 14 bits
                 longStrBuilder.delete(0, longStrBuilder.length());
@@ -746,10 +752,10 @@ public class AbstractCustomBinarySerializerTests
                 longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
 
                 testStr = longStrBuilder.toString();
-                serialiser.write(testStr, brw);
+                serializer.write(testStr, brw);
                 positionOffset += testStr.length() + 2;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testStr, serializer.readString(brr));
 
                 // String with length fitting in 22 bits
                 longStrBuilder.delete(0, longStrBuilder.length());
@@ -760,10 +766,10 @@ public class AbstractCustomBinarySerializerTests
                 longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
 
                 testStr = longStrBuilder.toString();
-                serialiser.write(testStr, brw);
+                serializer.write(testStr, brw);
                 positionOffset += testStr.length() + 3;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testStr, serializer.readString(brr));
             }
         }
     }
@@ -781,18 +787,18 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(false);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(false);
 
                 int positionOffset = 0;
                 String testStr;
 
                 // empty string
                 testStr = "";
-                serialiser.write(testStr, brw);
+                serializer.write(testStr, brw);
                 positionOffset += testStr.length() + 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testStr, serializer.readString(brr));
 
                 final StringBuilder longStrBuilder = new StringBuilder(4096);
                 // String with length fitting in 6 bits
@@ -801,10 +807,10 @@ public class AbstractCustomBinarySerializerTests
                     longStrBuilder.append("0123456789ABCDEF");
                 }
                 longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
-                serialiser.write(testStr, brw);
+                serializer.write(testStr, brw);
                 positionOffset += testStr.length() + 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testStr, serializer.readString(brr));
 
                 // String with length fitting in 14 bits
                 longStrBuilder.delete(0, longStrBuilder.length());
@@ -815,10 +821,10 @@ public class AbstractCustomBinarySerializerTests
                 longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
 
                 testStr = longStrBuilder.toString();
-                serialiser.write(testStr, brw);
+                serializer.write(testStr, brw);
                 positionOffset += testStr.length() + 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testStr, serializer.readString(brr));
 
                 // String with length fitting in 22 bits
                 longStrBuilder.delete(0, longStrBuilder.length());
@@ -829,10 +835,10 @@ public class AbstractCustomBinarySerializerTests
                 longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
 
                 testStr = longStrBuilder.toString();
-                serialiser.write(testStr, brw);
+                serializer.write(testStr, brw);
                 positionOffset += testStr.length() + 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testStr, serialiser.readString(brr));
+                Assert.assertEquals(testStr, serializer.readString(brr));
             }
         }
     }
@@ -850,32 +856,32 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(true);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(true);
 
                 int positionOffset = 0;
                 Locale testLocale;
 
                 // simple language locale
                 testLocale = Locale.ENGLISH;
-                serialiser.write(testLocale, brw);
+                serializer.write(testLocale, brw);
                 positionOffset += 2 + 1;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
+                Assert.assertEquals(testLocale, serializer.readLocale(brr));
 
                 // language + country locale
                 testLocale = Locale.GERMANY;
-                serialiser.write(testLocale, brw);
+                serializer.write(testLocale, brw);
                 positionOffset += 5 + 1;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
+                Assert.assertEquals(testLocale, serializer.readLocale(brr));
 
                 // language + country + variant locale
                 testLocale = new Locale("de", "DE", "1901");
-                serialiser.write(testLocale, brw);
+                serializer.write(testLocale, brw);
                 positionOffset += 10 + 1;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
+                Assert.assertEquals(testLocale, serializer.readLocale(brr));
             }
         }
     }
@@ -893,33 +899,400 @@ public class AbstractCustomBinarySerializerTests
                 final BinaryRawWriter brw = bw.rawWriter();
                 final BinaryRawReader brr = br.rawReader();
 
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(false);
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(false);
 
                 int positionOffset = 0;
                 Locale testLocale;
 
                 // simple language locale
                 testLocale = Locale.ENGLISH;
-                serialiser.write(testLocale, brw);
+                serializer.write(testLocale, brw);
                 positionOffset += 2 + 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
+                Assert.assertEquals(testLocale, serializer.readLocale(brr));
 
                 // language + country locale
                 testLocale = Locale.GERMANY;
-                serialiser.write(testLocale, brw);
+                serializer.write(testLocale, brw);
                 positionOffset += 5 + 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
+                Assert.assertEquals(testLocale, serializer.readLocale(brr));
 
                 // language + country + variant locale
                 testLocale = new Locale("de", "DE", "1901");
-                serialiser.write(testLocale, brw);
+                serializer.write(testLocale, brw);
                 positionOffset += 10 + 4;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testLocale, serialiser.readLocale(brr));
+                Assert.assertEquals(testLocale, serializer.readLocale(brr));
             }
         }
+    }
+
+    @Test
+    public void testContentURLVariableLengthInteger() throws IOException
+    {
+        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(40960);
+        final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
+
+        try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
+        {
+            try (final BinaryReaderExImpl br = new BinaryReaderExImpl(null, bis, null, false))
+            {
+                final BinaryRawWriter brw = bw.rawWriter();
+                final BinaryRawReader brr = br.rawReader();
+
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(true);
+                serializer.setUseOptimisedContentURL(true);
+
+                int positionOffset = 0;
+                String testURL;
+
+                // dynamically created without volumes + buckets
+                testURL = createNewTimeBasedFileContentUrl(0);
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // dynamically created without volumes
+                testURL = createNewTimeBasedFileContentUrl(256);
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 22;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // dynamically created without buckets
+                testURL = createNewVolumeAwareTimeBasedFileContentUrl(0, "volume1");
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21 + 8;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // dynamically created
+                testURL = createNewVolumeAwareTimeBasedFileContentUrl(256, "volume2");
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 22 + 8;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // minimum values for date path elements (no buckets / volumes)
+                testURL = "store://0/1/1/0/0/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // minimum values for date path elements and buckets (no volumes)
+                testURL = "store://0/1/1/0/0/0/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 22;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // maximum values for date path elements (no buckets / volumes)
+                testURL = "store://4095/12/31/23/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // maximum values for date path elements and buckets (no volumes)
+                testURL = "store://4095/12/31/23/59/255/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 22;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for year path element
+                testURL = "store://4096/12/31/23/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 17;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for year month element
+                testURL = "store://4095/13/31/23/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 17;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for day path element
+                testURL = "store://4095/12/32/23/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 17;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for hour path element
+                testURL = "store://4095/12/31/24/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 17;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for minute path element
+                testURL = "store://4095/12/31/23/60/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 17;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // custom store (no buckets / volumes)
+                testURL = "my-store://1/1/1/1/1/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21 + 9;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // no suffix (no buckets / volumes)
+                testURL = "store://1/1/1/1/1/" + UUID.randomUUID().toString();
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // custom suffix (no buckets / volumes)
+                testURL = "store://1/1/1/1/1/" + UUID.randomUUID().toString() + ".byn";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21 + 4;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // custom name (no buckets / volumes)
+                testURL = "store://1/1/1/1/1/file.bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 5 + 5; // (1 byte flag + 4 byte path) + 5 byte name
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // no path (no buckets / volumes)
+                testURL = "store://" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // non-optimisable URL
+                testURL = "my-store://path/to/file.byn";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 29;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+            }
+        }
+    }
+
+    @Test
+    public void testContentURLNonVariableLengthInteger() throws IOException
+    {
+        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(4096);
+        final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
+
+        try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
+        {
+            try (final BinaryReaderExImpl br = new BinaryReaderExImpl(null, bis, null, false))
+            {
+                final BinaryRawWriter brw = bw.rawWriter();
+                final BinaryRawReader brr = br.rawReader();
+
+                final SpecificCustomBinarySerializer serializer = new SpecificCustomBinarySerializer();
+                serializer.setUseVariableLengthIntegers(false);
+                serializer.setUseOptimisedContentURL(true);
+
+                int positionOffset = 0;
+                String testURL;
+
+                // dynamically created without volumes + buckets
+                testURL = createNewTimeBasedFileContentUrl(0);
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // dynamically created without volumes
+                testURL = createNewTimeBasedFileContentUrl(256);
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 22;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // dynamically created without buckets
+                testURL = createNewVolumeAwareTimeBasedFileContentUrl(0, "volume1");
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21 + 11;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // dynamically created
+                testURL = createNewVolumeAwareTimeBasedFileContentUrl(256, "volume2");
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 22 + 11;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // minimum values for date path elements (no buckets / volumes)
+                testURL = "store://0/1/1/0/0/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // minimum values for date path elements and buckets (no volumes)
+                testURL = "store://0/1/1/0/0/0/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 22;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // maximum values for date path elements (no buckets / volumes)
+                testURL = "store://4095/12/31/23/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // maximum values for date path elements and buckets (no volumes)
+                testURL = "store://4095/12/31/23/59/255/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 22;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for year path element
+                testURL = "store://4096/12/31/23/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 20;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for year month element
+                testURL = "store://4095/13/31/23/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 20;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for day path element
+                testURL = "store://4095/12/32/23/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 20;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for hour path element
+                testURL = "store://4095/12/31/24/59/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 20;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // unsupported path / invalid value for minute path element
+                testURL = "store://4095/12/31/23/60/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17 + 20;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // custom store (no buckets / volumes)
+                testURL = "my-store://1/1/1/1/1/" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21 + 12;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // no suffix (no buckets / volumes)
+                testURL = "store://1/1/1/1/1/" + UUID.randomUUID().toString();
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // custom suffix (no buckets / volumes)
+                testURL = "store://1/1/1/1/1/" + UUID.randomUUID().toString() + ".byn";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 21 + 7;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // custom name (no buckets / volumes)
+                testURL = "store://1/1/1/1/1/file.bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 5 + 8; // (1 byte flag + 4 byte path) + 8 byte name
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // no path (no buckets / volumes)
+                testURL = "store://" + UUID.randomUUID().toString() + ".bin";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 17;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+
+                // non-optimisable URL
+                testURL = "my-store://path/to/file.byn";
+                serializer.writeContentURL(testURL, brw);
+                positionOffset += 32;
+                Assert.assertEquals(positionOffset, bos.position());
+                Assert.assertEquals(testURL, serializer.readContentURL(brr));
+            }
+        }
+    }
+
+    // needed to duplicate Alfresco code in static methods because it is not accessible (package-protected)
+    protected static String createNewTimeBasedFileContentUrl(final int bucketsPerMinute)
+    {
+        final StringBuilder sb = new StringBuilder(20);
+        sb.append(FileContentStore.STORE_PROTOCOL);
+        sb.append(ContentStore.PROTOCOL_DELIMITER);
+
+        final Calendar calendar = new GregorianCalendar();
+        final int year = calendar.get(Calendar.YEAR);
+        final int month = calendar.get(Calendar.MONTH) + 1;
+        final int day = calendar.get(Calendar.DAY_OF_MONTH);
+        final int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        final int minute = calendar.get(Calendar.MINUTE);
+        sb.append(year).append('/').append(month).append('/').append(day).append('/').append(hour).append('/').append(minute).append('/');
+
+        if (bucketsPerMinute != 0)
+        {
+            final long seconds = System.currentTimeMillis() % (60 * 1000);
+            final int actualBucket = (int) seconds / ((60 * 1000) / bucketsPerMinute);
+            sb.append(actualBucket).append('/');
+        }
+
+        sb.append(GUID.generate()).append(".bin");
+        return sb.toString();
+    }
+
+    // needed to duplicate Alfresco code in static methods because it is not accessible (package-protected)
+    protected static String createNewVolumeAwareTimeBasedFileContentUrl(final int bucketsPerMinute, final String volumeName)
+    {
+        final StringBuilder sb = new StringBuilder(20);
+        sb.append(FileContentStore.STORE_PROTOCOL);
+        sb.append(ContentStore.PROTOCOL_DELIMITER);
+
+        // for reproducibility we do not randomly pick a volume and require that the caller specify it
+        sb.append(volumeName).append('/');
+
+        final Calendar calendar = new GregorianCalendar();
+        final int year = calendar.get(Calendar.YEAR);
+        final int month = calendar.get(Calendar.MONTH) + 1;
+        final int day = calendar.get(Calendar.DAY_OF_MONTH);
+        final int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        final int minute = calendar.get(Calendar.MINUTE);
+        sb.append(year).append('/').append(month).append('/').append(day).append('/').append(hour).append('/').append(minute).append('/');
+
+        if (bucketsPerMinute != 0)
+        {
+            final long seconds = System.currentTimeMillis() % (60 * 1000);
+            final int actualBucket = (int) seconds / ((60 * 1000) / bucketsPerMinute);
+            sb.append(actualBucket).append('/');
+        }
+
+        sb.append(GUID.generate()).append(".bin");
+        return sb.toString();
     }
 }
