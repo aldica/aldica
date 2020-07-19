@@ -991,13 +991,6 @@ public class AbstractCustomBinarySerializerTests
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testURL, serializer.readContentURL(brr));
 
-                // minimum values for date path elements and buckets
-                testURL = "store://volume1/0/1/1/0/0/0/" + UUID.randomUUID().toString() + ".bin";
-                serializer.writeContentURL(testURL, brw);
-                positionOffset += 22 + 8;
-                Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testURL, serializer.readContentURL(brr));
-
                 // maximum values for date path elements (no buckets / volumes)
                 testURL = "store://4095/12/31/23/59/" + UUID.randomUUID().toString() + ".bin";
                 serializer.writeContentURL(testURL, brw);
@@ -1009,13 +1002,6 @@ public class AbstractCustomBinarySerializerTests
                 testURL = "store://4095/12/31/23/59/255/" + UUID.randomUUID().toString() + ".bin";
                 serializer.writeContentURL(testURL, brw);
                 positionOffset += 22;
-                Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testURL, serializer.readContentURL(brr));
-
-                // maximum values for date path elements and buckets
-                testURL = "store://volume1/4095/12/31/23/59/255/" + UUID.randomUUID().toString() + ".bin";
-                serializer.writeContentURL(testURL, brw);
-                positionOffset += 22 + 8;
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testURL, serializer.readContentURL(brr));
 
@@ -1161,13 +1147,6 @@ public class AbstractCustomBinarySerializerTests
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testURL, serializer.readContentURL(brr));
 
-                // minimum values for date path elements and buckets
-                testURL = "store://volume1/0/1/1/0/0/0/" + UUID.randomUUID().toString() + ".bin";
-                serializer.writeContentURL(testURL, brw);
-                positionOffset += 22 + 11;
-                Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testURL, serializer.readContentURL(brr));
-
                 // maximum values for date path elements (no buckets / volumes)
                 testURL = "store://4095/12/31/23/59/" + UUID.randomUUID().toString() + ".bin";
                 serializer.writeContentURL(testURL, brw);
@@ -1179,13 +1158,6 @@ public class AbstractCustomBinarySerializerTests
                 testURL = "store://4095/12/31/23/59/255/" + UUID.randomUUID().toString() + ".bin";
                 serializer.writeContentURL(testURL, brw);
                 positionOffset += 22;
-                Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(testURL, serializer.readContentURL(brr));
-
-                // maximum values for date path elements and buckets
-                testURL = "store://volume1/4095/12/31/23/59/255/" + UUID.randomUUID().toString() + ".bin";
-                serializer.writeContentURL(testURL, brw);
-                positionOffset += 22 + 11;
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testURL, serializer.readContentURL(brr));
 
