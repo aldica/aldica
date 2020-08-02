@@ -76,48 +76,48 @@ public class AbstractCustomBinarySerializerTests
 
                 // test unsigned positive values
                 serialiser.write(0l, true, brw);
-                positionOffset += 1;
+                positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(0, serialiser.readLong(true, brr));
-                for (int bytes = 1; bytes < 9; bytes++)
+                for (int shorts = 1; shorts < 5; shorts++)
                 {
-                    final int bits = bytes * 8 - Math.min(7, bytes);
+                    final int bits = shorts * 16 - 2;
                     final long value = (0x01l << bits) - 1;
 
                     serialiser.write(value, true, brw);
-                    positionOffset += bytes;
+                    positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
                     Assert.assertEquals(value, serialiser.readLong(true, brr));
                 }
 
                 // test signed positive values
-                serialiser.write(0l, false, brw);
-                positionOffset += 1;
+                serialiser.write(1l, false, brw);
+                positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readLong(false, brr));
-                for (int bytes = 1; bytes < 9; bytes++)
+                Assert.assertEquals(1, serialiser.readLong(false, brr));
+                for (int shorts = 1; shorts < 5; shorts++)
                 {
-                    final int bits = bytes * 8 - (1 + Math.min(7, bytes));
+                    final int bits = shorts * 16 - 3;
                     final long value = (0x01l << bits) - 1;
 
                     serialiser.write(value, false, brw);
-                    positionOffset += bytes;
+                    positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
                     Assert.assertEquals(value, serialiser.readLong(false, brr));
                 }
 
                 // test signed negative values
                 serialiser.write(-1l, false, brw);
-                positionOffset += 1;
+                positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(-1, serialiser.readLong(false, brr));
-                for (int bytes = 1; bytes < 9; bytes++)
+                for (int shorts = 1; shorts < 5; shorts++)
                 {
-                    final int bits = bytes * 8 - (1 + Math.min(7, bytes));
+                    final int bits = shorts * 16 - 3;
                     final long value = -(0x01l << bits);
 
                     serialiser.write(value, false, brw);
-                    positionOffset += bytes;
+                    positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
                     Assert.assertEquals(value, serialiser.readLong(false, brr));
                 }
@@ -138,7 +138,7 @@ public class AbstractCustomBinarySerializerTests
             serialiser.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_BYTE_UNSIGNED_MAX + 1, true, brw);
+            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_UNSIGNED_MAX + 1, true, brw);
         }
     }
 
@@ -174,7 +174,7 @@ public class AbstractCustomBinarySerializerTests
             serialiser.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_BYTE_SIGNED_POSITIVE_MAX + 1, false, brw);
+            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_SIGNED_POSITIVE_MAX + 1, false, brw);
         }
     }
 
@@ -191,7 +191,7 @@ public class AbstractCustomBinarySerializerTests
             serialiser.setUseVariableLengthIntegers(true);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_BYTE_SIGNED_NEGATIVE_MAX - 1, false, brw);
+            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_SIGNED_NEGATIVE_MAX - 1, false, brw);
         }
     }
 
@@ -278,16 +278,16 @@ public class AbstractCustomBinarySerializerTests
 
                 // test unsigned positive values
                 serialiser.writeDbId(0l, brw);
-                positionOffset += 1;
+                positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(0, serialiser.readLong(true, brr));
-                for (int bytes = 1; bytes < 9; bytes++)
+                for (int shorts = 1; shorts < 5; shorts++)
                 {
-                    final int bits = bytes * 8 - Math.min(7, bytes);
+                    final int bits = shorts * 16 - 2;
                     final long value = (0x01l << bits) - 1;
 
                     serialiser.writeDbId(value, brw);
-                    positionOffset += bytes;
+                    positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
                     Assert.assertEquals(value, serialiser.readLong(true, brr));
                 }
@@ -316,32 +316,32 @@ public class AbstractCustomBinarySerializerTests
 
                 // test signed positive values
                 serialiser.writeDbId(0l, brw);
-                positionOffset += 1;
+                positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(0, serialiser.readLong(false, brr));
-                for (int bytes = 1; bytes < 9; bytes++)
+                for (int shorts = 1; shorts < 5; shorts++)
                 {
-                    final int bits = bytes * 8 - (1 + Math.min(7, bytes));
+                    final int bits = shorts * 16 - 3;
                     final long value = (0x01l << bits) - 1;
 
                     serialiser.writeDbId(value, brw);
-                    positionOffset += bytes;
+                    positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
                     Assert.assertEquals(value, serialiser.readLong(false, brr));
                 }
 
                 // test signed negative values
                 serialiser.writeDbId(-1l, brw);
-                positionOffset += 1;
+                positionOffset += 2;
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(-1, serialiser.readLong(false, brr));
-                for (int bytes = 1; bytes < 9; bytes++)
+                for (int shorts = 1; shorts < 5; shorts++)
                 {
-                    final int bits = bytes * 8 - (1 + Math.min(7, bytes));
+                    final int bits = shorts * 16 - 3;
                     final long value = -(0x01l << bits);
 
                     serialiser.writeDbId(value, brw);
-                    positionOffset += bytes;
+                    positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
                     Assert.assertEquals(value, serialiser.readLong(false, brr));
                 }
@@ -583,46 +583,7 @@ public class AbstractCustomBinarySerializerTests
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
                 serialiser.setUseVariableLengthIntegers(true);
-                serialiser.setHandle128PiBFileSizes(false);
-                serialiser.setHandle2EiBFileSizes(false);
-
-                int positionOffset = 0;
-
-                serialiser.writeFileSize(0l, brw);
-                positionOffset += 1;
-                Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readFileSize(brr));
-                for (int bytes = 1; bytes < 9; bytes++)
-                {
-                    final int bits = bytes * 8 - Math.min(7, bytes);
-                    final long value = (0x01l << bits) - 1;
-
-                    serialiser.writeFileSize(value, brw);
-                    positionOffset += bytes;
-                    Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readFileSize(brr));
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testVariable128PiBFileSize() throws IOException
-    {
-        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(10240);
-        final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
-
-        try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
-        {
-            try (final BinaryReaderExImpl br = new BinaryReaderExImpl(null, bis, null, false))
-            {
-                final BinaryRawWriter brw = bw.rawWriter();
-                final BinaryRawReader brr = br.rawReader();
-
-                final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-                serialiser.setUseVariableLengthIntegers(true);
-                serialiser.setHandle128PiBFileSizes(true);
-                serialiser.setHandle2EiBFileSizes(false);
+                serialiser.setHandle4EiBFileSizes(false);
 
                 int positionOffset = 0;
 
@@ -632,11 +593,11 @@ public class AbstractCustomBinarySerializerTests
                 Assert.assertEquals(0, serialiser.readFileSize(brr));
                 for (int shorts = 1; shorts < 5; shorts++)
                 {
-                    final int bits = shorts * 16 - Math.min(3, shorts);
+                    final int bits = shorts * 16 - 2;
                     final long value = (0x01l << bits) - 1;
 
                     serialiser.writeFileSize(value, brw);
-                    positionOffset += (shorts * 2);
+                    positionOffset += shorts * 2;
                     Assert.assertEquals(positionOffset, bos.position());
                     Assert.assertEquals(value, serialiser.readFileSize(brr));
                 }
@@ -645,7 +606,7 @@ public class AbstractCustomBinarySerializerTests
     }
 
     @Test
-    public void testNonVariable2EiBFileSize() throws IOException
+    public void testNonVariable4EiBFileSize() throws IOException
     {
         final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(10240);
         final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
@@ -659,8 +620,7 @@ public class AbstractCustomBinarySerializerTests
 
                 final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
                 serialiser.setUseVariableLengthIntegers(true);
-                serialiser.setHandle128PiBFileSizes(false);
-                serialiser.setHandle2EiBFileSizes(true);
+                serialiser.setHandle4EiBFileSizes(true);
 
                 int positionOffset = 0;
 
@@ -682,25 +642,6 @@ public class AbstractCustomBinarySerializerTests
                     Assert.assertEquals(positionOffset, bos.position());
                     Assert.assertEquals(value, serialiser.readFileSize(brr));
                 }
-
-                // test same with slightly different config constellation (handle2EiBFileSizes must be only effective flag)
-                serialiser.setHandle128PiBFileSizes(true);
-                serialiser.setHandle2EiBFileSizes(true);
-
-                serialiser.writeFileSize(0l, brw);
-                positionOffset += 8;
-                Assert.assertEquals(positionOffset, bos.position());
-                Assert.assertEquals(0, serialiser.readFileSize(brr));
-                for (int shorts = 1; shorts < 5; shorts++)
-                {
-                    final int bits = shorts * 16 - Math.min(3, shorts);
-                    final long value = (0x01l << bits) - 1;
-
-                    serialiser.writeFileSize(value, brw);
-                    positionOffset += 8;
-                    Assert.assertEquals(positionOffset, bos.position());
-                    Assert.assertEquals(value, serialiser.readFileSize(brr));
-                }
             }
         }
     }
@@ -716,8 +657,7 @@ public class AbstractCustomBinarySerializerTests
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
             serialiser.setUseVariableLengthIntegers(true);
-            serialiser.setHandle128PiBFileSizes(false);
-            serialiser.setHandle2EiBFileSizes(false);
+            serialiser.setHandle4EiBFileSizes(false);
 
             this.exEx.expect(BinaryObjectException.class);
             serialiser.writeFileSize(-1, brw);
@@ -725,7 +665,7 @@ public class AbstractCustomBinarySerializerTests
     }
 
     @Test
-    public void testNegativeVariableFileSize128PiB() throws IOException
+    public void testNegativeNonVariableFileSize4EiB() throws IOException
     {
         final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(10240);
 
@@ -735,27 +675,7 @@ public class AbstractCustomBinarySerializerTests
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
             serialiser.setUseVariableLengthIntegers(true);
-            serialiser.setHandle128PiBFileSizes(true);
-            serialiser.setHandle2EiBFileSizes(false);
-
-            this.exEx.expect(BinaryObjectException.class);
-            serialiser.writeFileSize(-1, brw);
-        }
-    }
-
-    @Test
-    public void testNegativeNonVariableFileSize2EiB() throws IOException
-    {
-        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(10240);
-
-        try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
-        {
-            final BinaryRawWriter brw = bw.rawWriter();
-
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
-            serialiser.setHandle128PiBFileSizes(true);
-            serialiser.setHandle2EiBFileSizes(true);
+            serialiser.setHandle4EiBFileSizes(true);
 
             serialiser.writeFileSize(-1, brw);
         }
@@ -772,37 +692,17 @@ public class AbstractCustomBinarySerializerTests
 
             final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
             serialiser.setUseVariableLengthIntegers(true);
-            serialiser.setHandle128PiBFileSizes(false);
-            serialiser.setHandle2EiBFileSizes(false);
+            serialiser.setHandle4EiBFileSizes(false);
 
             this.exEx.expect(BinaryObjectException.class);
-            serialiser.writeFileSize(AbstractCustomBinarySerializer.LONG_AS_BYTE_UNSIGNED_MAX + 1, brw);
-        }
-    }
-
-    @Test
-    public void testVariableFileSize128PiBValueTooHigh() throws IOException
-    {
-        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(10240);
-
-        try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
-        {
-            final BinaryRawWriter brw = bw.rawWriter();
-
-            final SpecificCustomBinarySerializer serialiser = new SpecificCustomBinarySerializer();
-            serialiser.setUseVariableLengthIntegers(true);
-            serialiser.setHandle128PiBFileSizes(true);
-            serialiser.setHandle2EiBFileSizes(false);
-
-            this.exEx.expect(BinaryObjectException.class);
-            serialiser.write(AbstractCustomBinarySerializer.LONG_AS_SHORT_UNSIGNED_MAX + 1, false, brw);
+            serialiser.writeFileSize(AbstractCustomBinarySerializer.LONG_AS_SHORT_UNSIGNED_MAX + 1, brw);
         }
     }
 
     @Test
     public void testStringWithVariableLengthInteger() throws IOException
     {
-        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(40960);
+        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(8192000);
         final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
 
         try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
@@ -825,19 +725,25 @@ public class AbstractCustomBinarySerializerTests
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testStr, serialiser.readString(brr));
 
-                // simple String where length fits in 7 bits
-                testStr = "Test";
+                final StringBuilder longStrBuilder = new StringBuilder(4096);
+                // String with length fitting in 6 bits
+                for (int it = 0; it < (1 << 5) / 16; it++)
+                {
+                    longStrBuilder.append("0123456789ABCDEF");
+                }
+                longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
                 serialiser.write(testStr, brw);
                 positionOffset += testStr.length() + 1;
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testStr, serialiser.readString(brr));
 
-                final StringBuilder longStrBuilder = new StringBuilder(256);
-                // String with length between 7 and 14 bits
-                for (int it = 0; it < 16; it++)
+                // String with length fitting in 14 bits
+                longStrBuilder.delete(0, longStrBuilder.length());
+                for (int it = 0; it < (1 << 13) / 16; it++)
                 {
                     longStrBuilder.append("0123456789ABCDEF");
                 }
+                longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
 
                 testStr = longStrBuilder.toString();
                 serialiser.write(testStr, brw);
@@ -845,11 +751,13 @@ public class AbstractCustomBinarySerializerTests
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testStr, serialiser.readString(brr));
 
-                // String with exceeding 14 bits
-                for (int it = 0; it < 1024; it++)
+                // String with length fitting in 22 bits
+                longStrBuilder.delete(0, longStrBuilder.length());
+                for (int it = 0; it < (1 << 21) / 16; it++)
                 {
                     longStrBuilder.append("0123456789ABCDEF");
                 }
+                longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
 
                 testStr = longStrBuilder.toString();
                 serialiser.write(testStr, brw);
@@ -863,7 +771,7 @@ public class AbstractCustomBinarySerializerTests
     @Test
     public void testStringWithNonVariableLengthInteger() throws IOException
     {
-        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(1024);
+        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(8192000);
         final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
 
         try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))
@@ -886,19 +794,25 @@ public class AbstractCustomBinarySerializerTests
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testStr, serialiser.readString(brr));
 
-                // simple String where length fits in 7 bits
-                testStr = "Test";
+                final StringBuilder longStrBuilder = new StringBuilder(4096);
+                // String with length fitting in 6 bits
+                for (int it = 0; it < (1 << 5) / 16; it++)
+                {
+                    longStrBuilder.append("0123456789ABCDEF");
+                }
+                longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
                 serialiser.write(testStr, brw);
                 positionOffset += testStr.length() + 4;
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testStr, serialiser.readString(brr));
 
-                final StringBuilder longStrBuilder = new StringBuilder(256);
-                // String with length between 7 and 14 bits
-                for (int it = 0; it < 16; it++)
+                // String with length fitting in 14 bits
+                longStrBuilder.delete(0, longStrBuilder.length());
+                for (int it = 0; it < (1 << 13) / 16; it++)
                 {
                     longStrBuilder.append("0123456789ABCDEF");
                 }
+                longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
 
                 testStr = longStrBuilder.toString();
                 serialiser.write(testStr, brw);
@@ -906,11 +820,13 @@ public class AbstractCustomBinarySerializerTests
                 Assert.assertEquals(positionOffset, bos.position());
                 Assert.assertEquals(testStr, serialiser.readString(brr));
 
-                // String with exceeding 14 bits
-                for (int it = 0; it < 1024; it++)
+                // String with length fitting in 22 bits
+                longStrBuilder.delete(0, longStrBuilder.length());
+                for (int it = 0; it < (1 << 21) / 16; it++)
                 {
                     longStrBuilder.append("0123456789ABCDEF");
                 }
+                longStrBuilder.delete(longStrBuilder.length() - 1, longStrBuilder.length());
 
                 testStr = longStrBuilder.toString();
                 serialiser.write(testStr, brw);
@@ -967,7 +883,7 @@ public class AbstractCustomBinarySerializerTests
     @Test
     public void testLocaleWithNonVariableLengthInteger() throws IOException
     {
-        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(40960);
+        final BinaryHeapOutputStream bos = new BinaryHeapOutputStream(1024);
         final BinaryHeapInputStream bis = new BinaryHeapInputStream(bos.array());
 
         try (final BinaryWriterExImpl bw = new BinaryWriterExImpl(null, bos, null, null))

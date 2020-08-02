@@ -328,7 +328,7 @@ public class NodePropertiesBinarySerializer extends AbstractCustomBinarySerializ
         else if (value instanceof Long)
         {
             final long val = ((Long) value).longValue();
-            if (val < LONG_AS_BYTE_SIGNED_NEGATIVE_MAX || val > LONG_AS_BYTE_SIGNED_POSITIVE_MAX)
+            if (val < LONG_AS_SHORT_SIGNED_NEGATIVE_MAX || val > LONG_AS_SHORT_SIGNED_POSITIVE_MAX)
             {
                 rawWriter.writeByte(TYPE_LONG);
                 rawWriter.writeLong(val);
@@ -357,7 +357,7 @@ public class NodePropertiesBinarySerializer extends AbstractCustomBinarySerializ
         else if (value instanceof Date)
         {
             final long time = ((Date) value).getTime();
-            if (time < LONG_AS_BYTE_SIGNED_NEGATIVE_MAX || time > LONG_AS_BYTE_SIGNED_POSITIVE_MAX)
+            if (time < LONG_AS_SHORT_SIGNED_NEGATIVE_MAX || time > LONG_AS_SHORT_SIGNED_POSITIVE_MAX)
             {
                 rawWriter.writeByte(TYPE_DATE);
                 rawWriter.writeLong(time);

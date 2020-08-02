@@ -388,18 +388,18 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache4 = useAllIdGrid.getOrCreateCache(cacheConfig);
 
                 // savings should be more pronounced with both QName and ContentDataWithId replaced
-                // 81%
+                // 80%
                 this.efficiencyImpl(referenceGrid, useAllIdGrid, referenceCache4, cache4, contentDataDAO,
-                        "aldica raw serial (QName + ContentData ID substitution)", "aldica optimised", 0.81);
+                        "aldica raw serial (QName + ContentData ID substitution)", "aldica optimised", 0.8);
 
                 cacheConfig.setName("comparison5");
                 cacheConfig.setDataRegionName("comparison5");
                 final IgniteCache<Long, NodePropertiesCacheMap> referenceCache5 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, NodePropertiesCacheMap> cache5 = useAllIdGrid.getOrCreateCache(cacheConfig);
 
-                // 81%
+                // 80%
                 this.efficiencyImpl(defaultGrid, useAllIdGrid, referenceCache5, cache5, contentDataDAO,
-                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial", 0.81);
+                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial", 0.80);
 
                 cacheConfig.setName("comparison6");
                 cacheConfig.setDataRegionName("comparison6");
@@ -407,9 +407,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> cache6 = useAllIdGrid.getOrCreateCache(cacheConfig);
 
                 // ContentDataWithId is quite complex, so significant savings in addition to QName ID substitution if sparse metadata
-                // 52%
+                // 49%
                 this.efficiencyImpl(useQNameIdGrid, useAllIdGrid, referenceCache6, cache6, contentDataDAO,
-                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial (QName ID substitution)", 0.52);
+                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial (QName ID substitution)", 0.49);
             }
             finally
             {

@@ -165,8 +165,7 @@
         <property name="useVariableLengthIntegers"
             value="\${${moduleId}.core.binary.optimisation.contentData.useVariableLengthIntegers}" />
         <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.contentData.handleNegativeIds}" />
-        <property name="handle128PiBFileSizes" value="\${${moduleId}.core.binary.optimisation.contentData.handle128PiBFileSizes}" />
-        <property name="handle2EiBFileSizes" value="\${${moduleId}.core.binary.optimisation.contentData.handle2EiBFileSizes}" />
+        <property name="handle4EiBFileSizes" value="\${${moduleId}.core.binary.optimisation.contentData.handle4EiBFileSizes}" />
     </bean>
 
     <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedModuleVersionNumber" abstract="true"
