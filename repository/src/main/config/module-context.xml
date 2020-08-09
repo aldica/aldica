@@ -16,6 +16,7 @@
     </bean>
 
     <import resource="classpath:alfresco/module/${moduleId}/context/core-instance-context.xml" />
+    <import resource="classpath:alfresco/module/${moduleId}/context/serializer-context.xml" />
     <import resource="classpath:alfresco/module/${moduleId}/context/caches-context.xml" />
     <import resource="classpath:alfresco/module/${moduleId}/context/behaviours-context.xml" />
     <import resource="classpath:alfresco/module/${moduleId}/context/webscripts-context.xml" />

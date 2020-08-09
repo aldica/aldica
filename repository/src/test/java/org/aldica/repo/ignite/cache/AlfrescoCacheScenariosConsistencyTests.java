@@ -21,7 +21,7 @@ import java.util.UUID;
 
 import org.aldica.common.ignite.GridTestsBase;
 import org.aldica.repo.ignite.ExpensiveTestCategory;
-import org.aldica.repo.ignite.binary.QNameBinarySerializer;
+import org.aldica.repo.ignite.binary.value.QNameBinarySerializer;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.cache.SimpleCache;
 import org.alfresco.repo.cache.TransactionalCache;

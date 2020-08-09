@@ -22,6 +22,7 @@ import org.aldica.common.ignite.lifecycle.IgniteInstanceLifecycleAware;
 import org.aldica.common.ignite.lifecycle.SpringIgniteLifecycleBean;
 import org.alfresco.repo.cache.AbstractCacheFactory;
 import org.alfresco.repo.cache.DefaultSimpleCache;
+import org.alfresco.repo.cache.NullCache;
 import org.alfresco.repo.cache.SimpleCache;
 import org.alfresco.util.EqualsHelper;
 import org.alfresco.util.PropertyCheck;
@@ -56,6 +57,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheFactoryImpl.class);
 
     private static final String CACHE_TYPE_NOT_SET = "<not set>";
+
+    private static final String CACHE_TYPE_NULL = "nullCache";
 
     private static final String CACHE_TYPE_LOCAL = "local";
 
@@ -269,10 +272,14 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
             throw new IllegalStateException("Cache " + cacheName + " has not been configured for a specifc cache type");
         }
 
+        boolean disabled = false;
         boolean requiresRemoteSupport = true;
         boolean requiresIgnite = true;
         switch (cacheType)
         {
+            case CACHE_TYPE_NULL:
+                disabled = true;
+                break;
             case CACHE_TYPE_LOCAL:
                 requiresRemoteSupport = false;
                 break;
@@ -314,14 +321,18 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
                 // NO-OP
         }
 
-        if (requiresRemoteSupport && !this.enableRemoteSupport)
+        if (!disabled && requiresRemoteSupport && !this.enableRemoteSupport)
         {
             throw new UnsupportedOperationException("Cache type " + cacheType + " is not supported as remote support is not enabled");
         }
 
         SimpleCache<K, V> cache;
 
-        if (this.instanceStarted)
+        if (disabled)
+        {
+            cache = new NullCache<>();
+        }
+        else if (this.instanceStarted)
         {
             final Ignite grid = this.instanceName != null ? Ignition.ignite(this.instanceName) : Ignition.ignite();
             // old behaviour was to always invalidate on put - keep as long as no override has been configured
@@ -361,7 +372,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
             cache = this.createLocalDefaultSimpleCache(cacheName);
         }
 
-        if (withProxy)
+        if (!disabled && withProxy)
         {
             if (!this.instanceStarted && requiresIgnite)
             {

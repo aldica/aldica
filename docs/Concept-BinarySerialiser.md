@@ -89,8 +89,17 @@ All values were derived from the CSV output of the micro-benchmark, processed vi
 The aldica module currently adds the following, flexibly configurable serialisation options / optimisations with its Repository-tier Ignited-backed module:
 
 - `org.alfresco.repo.cache.TransactionalCache$CacheRegionKey`: structure flattening (eliminating reconstructible hash code) and raw serial form
+- `org.alfresco.repo.cache.TransactionalCache$ValueHolder`: structure flattening (substituting well known sentinel values; inlining simple numerical/textual values) and raw serial form
 - `org.alfresco.repo.cache.lookup.CacheRegionKey`: structure flattening (eliminating reconstructible hash code), well-known value substitution and raw serial form
 - `org.alfresco.repo.cache.lookup.CacheRegionValueKey`: structure flattening (eliminating reconstructible hash code), well-known value substitution and raw serial form
+- `org.alfresco.repo.domain.node.NodeVersionKey`: raw serial form
+- `org.alfresco.repo.domain.node.TransactionEntity`: raw serial form
+- `org.alfresco.repo.domain.node.StoreEntity`: structure flattening (inlining store protocol / identifier) and raw serial form
+- `org.alfresco.repo.domain.node.NodeEntity`: structure flattening (eliminating constant state, eliminating irrelevant state, eliminiate state only used for SQL ORM, inlining auditable properties, handling auditable dates as timestamp, not text) and raw serial form
+- `org.alfresco.repo.domain.node.ChildAssocEntity`: structure flattening (eliminiate state only used for SQL ORM) and raw serial form
+- `org.alfresco.repo.domain.permissions.AclEntity`: structure flattening (aggregating booleans and small value space enum into bitmask, handling the ACL (UU)ID as binary) and raw serial form
+- `org.alfresco.repo.domain.contentdata.ContentUrlEntity`: structure flattening (inlining content URL key), dynamic value substitution (substituting `Mimetype`, `Encoding` and/or `Locale` instances with ID), value type substitution for `Locale` and raw serial form
+- `org.alfresco.repo.domain.propval.PropertyUniqueContextEntity`: raw serial form
 - `org.alfresco.service.cmr.repository.StoreRef`: well-known value substitution (on the `protocol` field) and raw serial form
 - `org.alfresco.service.cmr.repository.NodeRef`: structure flattening (inline `StoreRef` fields), well-known value substitution (full `StoreRef` or only `protocol` field of `StoreRef`) and raw serial form
 - `org.alfresco.service.namespace.QName`: structure flattening (eliminating reconstructible `hashCode` and optional `prefix`), well-known value substitution (namespace URIs) and raw serial form
@@ -99,6 +108,10 @@ The aldica module currently adds the following, flexibly configurable serialisat
 - `org.alfresco.repo.module.ModuleVersionNumber`: effectively no optimisation (even slightly less efficient), but custom serialiser provided to override `Externalizable` behaviour and support raw serial form
 - `org.aldica.repo.ignite.cache.NodeAspectsCacheSet`: dynamic value substitution (substituting `QName` instances with ID) and raw serial form
 - `org.aldica.repo.ignite.cache.NodePropertiesCacheMap`: dynamic value substitution (substituting `QName` and `ContentDataWithId` instances with ID) and raw serial form
+- `org.alfresco.repo.security.authentication.InMemoryTicketComponentImpl#Ticket`: structure flattening (inlining duration and expiry) and raw serial form
+- `org.alfresco.service.cmr.repository.datatype.Duration`: raw serial form
+- `org.alfresco.repo.security.authentication.RepositoryAuthenticationDao$CacheEntry`: raw serial form
+- `org.alfresco.service.cmr.action.ExecutionDetails`: structure flattening (aggregating boolean flags into bitmask, inlining user detail fields) and raw serial form
 
 The optimisations can be configured on a high-level via `alfresco-global.properties` and the following properties:
 
@@ -118,4 +131,4 @@ In addition, for each type-specific listing at the start of this section, there 
 Many of the binary serialisation optimisations provided by the aldica module are built in such a way that they can either complement each other or act as fallback optimisations. Examples for this are:
 
 - if `Locale` key in an `MLText` is not being substituted with its database ID (due to `aldica.core.binary.optimisation.useIdsWhenReasonable` being disabled), it will still be written as a plain String instead of a costly `Locale` instance
-- a `QName` key in a node properties map being substituted with its database ID will be further optimised in raw serial form by having the database ID written as a variable length integer, likely cutting the cost for most `QName` instances to 25% or less (7-14 bit integer written as 8-16 bit values instead of 64 bit long)
+- a `QName` key in a node properties map being substituted with its database ID will be further optimised in raw serial form by having the database ID written as a variable length integer, likely cutting the cost for most `QName` instances to 25% (positive values with up to 14 significant bits written as unsigned 16 bit values instead of signed 64 bit long)

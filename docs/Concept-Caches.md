@@ -21,6 +21,7 @@ The [cache factory](../blob/master/repository/src/main/java/org/aldica/repo/igni
     - *partitioned*: data is collectively held by all servers in a data grid, split into a defined number of partitions, with one server acting as the primary control server for a specific partition, and one or more other servers maintaining a backup of that partition; when a server needs to use a cache entry not stored in a primary partition managed by this server, it needs to perform a network call to another server to check for its existence / obtain the entry ([Ignite partitioned cache mode details](https://apacheignite.readme.io/docs/cache-modes#partitioned-mode)) 
     - *replicated*: similar to a *partitioned* cache, but all servers in a data grid have all data partitions in their local memory, and never need to perform network calls for read-only operations ([Ignite replicated cache mode details](https://apacheignite.readme.io/docs/cache-modes#replicated-mode))
 - Not Ignite-backed
+    - *nullCache*: Alfresco's no-op cache, allowing targeted disabling / read-through semantics for individual caches
     - *localDefaultSimple*: the default, non-distributed type of caches created by default Alfresco, relevant for use cases where cache keys/values or their pattern of use do not support a distributed type of use and storage in serialised form
 - Mixed Ignite / non-Ignite
     - *invalidatingDefaultSimple*: an enhanced variant of the default Alfresco cache type, where messages concerning update / removal operations on cache keys are distributed to other servers in a data grid for invalidation of locally held data in their corresponding caches
@@ -51,11 +52,12 @@ The following default Alfresco caches are incompatible with Ignite-backed caches
 - loadedResourceBundlessSharedCache
 - resourceBundleBaseNamesSharedCache
 - openCMISRegistrySharedCache
-- node.nodesSharedCache
+- imapMessageSharedCache
+- contentDiskDriver
 
-Apart from the node.nodesSharedCache, cachingContentStoreCache and resourceBundleBaseNamesSharedCache, all unsupported caches only handle actual functional components instead of data entries, and distributing such components to other servers of the data grid would not make sense.
+Apart from the cachingContentStoreCache, resourceBundleBaseNamesSharedCache and imapMessageSharedCache, all unsupported caches only handle actual functional components instead of data entries, and distributing such components to other servers of the data grid would not make sense.
 The cachingContentStoreCache stores paths for local temporary files, which would typically not be valid on servers other than the one which created the temporary file. The resourceBundleBaseNamesSharedCache stores names of localisation bundles loaded from either the classpath of the server or the logical data repository, so contains a mixture of data that is either universal to all servers or specific only to the local server.
-The node.nodesSharedCache is a key cache for handling the identity and state of nodes in the Alfresco Repository, and is one of the most frequently used caches at all. Unfortunately, its value objects contain mutable state which is modified without proper cache update operations and which should not be transmitted to other servers as it has relevance only for the local server.
+The imapMessageSharedCache stores full instances of `javax.mail.internet.MimeMessage`, which may contain references to functional components or connection management elements (e.g. `javax.mail.Session`). The contentDiskDriver indirectly stores value objects with direct references to Alfresco services, file channel and content accessor (reader/writer) instances. Any kind of serialisation in Ignite-backed caches would break apart these references.
 
 ### Aldica Cache Optimisations
 The aldica module includes various optimisations to a sub-set of the default Alfresco caches to improve their performance and/or utility. Some of these optimisations may also be enabled on other caches by setting specific configuration properties.
@@ -77,6 +79,19 @@ A small set of default Alfresco caches serves in specific use cases that warrant
 - propertyClassCache
 
 Furthermore, the default cache *ticketsCache* is used in such a way that its default type as a *partitioned* (Alfresco term: *fully-distributed*) cache can cause significant overhead on user login or use of operations that list the currently authenticated users based on their cached tickets. Since at least the user login case occurs regularly, the cache type is overwritten by the aldica module to that of a *replicated* cache.
+Overall, the following caches have been overwritten to use a *replicated* cache type for reasons of performance due for frequency of use, considering a generally limited number of small-ish entries:
+
+- ticketsCache
+- authenticationSharedCache
+- immutableEntitySharedCache
+
+The following caches have been overwritten to use a *partitioned* cache type instead of the Alfresco default (either *invalidating* or *local*) in order to reduce redundant data and increase the overall effective amount of data cached among all nodes in a grid, and avoid wasteful invalidations between nodes when non-sticky access patterns are used and same data is accessed successively on different nodes:
+
+- node.nodesSharedCache
+- node.aspectsSharedCache
+- node.propertiesSharedCache
+- propertyValueCache
+- propertyUniqueContextSharedCache
 
 ## Asynchronously Refreshed Caches
 In addition to the vast amount of standard caches in the Alfresco Repository (about 52 in Alfresco 6.1) there are a handful of caches using a distinct technical concept and interface. A [AsynchronouslyRefreshedCache](https://github.com/Alfresco/alfresco-core/blob/master/src/main/java/org/alfresco/util/cache/AsynchronouslyRefreshedCache.java) is a special type of cache that can have its values regenerated / recalculated asynchronously. It is used to manage rather complex data structures where a simple change can require extensive, cascading updates and/or recalculation of data, which would be too costly to handle as part of the original user action. It is used in the default Alfresco Repository for the following use cases:

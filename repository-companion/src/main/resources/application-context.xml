@@ -114,48 +114,7 @@
 
     <bean id="Configuration.${moduleId}.core.binary" class="org.apache.ignite.configuration.BinaryConfiguration" />
 
-    <bean id="Configuration.${moduleId}.core.binary.serializer.configurableRelevantFields"
-        class="${aldica.ignite-common.basePackage}.binary.SelectivelyReflectiveBinarySerializer">
-        <property name="relevantFieldsProvider">
-            <bean class="${aldica.ignite-common.basePackage}.binary.ConfigurableSerializationRelevantFieldsProvider">
-                <property name="basePropertyKey" value="${moduleId}.core.binary.relevantFields" />
-                <property name="propertiesSource" ref="global-properties" />
-            </bean>
-        </property>
-    </bean>
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheRegionKey"
-        class="org.aldica.repo.ignite.binary.TransactionalCacheRegionKeyBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionKey"
-        class="org.aldica.repo.ignite.binary.CacheRegionKeyBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionValueKey"
-        class="org.aldica.repo.ignite.binary.CacheRegionValueKeyBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedStoreRef"
-        class="org.aldica.repo.ignite.binary.StoreRefBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeRef"
-        class="org.aldica.repo.ignite.binary.NodeRefBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedQName"
-        class="org.aldica.repo.ignite.binary.QNameBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedMLText"
-        class="org.aldica.repo.ignite.binary.MLTextBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedContentData"
-        class="org.aldica.repo.ignite.binary.ContentDataBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedModuleVersionNumber"
-        class="org.aldica.repo.ignite.binary.ModuleVersionNumberBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeAspects"
-        class="org.aldica.repo.ignite.binary.NodeAspectsBinarySerializer" />
-
-    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeProperties"
-        class="org.aldica.repo.ignite.binary.NodePropertiesBinarySerializer" />
+    <import resource="classpath:serializer-context.xml" />
 
     <bean id="Configuration.${moduleId}.core.binary.binaryTypeConfigurationBeanEmitter"
         class="${aldica.ignite-common.basePackage}.spring.BinaryTypeConfigurationBeanDefinitionEmitter">

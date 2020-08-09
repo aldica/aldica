@@ -1,0 +1,226 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.configurableRelevantFields" abstract="true"
+        class="${aldica.ignite-common.basePackage}.binary.SelectivelyReflectiveBinarySerializer">
+        <property name="relevantFieldsProvider">
+            <bean class="${aldica.ignite-common.basePackage}.binary.ConfigurableSerializationRelevantFieldsProvider">
+                <property name="basePropertyKey" value="${moduleId}.core.binary.relevantFields" />
+                <property name="propertiesSource" ref="global-properties" />
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheRegionKey" abstract="true"
+        class="${project.basePackage}.binary.support.TransactionalCacheRegionKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.txnCacheKey.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.txnCacheKey.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheValueHolder" abstract="true"
+        class="${project.basePackage}.binary.support.TransactionalCacheValueHolderBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.txnCacheValueHolder.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.txnCacheValueHolder.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionKey" abstract="true"
+        class="${project.basePackage}.binary.support.CacheRegionKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.cacheKey.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.cacheKey.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionValueKey" abstract="true"
+        class="${project.basePackage}.binary.support.CacheRegionValueKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.cacheValueKey.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.cacheValueKey.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeVersionKey" abstract="true"
+        class="${project.basePackage}.binary.support.NodeVersionKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeVersionKey.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.nodeVersionKey.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.nodeVersionKey.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedChildByNameKey" abstract="true"
+        class="${project.basePackage}.binary.support.ChildByNameKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.childByNameKey.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.childByNameKey.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.childByNameKey.handleNegativeIds}" />
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.childByNameKey.useIdsWhenReasonable}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedPucKey" abstract="true"
+        class="${project.basePackage}.binary.support.CachePucKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.pucKey.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.pucKey.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.pucKey.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTransactionEntity" abstract="true"
+        class="${project.basePackage}.binary.entity.TransactionEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.transactionEntity.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.transactionEntity.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.transactionEntity.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedStoreEntity" abstract="true"
+        class="${project.basePackage}.binary.entity.StoreEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.storeEntity.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.storeEntity.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.storeEntity.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeEntity" abstract="true"
+        class="${project.basePackage}.binary.entity.NodeEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeEntity.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.nodeEntity.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.nodeEntity.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedChildAssocEntity" abstract="true"
+        class="${project.basePackage}.binary.entity.ChildAssocEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.childAssocEntity.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.childAssocEntity.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.childAssocEntity.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedAclEntity" abstract="true"
+        class="${project.basePackage}.binary.entity.AclEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.aclEntity.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.aclEntity.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.aclEntity.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedContentUrlEntity" abstract="true"
+        class="${project.basePackage}.binary.entity.ContentUrlEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.contentUrlEntity.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.contentUrlEntity.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.contentUrlEntity.handleNegativeIds}" />
+        <property name="handle4EiBFileSizes" value="\${${moduleId}.core.binary.optimisation.contentUrlEntity.handle4EiBFileSizes}" />
+        <property name="useOptimisedContentURL"
+            value="\${${moduleId}.core.binary.optimisation.contentUrlEntity.useOptimisedContentURL}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedPropertyUniqueContextEntity" abstract="true"
+        class="${project.basePackage}.binary.entity.PropertyUniqueContextEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.propertyUniqueContextEntity.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.propertyUniqueContextEntity.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.propertyUniqueContextEntity.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedStoreRef" abstract="true"
+        class="${project.basePackage}.binary.value.StoreRefBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.storeRef.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.storeRef.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeRef" abstract="true"
+        class="${project.basePackage}.binary.value.NodeRefBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeRef.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.nodeRef.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedQName" abstract="true"
+        class="${project.basePackage}.binary.value.QNameBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.qname.useRawSerial}" />
+        <property name="useVariableLengthIntegers" value="\${${moduleId}.core.binary.optimisation.qname.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedMLText" abstract="true"
+        class="${project.basePackage}.binary.value.MLTextBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.mlText.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.mlText.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.mlText.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.mlText.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedContentData" abstract="true"
+        class="${project.basePackage}.binary.value.ContentDataBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.contentData.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.contentData.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.contentData.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.contentData.handleNegativeIds}" />
+        <property name="handle4EiBFileSizes" value="\${${moduleId}.core.binary.optimisation.contentData.handle4EiBFileSizes}" />
+        <property name="useOptimisedContentURL" value="\${${moduleId}.core.binary.optimisation.contentData.useOptimisedContentURL}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedModuleVersionNumber" abstract="true"
+        class="${project.basePackage}.binary.value.ModuleVersionNumberBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.moduleVersionNumber.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.moduleVersionNumber.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeAspects" abstract="true"
+        class="${project.basePackage}.binary.value.NodeAspectsBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.nodeAspects.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeAspects.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.nodeAspects.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.nodeAspects.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeProperties" abstract="true"
+        class="${project.basePackage}.binary.value.NodePropertiesBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.nodeProperties.useIdsWhenReasonable}" />
+        <property name="useIdsWhenPossible" value="\${${moduleId}.core.binary.optimisation.nodeProperties.useIdsWhenPossible}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeProperties.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.nodeProperties.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.nodeProperties.handleNegativeIds}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTicket" abstract="true"
+        class="${project.basePackage}.binary.value.TicketBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.ticket.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.ticket.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedDuration" abstract="true"
+        class="${project.basePackage}.binary.value.DurationBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.duration.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.duration.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedAuthenticationCacheEntry" abstract="true"
+        class="${project.basePackage}.binary.misc.AuthenticationCacheEntryBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.authenticationCacheEntry.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.authenticationCacheEntry.useVariableLengthIntegers}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedExecutionDetails" abstract="true"
+        class="${project.basePackage}.binary.value.ExecutionDetailsBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.executionDetails.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.executionDetails.useVariableLengthIntegers}" />
+    </bean>
+
+</beans>
