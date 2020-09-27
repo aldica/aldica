@@ -19,6 +19,15 @@ The module of this project is built to be compatible with Alfresco Content Servi
 
 **Note**: Alfresco Enterprise Edition already ships with custom cache implementations that are tied directly to its Enterprise clustering feature. Though we have managed to install aldica and use its cache provider on a trial version of Alfresco Enterprise Edition with only a minor bit of tinkering, we cannot generally support Alfresco Enterprise Edition. Its code is not open to us and may change without notice / disclosure in any service pack or hotfix release, so we cannot safely adapt aldica to work without risk to Enterprise features in the range of versions of Alfresco Content Services that we would like to support. Furthermore, Enterprise customers choosing to install aldica would likely be left in a system state that Alfresco Support could rightfully refuse to support when issues are filed for problems remotely related to caching. As an open source project, we cannot take on the warranty / liability of such systems either.
 
+### Known Issue(s) / Limitation(s) with Alfresco 5.2
+
+Due to an issue with transactional resource and cleanup handling (e.g. [SPR-15194](https://jira.spring.io/browse/SPR-15194)) fixed only with an upgraded Spring library in Alfresco 6.x, parts of aldica's serialisation improvements to reduce the memory footprint of cached values cannot be used on Alfresco 5.2. These must be disabled by setting the following Repository-tier global properties:
+
+```
+aldica.core.binary.optimisation.useIdsWhenReasonable=false
+aldica.core.binary.optimisation.useIdsWhenPossible=false
+```
+
 ## Published Release / SNAPSHOT Artifacts
 
 All artifacts of released versions of this module will be published on Maven Central, using the group ID _org.aldica_ . SNAPSHOT versions of artifacts will be published on the [Sonatype Open Source Software Repository Hosting](https://oss.sonatype.org) service. In order to reference SNAPSHOT versions in Maven-based projects, an appropriate repository section has to be added to the project's POM file:
