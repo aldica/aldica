@@ -5,15 +5,16 @@
 # If the container memory is not explicitly set then the flags above will set the max heap default to 1/4 of the container's memory, which may not be ideal.
 # For performance tuning, assign the container memory and give a percentage of it to the JVM.
 
-# Using version 2 as 3 does not support resource constraint options (cpu_*, mem_* limits) for non swarm mode in Compose
-version: "2"
+version: "3.5"
 
 services:
-    alfresco:
+    alfresco1:
+        depends_on:
+            - postgres
+        image: aldica/repo:1.0.1
         build:
-          context: ..
-          dockerfile: docker/Dockerfile.repo.build
-        mem_limit: 1500m
+            context: ..
+            dockerfile: docker/Dockerfile.repo.download
         environment:
             JAVA_OPTS: "
                 -Ddb.driver=org.postgresql.Driver
@@ -25,7 +26,7 @@ services:
                 -Dsolr.secureComms=none
                 -Dsolr.base.url=/solr
                 -Dindex.subsystem.name=solr6
-                -Dshare.host=127.0.0.1
+                -Dshare.host=loadbalancer
                 -Dshare.port=8080
                 -Dalfresco.host=localhost
                 -Dalfresco.port=8080
@@ -48,12 +49,131 @@ services:
                 -Dtransform.misc.url=http://transform-misc:8090/
 
                 -Dcsrf.filter.enabled=false
-                -Xms1500m -Xmx1500m
-                "
+
+                --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+                --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+                --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                --illegal-access=permit
+
+                -Xms1500m
+                -Xmx2000m
+
+                -XX:+UseG1GC
+                -XX:+ParallelRefProcEnabled
+                -XX:+UseStringDeduplication
+                -XX:+ScavengeBeforeFullGC
+                -XX:+DisableExplicitGC
+                -XX:+AlwaysPreTouch
+
+                -Dfile.encoding=UTF-8
+                -Djava.net.preferIPv4Stack=true
+
+                -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                -DIGNITE_QUIET=true
+                -DIGNITE_NO_ASCII=true
+                -DIGNITE_UPDATE_NOTIFIER=false
+                -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+
+                -Daldica.caches.remoteSupport.enabled=true
+                -Daldica.core.local.id=alfresco1
+                -Daldica.core.public.host=alfresco1
+            "
+        # Expose Tomcat port for convenience
+        ports:
+            - 8081:8080
+        # The two Alfresco repositories need to share files
+        volumes:
+            - type: volume
+              source: alfresco-data-volume
+              target: /usr/local/tomcat/alf_data
+
+    alfresco2:
+        depends_on:
+            - postgres
+        image: aldica/repo:1.0.1
+        build:
+            context: ..
+            dockerfile: docker/Dockerfile.repo.download
+        environment:
+            JAVA_OPTS: "
+                -Ddb.driver=org.postgresql.Driver
+                -Ddb.username=alfresco
+                -Ddb.password=alfresco
+                -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                -Dsolr.host=solr6
+                -Dsolr.port=8983
+                -Dsolr.secureComms=none
+                -Dsolr.base.url=/solr
+                -Dindex.subsystem.name=solr6
+                -Dshare.host=loadbalancer
+                -Dshare.port=8080
+                -Dalfresco.host=localhost
+                -Dalfresco.port=8080
+                -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
+                -Dmessaging.broker.url=\"failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true\"
+                -Ddeployment.method=DOCKER_COMPOSE
+
+                -Dlocal.transform.service.enabled=true
+                -DlocalTransform.pdfrenderer.url=http://alfresco-pdf-renderer:8090/
+                -DlocalTransform.imagemagick.url=http://imagemagick:8090/
+                -DlocalTransform.libreoffice.url=http://libreoffice:8090/
+                -DlocalTransform.tika.url=http://tika:8090/
+                -DlocalTransform.misc.url=http://transform-misc:8090/
+
+                -Dlegacy.transform.service.enabled=true
+                -Dalfresco-pdf-renderer.url=http://alfresco-pdf-renderer:8090/
+                -Djodconverter.url=http://libreoffice:8090/
+                -Dimg.url=http://imagemagick:8090/
+                -Dtika.url=http://tika:8090/
+                -Dtransform.misc.url=http://transform-misc:8090/
+
+                -Dcsrf.filter.enabled=false
+
+                --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+                --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+                --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                --illegal-access=permit
+
+                -Xms1500m
+                -Xmx2000m
+
+                -XX:+UseG1GC
+                -XX:+ParallelRefProcEnabled
+                -XX:+UseStringDeduplication
+                -XX:+ScavengeBeforeFullGC
+                -XX:+DisableExplicitGC
+                -XX:+AlwaysPreTouch
+
+                -Dfile.encoding=UTF-8
+                -Djava.net.preferIPv4Stack=true
+
+                -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                -DIGNITE_QUIET=true
+                -DIGNITE_NO_ASCII=true
+                -DIGNITE_UPDATE_NOTIFIER=false
+                -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+
+                -Daldica.caches.remoteSupport.enabled=true
+                -Daldica.core.local.id=alfresco2
+                -Daldica.core.public.host=alfresco2
+            "
+        # Expose Tomcat port for convenience
+        ports:
+            - 8082:8080
+        # The two Alfresco repositories need to share files
+        volumes:
+            - type: volume
+              source: alfresco-data-volume
+              target: /usr/local/tomcat/alf_data
 
     alfresco-pdf-renderer:
         image: alfresco/alfresco-pdf-renderer:2.1.0
-        mem_limit: 1g
         environment:
             JAVA_OPTS: " -Xms256m -Xmx512m"
         ports:
@@ -61,7 +181,6 @@ services:
 
     imagemagick:
         image: alfresco/alfresco-imagemagick:2.1.0
-        mem_limit: 1g
         environment:
             JAVA_OPTS: " -Xms256m -Xmx512m"
         ports:
@@ -69,7 +188,6 @@ services:
 
     libreoffice:
         image: alfresco/alfresco-libreoffice:2.1.0
-        mem_limit: 1g
         environment:
             JAVA_OPTS: " -Xms256m -Xmx512m"
         ports:
@@ -77,7 +195,6 @@ services:
 
     tika:
         image: alfresco/alfresco-tika:2.1.0
-        mem_limit: 1g
         environment:
             JAVA_OPTS: " -Xms256m -Xmx512m"
         ports:
@@ -85,32 +202,63 @@ services:
 
     transform-misc:
         image: alfresco/alfresco-transform-misc:2.1.0
-        mem_limit: 1g
         environment:
             JAVA_OPTS: " -Xms256m -Xmx512m"
         ports:
             - 8094:8090
 
-    share:
+    share1:
+        image: aldica/share:1.0.1
         build:
           context: ..
-          dockerfile: docker/Dockerfile.share.build
-        mem_limit: 1g
+          dockerfile: docker/Dockerfile.share.download
         environment:
-            REPO_HOST: "alfresco"
+            REPO_HOST: "loadbalancer"
             REPO_PORT: "8080"
             JAVA_OPTS: "
                 -Xms500m
                 -Xmx500m
-                -Dalfresco.host=localhost
+                -Dalfresco.host=loadbalancer
                 -Dalfresco.port=8080
                 -Dalfresco.context=alfresco
                 -Dalfresco.protocol=http
+
+                -Daldica.core.local.id=share1
+                -Daldica.core.local.host=share1
+                -Daldica.core.public.host=share1
+                -Daldica.core.initialMembers=share1,share2
                 "
+        # Expose Tomcat port for convenience
+        ports:
+            - 8181:8080
+
+    share2:
+        image: aldica/share:1.0.1
+        build:
+            context: ..
+            dockerfile: docker/Dockerfile.share.download
+        environment:
+            REPO_HOST: "loadbalancer"
+            REPO_PORT: "8080"
+            JAVA_OPTS: "
+                -Xms500m
+                -Xmx500m
+                -Dalfresco.host=loadbalancer
+                -Dalfresco.port=8080
+                -Dalfresco.context=alfresco
+                -Dalfresco.protocol=http
+
+                -Daldica.core.local.id=share2
+                -Daldica.core.local.host=share2
+                -Daldica.core.public.host=share2
+                -Daldica.core.initialMembers=share1,share2
+                "
+        # Expose Tomcat port for convenience
+        ports:
+            - 8182:8080
 
     postgres:
         image: postgres:11.4
-        mem_limit: 512m
         environment:
             - POSTGRES_PASSWORD=alfresco
             - POSTGRES_USER=alfresco
@@ -120,11 +268,12 @@ services:
             - 5432:5432
 
     solr6:
+        depends_on:
+            - alfresco1
         image: alfresco/alfresco-search-services:1.4.0
-        mem_limit: 2g
         environment:
             #Solr needs to know how to register itself with Alfresco
-            - SOLR_ALFRESCO_HOST=alfresco
+            - SOLR_ALFRESCO_HOST=loadbalancer
             - SOLR_ALFRESCO_PORT=8080
             #Alfresco needs to know how to call solr
             - SOLR_SOLR_HOST=solr6
@@ -139,20 +288,25 @@ services:
 
     activemq:
         image: alfresco/alfresco-activemq:5.15.8
-        mem_limit: 1g
         ports:
             - 8161:8161 # Web Console
             - 5672:5672 # AMQP
             - 61616:61616 # OpenWire
             - 61613:61613 # STOMP
             
-    proxy:
-        image: alfresco/acs-community-ngnix:1.0.0
-        mem_limit: 128m
+    loadbalancer:
         depends_on:
-            - alfresco
+            - alfresco1
+            - alfresco2
+            - share1
+            - share2
+        image: aldica/lb:1.0.0
+        build:
+            context: ..
+            # dockerfile: docker/Dockerfile.lb
+            dockerfile: docker/Dockerfile.nginx.lb
         ports:
             - 8080:8080
-        links:
-            - alfresco
-            - share     
+
+volumes:
+    alfresco-data-volume:
