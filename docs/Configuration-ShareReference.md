@@ -41,7 +41,7 @@ The following configuration properties affect the instantiation of the core Igni
 | aldica.core.local.time.port | ``47150`` | Network port on which to bind for the UDP-based time server handling |
 | aldica.core.local.time.portRange | ``0`` | Range / number of alternative ports (relative to _aldica.core.local.time.port_) on which to attempt to bind if the configured port is not available |
 | aldica.core.public.time.port |  | Publicly accessible port for time server handling used in network address translation handling, e.g. in a NAT-ed environment |
-| aldica.core.initialMembers |  | Comma-separated list of accessible network addresses to attempt to contact as initial data grid members during [member discovery](./Concept-GridMemberDiscovery.md). This is generally **not necessary** as aldica will handle discovery using database-stored address registrations. Configured addresses may use host names / IP addresses with or without ports / port ranges (based on the _aldica.core.local.disco.port_ and related settings), e.g. ``repo1.acme.com,192.168.0.2,repo2.acme.com:47110,192.168.0.4:47110-47119`` |
+| aldica.core.initialMembers |  | Comma-separated list of accessible network addresses to attempt to contact as initial data grid members during [member discovery](./Concept-GridMemberDiscovery.md). This property is **required**, since Share cannot retrieve grid member registrations from the database. Configured addresses may use host names / IP addresses with or without ports / port ranges (based on the _aldica.core.local.disco.port_ and related settings), e.g. ``share1.acme.com,192.168.0.2,share2.acme.com:47110,192.168.0.4:47110-47119``. See more details in [GettingStarted-Share-Scenarios](./GettingStarted-Share-Scenarios.md) |
 
 ### Storage Properties
 
