@@ -38,3 +38,81 @@ The following configuration parameters have different default values in Alfresco
 - `aldica.core.local.comm.port`: 47130 (vs. 47100 in Alfresco Content Services)
 - `aldica.core.local.disco.port`: 47140 (vs. 47110 in Alfresco Content Services)
 - `aldica.core.local.time.port`: 47150 (vs. 47120 in Alfresco Content Services)
+
+## Load Balancing
+
+In environments where two or more instances of Share are running, it is _required_ to use
+sticky sessions in the load balancer running in front of Share. Session stickyness will ensure
+that all requests to Share endpoints will be routed to the same instance of Share (for a given
+session) running behind the
+load balancer. This can for example be accomplished as described below for Apache, Nginx and 
+Nginx-Ingress (Kubernetes), respectively.
+
+### Apache
+
+Create a VirtualHost file, e.g. `/etc/apache2/sites-available/lb_sticky.conf` similar the one
+shown below (adjusted with appropriate values as needed):
+
+```
+<VirtualHost *:80>
+
+    ServerName <load balancer hostname>
+
+    ProxyRequests off
+
+    Header add Set-Cookie "ROUTEID=.%{BALANCER_WORKER_ROUTE}e; path=/" env=BALANCER_ROUTE_CHANGED
+    <Proxy "balancer://mycluster">
+        BalancerMember "http://<share1 hostname>:8080" route=1
+        BalancerMember "http://<share2 hostname>:8080" route=2
+        
+        ProxySet stickysession=ROUTEID
+    </Proxy>
+
+    ProxyPass        "/" "balancer://mycluster/"
+    ProxyPassReverse "/" "balancer://mycluster/"
+
+</VirtualHost>
+```
+
+### Nginx
+
+An Nginx example can be seen in the [nginx.conf](../docker/nginx.conf) provided in this project - and 
+used by the [docker-compose.yml](../docker/docker-compose.yml) located in the same folder. The 
+stickyness is enforced by the line `hash $remote_addr consistent;` in the Share section of the file:
+```
+...
+http {
+
+    ...
+
+    upstream share {
+        hash $remote_addr consistent;
+        server share1:8080;
+        server share2:8080;
+    }
+
+    ...
+
+}
+```
+
+### Nginx-Ingress (Kubernetes)
+
+Alfrescos [acs-deployment](https://github.com/Alfresco/acs-deployment.git) project provides a
+Kubernetes Ingress example
+[here](https://github.com/Alfresco/acs-deployment/blob/master/helm/alfresco-content-services/templates/ingress-share.yaml).
+The important lines to note regarding stickyness are these lines in the `annotations` section:
+```
+nginx.ingress.kubernetes.io/affinity: "cookie"
+nginx.ingress.kubernetes.io/session-cookie-name: "alfrescoShare"
+nginx.ingress.kubernetes.io/session-cookie-path: "/share"
+nginx.ingress.kubernetes.io/session-cookie-max-age: "604800"
+nginx.ingress.kubernetes.io/session-cookie-expires: "604800"
+```
+The extra annotation
+```
+nginx.ingress.kubernetes.io/affinity-mode: "persistent"
+```
+can also be set. The [documentation](https://kubernetes.github.io/ingress-nginx/examples/affinity/cookie/)
+states "The affinity mode defines how sticky a session is. Use balanced to redistribute some sessions when
+scaling pods or persistent for maximum stickyness".
