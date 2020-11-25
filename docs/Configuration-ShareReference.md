@@ -1,4 +1,4 @@
-# Configuration: Alfresco Repository Property Reference
+# Configuration: Alfresco Share Property Reference
 
 All configuration on the Alfresco Share-tier - apart from the JVM properties - is done by setting Share global properties. Share global properties are a feature not available in default Alfresco and provided by the Acosix Utility project, which this project depends upon. All properties can be set via the _share-global.properties_ file in _&lt;tomcatPath&gt;/shared/classes/_. When using a deployment based on standard Alfresco Docker images for Alfresco Content Services, most properties can be set via the JAVA\_OPTS environment variables in Docker Compose or Kubernetes deployments.
 
