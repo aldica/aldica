@@ -4,40 +4,30 @@
 package org.aldica.repo.ignite.binary;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.aldica.common.ignite.GridTestsBase;
 import org.aldica.repo.ignite.ExpensiveTestCategory;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.StoreRef;
-import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.marshaller.Marshaller;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Axel Faust
  */
 public class NodeRefBinarySerializerTests extends GridTestsBase
 {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(NodeRefBinarySerializerTests.class);
 
     private static final int MODE_FULLY_RANDOM = 0;
 
@@ -56,7 +46,7 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
             NodeRefBinarySerializer.REF_WORKSPACE_LIGHT_WEIGHT_VERSION_STORE, NodeRefBinarySerializer.REF_WORKSPACE_SPACES_STORE,
             NodeRefBinarySerializer.REF_WORKSPACE_VERSION2STORE };
 
-    protected static IgniteConfiguration createConfiguration(final boolean serialForm, final String... regionNames)
+    protected static IgniteConfiguration createConfiguration(final boolean serialForm)
     {
         final IgniteConfiguration conf = createConfiguration(1, false, null);
 
@@ -71,22 +61,6 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForNodeRef));
         conf.setBinaryConfiguration(binaryConfiguration);
-
-        final DataStorageConfiguration dataConf = new DataStorageConfiguration();
-        final List<DataRegionConfiguration> regionConfs = new ArrayList<>();
-        for (final String regionName : regionNames)
-        {
-            final DataRegionConfiguration regionConf = new DataRegionConfiguration();
-            regionConf.setName(regionName);
-            // all regions are 10-100 MiB
-            regionConf.setInitialSize(10 * 1024 * 1024);
-            regionConf.setMaxSize(100 * 1024 * 1024);
-            regionConf.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
-            regionConf.setMetricsEnabled(true);
-            regionConfs.add(regionConf);
-        }
-        dataConf.setDataRegionConfigurations(regionConfs.toArray(new DataRegionConfiguration[0]));
-        conf.setDataStorageConfiguration(dataConf);
 
         return conf;
     }
@@ -104,45 +78,21 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
     {
         final IgniteConfiguration referenceConf = createConfiguration(1, false, null);
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(false, "fullyRandomNodeRefs", "randomNodeRefsKnownStore",
-                "knownStoreRandomId");
-
-        referenceConf.setDataStorageConfiguration(conf.getDataStorageConfiguration());
+        final IgniteConfiguration conf = createConfiguration(false);
 
         try
         {
             final Ignite referenceGrid = Ignition.start(referenceConf);
             final Ignite grid = Ignition.start(conf);
 
-            final CacheConfiguration<Long, NodeRef> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            // minimal potential, but inlining StoreRef should still yield at least 12%
+            this.efficiencyImpl(referenceGrid, grid, "aldica optimised", "Ignite default", MODE_FULLY_RANDOM, 0.12);
 
-            cacheConfig.setName("fullyRandomNodeRefs");
-            cacheConfig.setDataRegionName("fullyRandomNodeRefs");
-            final IgniteCache<Long, NodeRef> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, NodeRef> cache1 = grid.getOrCreateCache(cacheConfig);
+            // decent potential with known store protocol, 23%
+            this.efficiencyImpl(referenceGrid, grid, "aldica optimised", "Ignite default", MODE_RANDOM_STORE_AND_NODE_ID, 0.23);
 
-            // minimal potential, but inlining StoreRef should still yield at least 9%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica optimised", "Ignite default", MODE_FULLY_RANDOM,
-                    0.09);
-
-            cacheConfig.setName("randomNodeRefsKnownStore");
-            cacheConfig.setDataRegionName("randomNodeRefsKnownStore");
-            final IgniteCache<Long, NodeRef> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, NodeRef> cache2 = grid.getOrCreateCache(cacheConfig);
-
-            // decent potential with known store protocol, 15%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache2, cache2, "aldica optimised", "Ignite default",
-                    MODE_RANDOM_STORE_AND_NODE_ID, 0.15);
-
-            cacheConfig.setName("knownStoreRandomId");
-            cacheConfig.setDataRegionName("knownStoreRandomId");
-            final IgniteCache<Long, NodeRef> referenceCache3 = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, NodeRef> cache3 = grid.getOrCreateCache(cacheConfig);
-
-            // most potential with full store optimised away into a byte flag, 30%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache3, cache3, "aldica optimised", "Ignite default",
-                    MODE_KNOWN_STORE_AND_RANDOM_NODE_ID, 0.3);
+            // most potential with full store optimised away into a byte flag, 44%
+            this.efficiencyImpl(referenceGrid, grid, "aldica optimised", "Ignite default", MODE_KNOWN_STORE_AND_RANDOM_NODE_ID, 0.44);
         }
         finally
         {
@@ -161,45 +111,23 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
     @Test
     public void rawSerialFormEfficiency()
     {
-        final IgniteConfiguration referenceConf = createConfiguration(false, "fullyRandomNodeRefs", "randomNodeRefsKnownStore",
-                "knownStoreRandomId");
+        final IgniteConfiguration referenceConf = createConfiguration(false);
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(true, "fullyRandomNodeRefs", "randomNodeRefsKnownStore", "knownStoreRandomId");
+        final IgniteConfiguration conf = createConfiguration(true);
 
         try
         {
             final Ignite referenceGrid = Ignition.start(referenceConf);
             final Ignite grid = Ignition.start(conf);
 
-            final CacheConfiguration<Long, NodeRef> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            // saving potential is limited - 11%
+            this.efficiencyImpl(referenceGrid, grid, "aldica raw serial", "aldica optimised", MODE_FULLY_RANDOM, 0.11);
 
-            cacheConfig.setName("fullyRandomNodeRefs");
-            cacheConfig.setDataRegionName("fullyRandomNodeRefs");
-            final IgniteCache<Long, NodeRef> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, NodeRef> cache1 = grid.getOrCreateCache(cacheConfig);
+            // saving potential is limited - 10%
+            this.efficiencyImpl(referenceGrid, grid, "aldica raw serial", "aldica optimised", MODE_RANDOM_STORE_AND_NODE_ID, 0.10);
 
-            // saving potential is limited - 8%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", MODE_FULLY_RANDOM,
-                    0.08);
-
-            cacheConfig.setName("randomNodeRefsKnownStore");
-            cacheConfig.setDataRegionName("randomNodeRefsKnownStore");
-            final IgniteCache<Long, NodeRef> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, NodeRef> cache2 = grid.getOrCreateCache(cacheConfig);
-
-            // saving potential is limited - 6%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache2, cache2, "aldica raw serial", "aldica optimised",
-                    MODE_RANDOM_STORE_AND_NODE_ID, 0.06);
-
-            cacheConfig.setName("knownStoreRandomId");
-            cacheConfig.setDataRegionName("knownStoreRandomId");
-            final IgniteCache<Long, NodeRef> referenceCache3 = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, NodeRef> cache3 = grid.getOrCreateCache(cacheConfig);
-
-            // saving potential is limited - 4%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache3, cache3, "aldica raw serial", "aldica optimised",
-                    MODE_KNOWN_STORE_AND_RANDOM_NODE_ID, 0.04);
+            // saving potential is limited - 10%
+            this.efficiencyImpl(referenceGrid, grid, "aldica raw serial", "aldica optimised", MODE_KNOWN_STORE_AND_RANDOM_NODE_ID, 0.10);
         }
         finally
         {
@@ -211,56 +139,51 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
     {
         try (Ignite grid = Ignition.start(conf))
         {
-            final CacheConfiguration<Long, NodeRef> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setName("nodeRef");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
-            final IgniteCache<Long, NodeRef> cache = grid.getOrCreateCache(cacheConfig);
+            @SuppressWarnings("deprecation")
+            final Marshaller marshaller = grid.configuration().getMarshaller();
 
             NodeRef controlValue;
-            NodeRef cacheValue;
+            NodeRef serialisedValue;
 
             controlValue = new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, "node1");
-            cache.put(1l, controlValue);
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
 
-            cacheValue = cache.get(1l);
-
-            Assert.assertEquals(controlValue, cacheValue);
+            Assert.assertEquals(controlValue, serialisedValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
-            Assert.assertFalse(controlValue.getId() == cacheValue.getId());
+            Assert.assertNotSame(controlValue, serialisedValue);
+            Assert.assertNotSame(controlValue.getId(), serialisedValue.getId());
             // well-known store should use same value
-            Assert.assertTrue(controlValue.getStoreRef() == cacheValue.getStoreRef());
+            Assert.assertSame(controlValue.getStoreRef(), serialisedValue.getStoreRef());
 
             controlValue = new NodeRef(new StoreRef("my", "store"), "node2");
-            cache.put(2l, controlValue);
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
 
-            cacheValue = cache.get(2l);
-
-            Assert.assertEquals(controlValue, cacheValue);
+            Assert.assertEquals(controlValue, serialisedValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
-            Assert.assertFalse(controlValue.getStoreRef() == cacheValue.getStoreRef());
-            Assert.assertFalse(controlValue.getId() == cacheValue.getId());
+            Assert.assertNotSame(controlValue, serialisedValue);
+            Assert.assertNotSame(controlValue.getStoreRef(), serialisedValue.getStoreRef());
+            Assert.assertNotSame(controlValue.getId(), serialisedValue.getId());
 
             controlValue = new NodeRef(new StoreRef(StoreRef.PROTOCOL_WORKSPACE, "store"), "node3");
-            cache.put(3l, controlValue);
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
 
-            cacheValue = cache.get(3l);
-
-            Assert.assertEquals(controlValue, cacheValue);
+            Assert.assertEquals(controlValue, serialisedValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
-            Assert.assertFalse(controlValue.getStoreRef() == cacheValue.getStoreRef());
-            Assert.assertFalse(controlValue.getId() == cacheValue.getId());
-            Assert.assertFalse(controlValue.getStoreRef().getIdentifier() == cacheValue.getStoreRef().getIdentifier());
+            Assert.assertNotSame(controlValue, serialisedValue);
+            Assert.assertNotSame(controlValue.getStoreRef(), serialisedValue.getStoreRef());
+            Assert.assertNotSame(controlValue.getId(), serialisedValue.getId());
+            Assert.assertNotSame(controlValue.getStoreRef().getIdentifier(), serialisedValue.getStoreRef().getIdentifier());
             // well known protocol should use same value
-            Assert.assertTrue(controlValue.getStoreRef().getProtocol() == cacheValue.getStoreRef().getProtocol());
+            Assert.assertSame(controlValue.getStoreRef().getProtocol(), serialisedValue.getStoreRef().getProtocol());
+        }
+        catch (final IgniteCheckedException ice)
+        {
+            throw new IllegalStateException("Serialisation failed in correctness test", ice);
         }
     }
 
-    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final IgniteCache<Long, NodeRef> referenceCache,
-            final IgniteCache<Long, NodeRef> cache, final String serialisationType, final String referenceSerialisationType, final int mode,
-            final double marginFraction)
+    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final String serialisationType,
+            final String referenceSerialisationType, final int mode, final double marginFraction)
     {
         String modeStr = "unknown";
         switch (mode)
@@ -276,13 +199,9 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
                 break;
         }
 
-        LOGGER.info(
-                "Running NodeRef serialisation benchmark of 100k instances with {}, comparing {} vs. {} serialisation, expecting relative improvement margin / difference fraction of {}",
-                modeStr, referenceSerialisationType, serialisationType, marginFraction);
-
         final SecureRandom rnJesus = new SecureRandom();
-        for (int idx = 0; idx < 100000; idx++)
-        {
+
+        final Supplier<NodeRef> comparisonValueSupplier = () -> {
             StoreRef storeRef = null;
             switch (mode)
             {
@@ -297,21 +216,10 @@ public class NodeRefBinarySerializerTests extends GridTestsBase
                     break;
             }
             final NodeRef value = new NodeRef(storeRef, UUID.randomUUID().toString());
-            referenceCache.put(Long.valueOf(idx), value);
-            cache.put(Long.valueOf(idx), value);
-        }
+            return value;
+        };
 
-        @SuppressWarnings("unchecked")
-        final String regionName = cache.getConfiguration(CacheConfiguration.class).getDataRegionName();
-        final DataRegionMetrics referenceMetrics = referenceGrid.dataRegionMetrics(regionName);
-        final DataRegionMetrics metrics = grid.dataRegionMetrics(regionName);
-
-        // sufficient to compare used pages - byte-exact memory usage cannot be determined due to potential partial page fill
-        final long referenceTotalUsedPages = referenceMetrics.getTotalUsedPages();
-        final long totalUsedPages = metrics.getTotalUsedPages();
-        final long allowedMax = referenceTotalUsedPages - (long) (marginFraction * referenceTotalUsedPages);
-        LOGGER.info("Benchmark resulted in {} vs {} (expected max of {}) total used pages", referenceTotalUsedPages, totalUsedPages,
-                allowedMax);
-        Assert.assertTrue(totalUsedPages <= allowedMax);
+        super.serialisationEfficiencyComparison(referenceGrid, grid, "StoreRef (" + modeStr + ")", referenceSerialisationType,
+                serialisationType, comparisonValueSupplier, marginFraction);
     }
 }

@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import org.alfresco.service.cmr.repository.datatype.DefaultTypeConverter;
+import org.alfresco.util.ParameterCheck;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -137,6 +138,8 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      */
     protected final void writeFileSize(final long size, @NotNull final BinaryRawWriter rawWriter)
     {
+        ParameterCheck.mandatory("rawWriter", rawWriter);
+
         if (this.handle4EiBFileSizes || !this.useVariableLengthIntegers)
         {
             rawWriter.writeLong(size);
@@ -157,6 +160,8 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      */
     protected final long readFileSize(@NotNull final BinaryRawReader rawReader)
     {
+        ParameterCheck.mandatory("rawReader", rawReader);
+
         long fileSize;
         if (this.handle4EiBFileSizes || !this.useVariableLengthIntegers)
         {
@@ -179,6 +184,9 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      */
     protected final void write(@NotNull final String value, @NotNull final BinaryRawWriter rawWriter)
     {
+        ParameterCheck.mandatory("value", value);
+        ParameterCheck.mandatory("rawWriter", rawWriter);
+
         final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         this.write(bytes.length, true, rawWriter);
         if (bytes.length != 0)
@@ -200,6 +208,8 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
     @NotNull
     protected final String readString(@NotNull final BinaryRawReader rawReader)
     {
+        ParameterCheck.mandatory("rawReader", rawReader);
+
         final int size = this.readInt(true, rawReader);
         final byte[] bytes = new byte[size];
         for (int idx = 0; idx < size; idx++)
@@ -255,10 +265,33 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *             if the long value cannot be written, e.g. if {@link #setUseVariableLengthIntegers(boolean) variable length integers}
      *             are enabled and the value exceeds the supported (reduced) value space for long values
      */
+    protected final void write(@NotNull final Long value, final boolean nonNegativeOnly, @NotNull final BinaryRawWriter rawWriter)
+            throws BinaryObjectException
+    {
+        ParameterCheck.mandatory("value", value);
+        this.write(value.longValue(), nonNegativeOnly, rawWriter);
+    }
+
+    /**
+     * Writes a long value to a raw serialised form of an object.
+     *
+     * @param value
+     *            the value to write
+     * @param nonNegativeOnly
+     *            {@code true} if the value can always be expected to hold non-negative values and will be read the same - this is an
+     *            important input into handling {@link #setUseVariableLengthIntegers(boolean) variable length integers}
+     * @param rawWriter
+     *            the writer to use to write to the raw serialised form
+     * @throws BinaryObjectException
+     *             if the long value cannot be written, e.g. if {@link #setUseVariableLengthIntegers(boolean) variable length integers}
+     *             are enabled and the value exceeds the supported (reduced) value space for long values
+     */
     protected final void write(final long value, final boolean nonNegativeOnly,
             @NotNull final BinaryRawWriter rawWriter)
             throws BinaryObjectException
     {
+        ParameterCheck.mandatory("rawWriter", rawWriter);
+
         if (!this.useVariableLengthIntegers)
         {
             rawWriter.writeLong(value);
@@ -289,6 +322,8 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      */
     protected final long readLong(final boolean nonNegativeOnly, @NotNull final BinaryRawReader rawReader)
     {
+        ParameterCheck.mandatory("rawReader", rawReader);
+
         long value;
         if (!this.useVariableLengthIntegers)
         {
@@ -323,10 +358,33 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *             if the integer value cannot be written, e.g. if {@link #setUseVariableLengthIntegers(boolean) variable length integers}
      *             are enabled and the value exceeds the supported (reduced) value space for long values
      */
+    protected final void write(@NotNull final Integer value, final boolean nonNegativeOnly, @NotNull final BinaryRawWriter rawWriter)
+            throws BinaryObjectException
+    {
+        ParameterCheck.mandatory("value", value);
+        this.write(value.intValue(), nonNegativeOnly, rawWriter);
+    }
+
+    /**
+     * Writes an integer value to a raw serialised form of an object.
+     *
+     * @param value
+     *            the value to write
+     * @param nonNegativeOnly
+     *            {@code true} if the value can always be expected to hold non-negative values and will be read the same - this is an
+     *            important input into handling {@link #setUseVariableLengthIntegers(boolean) variable length integers}
+     * @param rawWriter
+     *            the writer to use to write to the raw serialised form
+     * @throws BinaryObjectException
+     *             if the integer value cannot be written, e.g. if {@link #setUseVariableLengthIntegers(boolean) variable length integers}
+     *             are enabled and the value exceeds the supported (reduced) value space for long values
+     */
     protected final void write(final int value, final boolean nonNegativeOnly,
             @NotNull final BinaryRawWriter rawWriter)
             throws BinaryObjectException
     {
+        ParameterCheck.mandatory("rawWriter", rawWriter);
+
         if (!this.useVariableLengthIntegers)
         {
             rawWriter.writeInt(value);
@@ -357,6 +415,8 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      */
     protected final int readInt(final boolean nonNegativeOnly, @NotNull final BinaryRawReader rawReader)
     {
+        ParameterCheck.mandatory("rawReader", rawReader);
+
         int value;
         if (!this.useVariableLengthIntegers)
         {
@@ -387,8 +447,10 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      * @param rawWriter
      *            the writer to use to write to the raw serialised form
      */
-    protected final void writeUnsignedLong(final long value, @NotNull final BinaryRawWriter rawWriter)
+    private final void writeUnsignedLong(final long value, @NotNull final BinaryRawWriter rawWriter)
     {
+        ParameterCheck.mandatory("rawWriter", rawWriter);
+
         if (value == 0)
         {
             final short s = 0;
@@ -448,8 +510,10 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      * @param rawWriter
      *            the writer to use to write to the raw serialised form
      */
-    protected final void writeSignedLong(final long value, @NotNull final BinaryRawWriter rawWriter)
+    private final void writeSignedLong(final long value, @NotNull final BinaryRawWriter rawWriter)
     {
+        ParameterCheck.mandatory("rawWriter", rawWriter);
+
         if (value == 0)
         {
             final short s = 0;
@@ -506,8 +570,10 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *            the reader to use to read from the raw serialised form
      * @return the unsigned long value
      */
-    protected final long readUnsignedLong(@NotNull final BinaryRawReader rawReader) throws BinaryObjectException
+    private final long readUnsignedLong(@NotNull final BinaryRawReader rawReader) throws BinaryObjectException
     {
+        ParameterCheck.mandatory("rawReader", rawReader);
+
         long value;
 
         final short s = rawReader.readShort();
@@ -546,8 +612,10 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *            the reader to use to read from the raw serialised form
      * @return the signed long value
      */
-    protected final long readSignedLong(@NotNull final BinaryRawReader rawReader) throws BinaryObjectException
+    private final long readSignedLong(@NotNull final BinaryRawReader rawReader) throws BinaryObjectException
     {
+        ParameterCheck.mandatory("rawReader", rawReader);
+
         long value;
 
         final short s = rawReader.readShort();
@@ -592,8 +660,10 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      * @param rawWriter
      *            the writer to use to write to the raw serialised form
      */
-    protected final void writeUnsignedInteger(final int value, @NotNull final BinaryRawWriter rawWriter)
+    private final void writeUnsignedInteger(final int value, @NotNull final BinaryRawWriter rawWriter)
     {
+        ParameterCheck.mandatory("rawWriter", rawWriter);
+
         if (value == 0)
         {
             final byte b = 0;
@@ -653,8 +723,10 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      * @param rawWriter
      *            the writer to use to write to the raw serialised form
      */
-    protected final void writeSignedInteger(final int value, @NotNull final BinaryRawWriter rawWriter)
+    private final void writeSignedInteger(final int value, @NotNull final BinaryRawWriter rawWriter)
     {
+        ParameterCheck.mandatory("rawWriter", rawWriter);
+
         if (value == 0)
         {
             final byte b = 0;
@@ -711,8 +783,10 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *            the reader to use to read from the raw serialised form
      * @return the unsigned integer value
      */
-    protected final int readUnsignedInteger(@NotNull final BinaryRawReader rawReader) throws BinaryObjectException
+    private final int readUnsignedInteger(@NotNull final BinaryRawReader rawReader) throws BinaryObjectException
     {
+        ParameterCheck.mandatory("rawReader", rawReader);
+
         int value;
 
         final byte b = rawReader.readByte();
@@ -751,8 +825,10 @@ public abstract class AbstractCustomBinarySerializer implements BinarySerializer
      *            the reader to use to read from the raw serialised form
      * @return the signed integer value
      */
-    protected final int readSignedInteger(@NotNull final BinaryRawReader rawReader) throws BinaryObjectException
+    private final int readSignedInteger(@NotNull final BinaryRawReader rawReader) throws BinaryObjectException
     {
+        ParameterCheck.mandatory("rawReader", rawReader);
+
         int value;
 
         final byte b = rawReader.readByte();

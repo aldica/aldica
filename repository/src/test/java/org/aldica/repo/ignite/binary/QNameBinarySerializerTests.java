@@ -10,36 +10,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.aldica.common.ignite.GridTestsBase;
 import org.aldica.repo.ignite.ExpensiveTestCategory;
 import org.alfresco.model.ContentModel;
 import org.alfresco.service.namespace.QName;
-import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.marshaller.Marshaller;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Axel Faust
  */
 public class QNameBinarySerializerTests extends GridTestsBase
 {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(QNameBinarySerializerTests.class);
 
     private static final QName[] QNAMES;
 
@@ -66,7 +58,7 @@ public class QNameBinarySerializerTests extends GridTestsBase
         }
     }
 
-    protected static IgniteConfiguration createConfiguration(final boolean serialForm, final String... regionNames)
+    protected static IgniteConfiguration createConfiguration(final boolean serialForm)
     {
         final IgniteConfiguration conf = createConfiguration(1, false, null);
 
@@ -81,22 +73,6 @@ public class QNameBinarySerializerTests extends GridTestsBase
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForQName));
         conf.setBinaryConfiguration(binaryConfiguration);
-
-        final DataStorageConfiguration dataConf = new DataStorageConfiguration();
-        final List<DataRegionConfiguration> regionConfs = new ArrayList<>();
-        for (final String regionName : regionNames)
-        {
-            final DataRegionConfiguration regionConf = new DataRegionConfiguration();
-            regionConf.setName(regionName);
-            // all regions are 10-100 MiB
-            regionConf.setInitialSize(10 * 1024 * 1024);
-            regionConf.setMaxSize(100 * 1024 * 1024);
-            regionConf.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
-            regionConf.setMetricsEnabled(true);
-            regionConfs.add(regionConf);
-        }
-        dataConf.setDataRegionConfigurations(regionConfs.toArray(new DataRegionConfiguration[0]));
-        conf.setDataStorageConfiguration(dataConf);
 
         return conf;
     }
@@ -114,25 +90,15 @@ public class QNameBinarySerializerTests extends GridTestsBase
     {
         final IgniteConfiguration referenceConf = createConfiguration(1, false, null);
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(false, "values");
-
-        referenceConf.setDataStorageConfiguration(conf.getDataStorageConfiguration());
+        final IgniteConfiguration conf = createConfiguration(false);
 
         try
         {
             final Ignite referenceGrid = Ignition.start(referenceConf);
             final Ignite grid = Ignition.start(conf);
 
-            final CacheConfiguration<Long, QName> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
-
-            cacheConfig.setName("values");
-            cacheConfig.setDataRegionName("values");
-            final IgniteCache<Long, QName> referenceCache = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, QName> cache = grid.getOrCreateCache(cacheConfig);
-
-            // savings on namespace should be substantial - 27%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", 0.27);
+            // savings on namespace should be substantial - 53%
+            this.efficiencyImpl(referenceGrid, grid, "aldica optimised", "Ignite default", 0.53);
         }
         finally
         {
@@ -151,25 +117,17 @@ public class QNameBinarySerializerTests extends GridTestsBase
     @Test
     public void rawSerialFormEfficiency()
     {
-        final IgniteConfiguration referenceConf = createConfiguration(false, "values");
+        final IgniteConfiguration referenceConf = createConfiguration(false);
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(true, "values");
+        final IgniteConfiguration conf = createConfiguration(true);
 
         try
         {
             final Ignite referenceGrid = Ignition.start(referenceConf);
             final Ignite grid = Ignition.start(conf);
 
-            final CacheConfiguration<Long, QName> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
-
-            cacheConfig.setName("values");
-            cacheConfig.setDataRegionName("values");
-            final IgniteCache<Long, QName> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, QName> cache1 = grid.getOrCreateCache(cacheConfig);
-
-            // saving potential is limited - 4%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.04);
+            // saving potential is limited - 15%
+            this.efficiencyImpl(referenceGrid, grid, "aldica raw serial", "aldica optimised", 0.15);
         }
         finally
         {
@@ -181,67 +139,49 @@ public class QNameBinarySerializerTests extends GridTestsBase
     {
         try (Ignite grid = Ignition.start(conf))
         {
-            final CacheConfiguration<Long, QName> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setName("qname");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
-            final IgniteCache<Long, QName> cache = grid.getOrCreateCache(cacheConfig);
+            @SuppressWarnings("deprecation")
+            final Marshaller marshaller = grid.configuration().getMarshaller();
 
             QName controlValue;
-            QName cacheValue;
+            QName serialisedValue;
 
             controlValue = ContentModel.ASPECT_AUDITABLE;
-            cache.put(1l, controlValue);
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
 
-            cacheValue = cache.get(1l);
-
-            Assert.assertEquals(controlValue, cacheValue);
+            Assert.assertEquals(controlValue, serialisedValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
-            Assert.assertFalse(controlValue.getLocalName() == cacheValue.getLocalName());
+            Assert.assertNotSame(controlValue, serialisedValue);
+            Assert.assertNotSame(controlValue.getLocalName(), serialisedValue.getLocalName());
             // namespace should be reused for well-known ones
-            Assert.assertTrue(controlValue.getNamespaceURI() == cacheValue.getNamespaceURI());
+            Assert.assertSame(controlValue.getNamespaceURI(), serialisedValue.getNamespaceURI());
 
             // random value, no well known namespace
             controlValue = QName.createQName(UUID.randomUUID().toString(), UUID.randomUUID().toString());
-            cache.put(2l, controlValue);
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
 
-            cacheValue = cache.get(2l);
-
-            Assert.assertEquals(controlValue, cacheValue);
+            Assert.assertEquals(controlValue, serialisedValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
-            Assert.assertFalse(controlValue.getLocalName() == cacheValue.getLocalName());
-            Assert.assertFalse(controlValue.getNamespaceURI() == cacheValue.getNamespaceURI());
+            Assert.assertNotSame(controlValue, serialisedValue);
+            Assert.assertNotSame(controlValue.getLocalName(), serialisedValue.getLocalName());
+            Assert.assertNotSame(controlValue.getNamespaceURI(), serialisedValue.getNamespaceURI());
+        }
+        catch (final IgniteCheckedException ice)
+        {
+            throw new IllegalStateException("Serialisation failed in correctness test", ice);
         }
     }
 
-    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final IgniteCache<Long, QName> referenceCache,
-            final IgniteCache<Long, QName> cache, final String serialisationType, final String referenceSerialisationType,
-            final double marginFraction)
+    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final String serialisationType,
+            final String referenceSerialisationType, final double marginFraction)
     {
-        LOGGER.info(
-                "Running QName serialisation benchmark of 100k instances, comparing {} vs. {} serialisation, expecting relative improvement margin / difference fraction of {}",
-                referenceSerialisationType, serialisationType, marginFraction);
-
         final SecureRandom rnJesus = new SecureRandom();
-        for (int idx = 0; idx < 100000; idx++)
-        {
+
+        final Supplier<QName> comparisonValueSupplier = () -> {
             final QName value = QNAMES[rnJesus.nextInt(QNAMES.length)];
-            referenceCache.put(Long.valueOf(idx), value);
-            cache.put(Long.valueOf(idx), value);
-        }
+            return value;
+        };
 
-        @SuppressWarnings("unchecked")
-        final String regionName = cache.getConfiguration(CacheConfiguration.class).getDataRegionName();
-        final DataRegionMetrics referenceMetrics = referenceGrid.dataRegionMetrics(regionName);
-        final DataRegionMetrics metrics = grid.dataRegionMetrics(regionName);
-
-        // sufficient to compare used pages - byte-exact memory usage cannot be determined due to potential partial page fill
-        final long referenceTotalUsedPages = referenceMetrics.getTotalUsedPages();
-        final long totalUsedPages = metrics.getTotalUsedPages();
-        final long allowedMax = referenceTotalUsedPages - (long) (marginFraction * referenceTotalUsedPages);
-        LOGGER.info("Benchmark resulted in {} vs {} (expected max of {}) total used pages", referenceTotalUsedPages, totalUsedPages,
-                allowedMax);
-        Assert.assertTrue(totalUsedPages <= allowedMax);
+        super.serialisationEfficiencyComparison(referenceGrid, grid, "QName", referenceSerialisationType, serialisationType,
+                comparisonValueSupplier, marginFraction);
     }
 }
