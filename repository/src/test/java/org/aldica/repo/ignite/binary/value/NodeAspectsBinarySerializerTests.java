@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 import org.aldica.common.ignite.GridTestsBase;
 import org.aldica.repo.ignite.ExpensiveTestCategory;
-import org.aldica.repo.ignite.cache.NodeAspectsCacheSet;
+import org.aldica.repo.ignite.trans.NodeAspectsCacheSet;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.domain.qname.QNameDAO;
 import org.alfresco.repo.domain.qname.ibatis.QNameDAOImpl;

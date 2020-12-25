@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 
 import org.aldica.common.ignite.GridTestsBase;
 import org.aldica.repo.ignite.ExpensiveTestCategory;
-import org.aldica.repo.ignite.cache.NodePropertiesCacheMap;
+import org.aldica.repo.ignite.trans.NodePropertiesCacheMap;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.repo.content.filestore.FileContentStore;

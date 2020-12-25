@@ -68,9 +68,10 @@ Some Alfresco default caches manage values which can contain quite verbose data 
 
 - replace QName aspect name values with the DB IDs for these values
 - replace ContentData property values with the DB IDs for these values
-- ensure String property values with a list of values constraint are interned upon read access
+- replace AclEntity instances used as cache keys with instances of the custom class AclVersionKey
 
-The replacement of the complex QName and ContentData values makes use of the fact that these values already have their own caches, making any additional storage of the full values in the node aspects or properties cache extremely redundant. Interning values for properties with a list of values constraint upon read access reduces pressure on the garbage collection mechanism by eliminating duplicate String instances as early as possible.
+The replacement of the complex QName and ContentData values makes use of the fact that these values already have their own caches, making any additional storage of the full values in the node aspects or properties cache extremely redundant.
+The replacement of AclEntity with AclVersionKey instances is necessary to support use of Ignite-backed caches for the caches in the AclDAOImpl and PermissionService, and fix a design problem with Alfresco's default implementation: instead of using a proper key class (like is already done with NodeVersionKey), the default implementation of the two mentioned components uses a complex value entity and uses it as a key, when only two out of literally a dozen fields is relevant for this operation. Since Ignite-backed caches perform hashCode/equals operations on the serialised form and do not take into account a custom implementation of hashCode/equals in Java code, using the complex value entity as a key would introduce mismatch issues when a lookup occurs with only a partially initialised entity.
 
 A small set of default Alfresco caches serves in specific use cases that warrant a deviation from their default Alfresco cache type configuration to make the best possible use of them. The following caches will only ever contain at most a handful of cache entries and thus use either *localDefaultSimple* or *invalidatingDefaultSimple* cache types to avoid the overhead of a full Ignite cache:
 

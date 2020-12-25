@@ -1,13 +1,13 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-package org.aldica.repo.ignite.cache;
+package org.aldica.repo.ignite.trans;
 
 import java.io.Serializable;
 
 /**
- * Instances of this interface are used to transform data values for more efficient use within Alfresco caches, e.g. by deduplicating data
- * read from caches and swapping complex data values with resolvable identity information to reduce the footprint in serialised form.
+ * Instances of this interface are used to transform cache keys/values for more efficient use within Alfresco caches, e.g. by deduplicating
+ * data read from caches and swapping complex structures with resolvable identity information to reduce the footprint in serialised form.
  *
  * @author Axel Faust
  *
@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @param <CV>
  *            the type of the value held inside the cache
  */
-public interface CacheValueTransformer<EV extends Serializable, CV extends Serializable>
+public interface CacheObjectTransformer<EV extends Serializable, CV extends Serializable>
 {
 
     /**

@@ -35,6 +35,9 @@
     <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedChildByNameKey"
         class="org.aldica.repo.ignite.binary.support.ChildByNameKeyBinarySerializer" />
 
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedAclVersionKey"
+        class="org.aldica.repo.ignite.binary.support.AclVersionKeyBinarySerializer" />
+
     <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedPucKey"
         class="org.aldica.repo.ignite.binary.support.CachePucKeyBinarySerializer" />
 

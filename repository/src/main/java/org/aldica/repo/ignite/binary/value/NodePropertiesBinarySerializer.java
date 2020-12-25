@@ -15,7 +15,7 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 
 import org.aldica.repo.ignite.binary.base.AbstractCustomBinarySerializer;
-import org.aldica.repo.ignite.cache.NodePropertiesCacheMap;
+import org.aldica.repo.ignite.trans.NodePropertiesCacheMap;
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.repo.domain.contentdata.ContentDataDAO;
 import org.alfresco.repo.domain.node.ContentDataWithId;

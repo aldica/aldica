@@ -6,7 +6,7 @@ package org.aldica.repo.ignite.binary.support;
 import java.lang.reflect.Field;
 
 import org.aldica.repo.ignite.binary.base.AbstractCustomBinarySerializer;
-import org.alfresco.repo.domain.node.NodeVersionKey;
+import org.aldica.repo.ignite.trans.AclVersionKey;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -14,20 +14,20 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 
 /**
- * Instances of this class handle (de-)serialisations of {@link NodeVersionKey} instances in order to optimise their serial form. This
+ * Instances of this class handle (de-)serialisations of {@link AclVersionKey} instances in order to optimise their serial form. This
  * implementation primarily aims to optimise by using the {@link #setUseVariableLengthIntegers(boolean) variable length integer} feature for
  * the database ID and version (used for optimistic locking) in the raw serial form.
  *
  * @author Axel Faust
  */
-public class NodeVersionKeyBinarySerializer extends AbstractCustomBinarySerializer
+public class AclVersionKeyBinarySerializer extends AbstractCustomBinarySerializer
 {
 
-    private static final String NODE_ID = "nodeId";
+    private static final String ID = "id";
 
     private static final String VERSION = "version";
 
-    private static final Field NODE_ID_FIELD;
+    private static final Field ID_FIELD;
 
     private static final Field VERSION_FIELD;
 
@@ -35,10 +35,10 @@ public class NodeVersionKeyBinarySerializer extends AbstractCustomBinarySerializ
     {
         try
         {
-            NODE_ID_FIELD = NodeVersionKey.class.getDeclaredField(NODE_ID);
-            VERSION_FIELD = NodeVersionKey.class.getDeclaredField(VERSION);
+            ID_FIELD = AclVersionKey.class.getDeclaredField(ID);
+            VERSION_FIELD = AclVersionKey.class.getDeclaredField(VERSION);
 
-            NODE_ID_FIELD.setAccessible(true);
+            ID_FIELD.setAccessible(true);
             VERSION_FIELD.setAccessible(true);
         }
         catch (final NoSuchFieldException nsfe)
@@ -55,26 +55,26 @@ public class NodeVersionKeyBinarySerializer extends AbstractCustomBinarySerializ
     public void writeBinary(final Object obj, final BinaryWriter writer) throws BinaryObjectException
     {
         final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(NodeVersionKey.class))
+        if (!cls.equals(AclVersionKey.class))
         {
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
 
-        final NodeVersionKey nodeVersionKey = (NodeVersionKey) obj;
+        final AclVersionKey aclVersionKey = (AclVersionKey) obj;
 
-        final Long nodeId = nodeVersionKey.getNodeId();
-        final Long version = nodeVersionKey.getVersion();
+        final Long id = aclVersionKey.getId();
+        final Long version = aclVersionKey.getVersion();
 
         if (this.useRawSerialForm)
         {
             final BinaryRawWriter rawWriter = writer.rawWriter();
 
-            this.writeDbId(nodeId, rawWriter);
+            this.writeDbId(id, rawWriter);
             this.writeDbId(version, rawWriter);
         }
         else
         {
-            writer.writeLong(NODE_ID, nodeId);
+            writer.writeLong(ID, id);
             writer.writeLong(VERSION, version);
         }
     }
@@ -87,30 +87,30 @@ public class NodeVersionKeyBinarySerializer extends AbstractCustomBinarySerializ
     public void readBinary(final Object obj, final BinaryReader reader) throws BinaryObjectException
     {
         final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(NodeVersionKey.class))
+        if (!cls.equals(AclVersionKey.class))
         {
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
 
-        final long nodeId;
+        final long id;
         final long version;
 
         if (this.useRawSerialForm)
         {
             final BinaryRawReader rawReader = reader.rawReader();
 
-            nodeId = this.readDbId(rawReader);
+            id = this.readDbId(rawReader);
             version = this.readDbId(rawReader);
         }
         else
         {
-            nodeId = reader.readLong(NODE_ID);
+            id = reader.readLong(ID);
             version = reader.readLong(VERSION);
         }
 
         try
         {
-            NODE_ID_FIELD.set(obj, nodeId);
+            ID_FIELD.set(obj, id);
             VERSION_FIELD.set(obj, version);
         }
         catch (final IllegalAccessException iae)

@@ -62,6 +62,14 @@
         <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.childByNameKey.useIdsWhenReasonable}" />
     </bean>
 
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedAclVersionKey" abstract="true"
+        class="${project.basePackage}.binary.support.AclVersionKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.aclVersionKey.useRawSerial}" />
+        <property name="useVariableLengthIntegers"
+            value="\${${moduleId}.core.binary.optimisation.aclVersionKey.useVariableLengthIntegers}" />
+        <property name="handleNegativeIds" value="\${${moduleId}.core.binary.optimisation.aclVersionKey.handleNegativeIds}" />
+    </bean>
+
     <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedPucKey" abstract="true"
         class="${project.basePackage}.binary.support.CachePucKeyBinarySerializer">
         <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.pucKey.useRawSerial}" />

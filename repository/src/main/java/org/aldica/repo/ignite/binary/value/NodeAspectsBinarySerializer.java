@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.HashSet;
 
 import org.aldica.repo.ignite.binary.base.AbstractCustomBinarySerializer;
-import org.aldica.repo.ignite.cache.NodeAspectsCacheSet;
+import org.aldica.repo.ignite.trans.NodeAspectsCacheSet;
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.repo.domain.qname.QNameDAO;
 import org.alfresco.service.namespace.QName;

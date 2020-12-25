@@ -21,15 +21,20 @@
                 <value>cacheFactory</value>
                 <value>lockStoreFactory</value>
                 <value>node</value>
+                <value>aclCache</value>
+                <value>readersCache</value>
+                <value>readersDeniedCache</value>
                 <value>immutableEntitySharedCache</value>
             </list>
         </property>
         <property name="propertiesSource" ref="global-properties" />
     </bean>
 
-    <bean id="${moduleId}-nodeAspectsCacheValueTransformer" class="${project.basePackage}.cache.NodeAspectsTransformer" />
+    <bean id="${moduleId}-nodeAspectsCacheValueTransformer" class="${project.basePackage}.trans.NodeAspectsTransformer" />
 
-    <bean id="${moduleId}-nodePropertiesCacheValueTransformer" class="${project.basePackage}.cache.NodePropertiesTransformer" />
+    <bean id="${moduleId}-nodePropertiesCacheValueTransformer" class="${project.basePackage}.trans.NodePropertiesTransformer" />
+
+    <bean id="${moduleId}-aclVersionKeyTransformer" class="${project.basePackage}.trans.AclVersionKeyTransformer" />
 
     <bean id="${moduleId}-globalAsynchronouslyRefreshedCacheEventHandler" class="${project.basePackage}.cache.AsynchronouslyRefreshedCacheEventHandler">
         <property name="registry" ref="asynchronouslyRefreshedCacheRegistry" />

@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-package org.aldica.repo.ignite.cache;
+package org.aldica.repo.ignite.trans;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -15,7 +15,7 @@ import org.apache.ignite.binary.BinarySerializer;
  *
  * @author Axel Faust
  */
-public class NodePropertiesTransformer implements CacheValueTransformer<Serializable, Serializable>
+public class NodePropertiesTransformer implements CacheObjectTransformer<Serializable, Serializable>
 {
 
     /**
