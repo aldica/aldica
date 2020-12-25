@@ -10,7 +10,6 @@ import org.alfresco.repo.module.ModuleVersionNumber;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -24,7 +23,7 @@ import org.apache.maven.artifact.versioning.ComparableVersion;
  *
  * @author Axel Faust
  */
-public class ModuleVersionNumberBinarySerializer implements BinarySerializer
+public class ModuleVersionNumberBinarySerializer extends AbstractCustomBinarySerializer
 {
 
     private static final String VERSION = "version";
@@ -45,17 +44,6 @@ public class ModuleVersionNumberBinarySerializer implements BinarySerializer
         }
     }
 
-    protected boolean useRawSerialForm = false;
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
-    }
-
     /**
      *
      * {@inheritDoc}
@@ -74,7 +62,7 @@ public class ModuleVersionNumberBinarySerializer implements BinarySerializer
         if (this.useRawSerialForm)
         {
             final BinaryRawWriter rawWriter = writer.rawWriter();
-            rawWriter.writeString(version);
+            this.write(version, rawWriter);
         }
         else
         {
@@ -95,7 +83,7 @@ public class ModuleVersionNumberBinarySerializer implements BinarySerializer
             throw new BinaryObjectException(cls + " is not supported by this serializer");
         }
 
-        final String version = this.useRawSerialForm ? reader.rawReader().readString() : reader.readString(VERSION);
+        final String version = this.useRawSerialForm ? this.readString(reader.rawReader()) : reader.readString(VERSION);
         // null will never occur, but technically possible
         final ComparableVersion delegate = new ComparableVersion(version != null ? version : "");
 

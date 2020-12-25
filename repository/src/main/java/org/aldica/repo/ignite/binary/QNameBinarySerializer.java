@@ -10,7 +10,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 
 /**
@@ -20,7 +19,7 @@ import org.apache.ignite.binary.BinaryWriter;
  *
  * @author Axel Faust
  */
-public class QNameBinarySerializer implements BinarySerializer
+public class QNameBinarySerializer extends AbstractCustomBinarySerializer
 {
 
     private static final String NAMESPACE_TYPE = "namespaceType";
@@ -49,17 +48,6 @@ public class QNameBinarySerializer implements BinarySerializer
         }
     }
 
-    protected boolean useRawSerialForm = false;
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
-    }
-
     /**
      *
      * {@inheritDoc}
@@ -86,9 +74,9 @@ public class QNameBinarySerializer implements BinarySerializer
             rawWriter.writeByte((byte) namespace.ordinal());
             if (namespace == Namespace.CUSTOM)
             {
-                rawWriter.writeString(namespaceURI);
+                this.write(namespaceURI, rawWriter);
             }
-            rawWriter.writeString(localName);
+            this.write(localName, rawWriter);
         }
         else
         {
@@ -124,13 +112,13 @@ public class QNameBinarySerializer implements BinarySerializer
             final Namespace namespace = Namespace.values()[namespaceType];
             if (namespace == Namespace.CUSTOM)
             {
-                namespaceUri = rawReader.readString();
+                namespaceUri = this.readString(rawReader);
             }
             else
             {
                 namespaceUri = namespace.getUri();
             }
-            localName = rawReader.readString();
+            localName = this.readString(rawReader);
         }
         else
         {

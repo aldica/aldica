@@ -3,16 +3,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.repo.ignite.binary;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Locale;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 import org.aldica.common.ignite.GridTestsBase;
 import org.aldica.repo.ignite.ExpensiveTestCategory;
-import org.alfresco.repo.domain.locale.LocaleDAO;
-import org.alfresco.repo.domain.locale.ibatis.LocaleDAOImpl;
-import org.alfresco.service.cmr.repository.MLText;
+import org.aldica.repo.ignite.cache.NodeAspectsCacheSet;
+import org.alfresco.model.ContentModel;
+import org.alfresco.repo.domain.qname.QNameDAO;
+import org.alfresco.repo.domain.qname.ibatis.QNameDAOImpl;
+import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,29 +32,30 @@ import org.springframework.context.support.GenericApplicationContext;
 /**
  * @author Axel Faust
  */
-public class MLTextBinarySerializerTests extends GridTestsBase
+public class NodeAspectsBinarySerializerTests extends GridTestsBase
 {
 
-    private static final Locale[] LOCALES = { Locale.ENGLISH, Locale.GERMAN, Locale.FRENCH, Locale.CHINESE, Locale.JAPANESE, Locale.ITALIAN,
-            Locale.SIMPLIFIED_CHINESE, Locale.US, Locale.UK, Locale.GERMANY };
+    private static final QName[] ASPECT_QNAMES = { ContentModel.ASPECT_REFERENCEABLE, ContentModel.ASPECT_AUDITABLE,
+            ContentModel.ASPECT_ARCHIVED, ContentModel.ASPECT_AUTHOR, ContentModel.ASPECT_CLASSIFIABLE, ContentModel.ASPECT_CHECKED_OUT,
+            ContentModel.ASPECT_UNDELETABLE, ContentModel.ASPECT_UNMOVABLE, ContentModel.ASPECT_LOCKABLE, ContentModel.ASPECT_HIDDEN };
 
     protected static GenericApplicationContext createApplicationContext()
     {
         final GenericApplicationContext appContext = new GenericApplicationContext();
 
-        final LocaleDAO localeDAO = EasyMock.partialMockBuilder(LocaleDAOImpl.class).addMockedMethod("getLocalePair", Long.class)
-                .addMockedMethod("getLocalePair", Locale.class).createMock();
-        appContext.getBeanFactory().registerSingleton("localeDAO", localeDAO);
+        final QNameDAO qnameDAO = EasyMock.partialMockBuilder(QNameDAOImpl.class).addMockedMethod("getQName", Long.class)
+                .addMockedMethod("getQName", QName.class).createMock();
+        appContext.getBeanFactory().registerSingleton("qnameDAO", qnameDAO);
         appContext.refresh();
 
-        for (int idx = 0; idx < LOCALES.length; idx++)
+        for (int idx = 0; idx < ASPECT_QNAMES.length; idx++)
         {
-            EasyMock.expect(localeDAO.getLocalePair(Long.valueOf(idx))).andStubReturn(new Pair<>(Long.valueOf(idx), LOCALES[idx]));
-            EasyMock.expect(localeDAO.getLocalePair(LOCALES[idx])).andStubReturn(new Pair<>(Long.valueOf(idx), LOCALES[idx]));
+            EasyMock.expect(qnameDAO.getQName(Long.valueOf(idx))).andStubReturn(new Pair<>(Long.valueOf(idx), ASPECT_QNAMES[idx]));
+            EasyMock.expect(qnameDAO.getQName(ASPECT_QNAMES[idx])).andStubReturn(new Pair<>(Long.valueOf(idx), ASPECT_QNAMES[idx]));
         }
-        EasyMock.expect(localeDAO.getLocalePair(EasyMock.anyObject(Locale.class))).andStubReturn(null);
+        EasyMock.expect(qnameDAO.getQName(EasyMock.anyObject(QName.class))).andStubReturn(null);
 
-        EasyMock.replay(localeDAO);
+        EasyMock.replay(qnameDAO);
 
         return appContext;
     }
@@ -65,16 +67,17 @@ public class MLTextBinarySerializerTests extends GridTestsBase
 
         final BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
 
-        final BinaryTypeConfiguration binaryTypeConfigurationForMLText = new BinaryTypeConfiguration();
-        binaryTypeConfigurationForMLText.setTypeName(MLText.class.getName());
-        final MLTextBinarySerializer serializer = new MLTextBinarySerializer();
+        final NodeAspectsBinarySerializer serializer = new NodeAspectsBinarySerializer();
         serializer.setApplicationContext(applicationContext);
         serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseRawSerialForm(serialForm);
         serializer.setUseVariableLengthIntegers(serialForm);
-        binaryTypeConfigurationForMLText.setSerializer(serializer);
 
-        binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForMLText));
+        final BinaryTypeConfiguration binaryTypeConfigurationForNodeAspectsCacheSet = new BinaryTypeConfiguration();
+        binaryTypeConfigurationForNodeAspectsCacheSet.setTypeName(NodeAspectsCacheSet.class.getName());
+        binaryTypeConfigurationForNodeAspectsCacheSet.setSerializer(serializer);
+
+        binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForNodeAspectsCacheSet));
         conf.setBinaryConfiguration(binaryConfiguration);
 
         return conf;
@@ -88,7 +91,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
     }
 
     @Test
-    public void defaultFormIdSubstitutionCorrectness()
+    public void defaultFormQNameIdSubstitutionCorrectness()
     {
         try (final GenericApplicationContext appContext = createApplicationContext())
         {
@@ -107,24 +110,26 @@ public class MLTextBinarySerializerTests extends GridTestsBase
             referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
 
             final IgniteConfiguration defaultConf = createConfiguration(null, false, false);
-            final IgniteConfiguration useIdConf = createConfiguration(appContext, true, false);
-            useIdConf.setIgniteInstanceName(useIdConf.getIgniteInstanceName() + "-idSubstitution");
+            final IgniteConfiguration useQNameIdConf = createConfiguration(appContext, true, false);
+
+            useQNameIdConf.setIgniteInstanceName(useQNameIdConf.getIgniteInstanceName() + "-qnameIdSubstitution");
 
             try
             {
                 final Ignite referenceGrid = Ignition.start(referenceConf);
                 final Ignite defaultGrid = Ignition.start(defaultConf);
-                final Ignite useIdGrid = Ignition.start(useIdConf);
+                final Ignite useQNameIdGrid = Ignition.start(useQNameIdConf);
 
-                // since our optimised serialisation replaces Locale with textual representation, we can provide a significant benefit - 31%
-                this.efficiencyImpl(referenceGrid, defaultGrid, "aldica optimised", "Ignite default", 0.31);
+                // default uses HashSet.writeObject and Serializable all the way through, which is already very efficient
+                // this actually intrinsically deduplicates common objects / values (e.g. namespace URIs)
+                // without ID substitution (or our custom QNameBinarySerializer), our serialisation cannot come close - -115%
+                this.efficiencyImpl(referenceGrid, defaultGrid, "aldica optimised", "Ignite default", -1.15);
 
-                // ID substitution should have roughly similar benefit when language AND country variant are used - 32%
-                this.efficiencyImpl(referenceGrid, useIdGrid, "aldica optimised (ID substitution)", "Ignite default", 0.32);
+                // ID substitution is everything - 70%
+                this.efficiencyImpl(referenceGrid, useQNameIdGrid, "aldica optimised (QName ID substitution)", "Ignite default", 0.7);
 
-                // since switching Locale for its textual representation in default optimisation
-                // ID substitution provides equal benefits
-                this.efficiencyImpl(defaultGrid, useIdGrid, "aldica optimised (ID substitution)", "aldica optimised", 0.01);
+                // ID substitution is everything - 86%
+                this.efficiencyImpl(defaultGrid, useQNameIdGrid, "aldica optimised (QName ID substitution)", "aldica optimised", 0.86);
             }
             finally
             {
@@ -141,7 +146,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
     }
 
     @Test
-    public void rawSerialFormIdSubstitutionCorrectness()
+    public void rawSerialFormQNameIdSubstitutionCorrectness()
     {
         try (final GenericApplicationContext appContext = createApplicationContext())
         {
@@ -160,25 +165,24 @@ public class MLTextBinarySerializerTests extends GridTestsBase
             referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
 
             final IgniteConfiguration defaultConf = createConfiguration(null, false, true);
-            final IgniteConfiguration useIdConf = createConfiguration(appContext, true, true);
-            useIdConf.setIgniteInstanceName(useIdConf.getIgniteInstanceName() + "-idSubstitution");
+            final IgniteConfiguration useQNameIdConf = createConfiguration(appContext, true, true);
+
+            useQNameIdConf.setIgniteInstanceName(useQNameIdConf.getIgniteInstanceName() + "-qnameIdSubstitution");
 
             try
             {
                 final Ignite referenceGrid = Ignition.start(referenceConf);
                 final Ignite defaultGrid = Ignition.start(defaultConf);
-                final Ignite useIdGrid = Ignition.start(useIdConf);
+                final Ignite useQNameIdGrid = Ignition.start(useQNameIdConf);
 
-                // normally, for objects with a single field, there is no benefit in raw serial form
-                // but MLText is able to use String optimisations via variable length primitives - 14%
-                this.efficiencyImpl(referenceGrid, defaultGrid, "aldica raw serial", "aldica optimised", 0.14);
+                // only a slight improvement due to metadata + collection handling - 0.5%
+                this.efficiencyImpl(referenceGrid, defaultGrid, "aldica raw serial", "aldica optimised", 0.005);
 
-                // aldica default already provides decent improvements by using Locale textual representation
-                // serial form with ID substitution can still provide benefits via variable length primitives for ID substitution - 21%
-                this.efficiencyImpl(referenceGrid, useIdGrid, "aldica raw serial (ID substitution)", "aldica optimised", 0.21);
+                // ID substitution + variable length integers are critical - 94%
+                this.efficiencyImpl(referenceGrid, useQNameIdGrid, "aldica raw serial (ID substitution)", "aldica optimised", 0.94);
 
-                // only benefit comes from variable length primitive long being more efficient than short text - 7%
-                this.efficiencyImpl(defaultGrid, useIdGrid, "aldica raw serial (ID substitution)", "aldica raw serial", 0.07);
+                // ID substitution is everything - 94%
+                this.efficiencyImpl(defaultGrid, useQNameIdGrid, "aldica raw serial (ID substitution)", "aldica raw serial", 0.94);
             }
             finally
             {
@@ -194,20 +198,15 @@ public class MLTextBinarySerializerTests extends GridTestsBase
             @SuppressWarnings("deprecation")
             final Marshaller marshaller = grid.configuration().getMarshaller();
 
-            MLText controlValue;
-            MLText serialisedValue;
+            NodeAspectsCacheSet controlValue;
+            NodeAspectsCacheSet serialisedValue;
 
-            controlValue = new MLText(Locale.ENGLISH, "English text");
-            controlValue.addValue(Locale.GERMAN, "German text");
-            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
+            controlValue = new NodeAspectsCacheSet();
+            for (final QName aspectQName : ASPECT_QNAMES)
+            {
+                controlValue.add(aspectQName);
+            }
 
-            Assert.assertEquals(controlValue, serialisedValue);
-            // check deep serialisation was actually involved (different value instances)
-            Assert.assertNotSame(controlValue, serialisedValue);
-
-            // test unsupported locale
-            controlValue = new MLText(Locale.UK, "English text");
-            controlValue.addValue(Locale.GERMANY, "German text");
             serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
 
             Assert.assertEquals(controlValue, serialisedValue);
@@ -223,15 +222,21 @@ public class MLTextBinarySerializerTests extends GridTestsBase
     protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final String serialisationType,
             final String referenceSerialisationType, final double marginFraction)
     {
-        final Supplier<MLText> comparisonValueSupplier = () -> {
-            final MLText value = new MLText(Locale.US, UUID.randomUUID().toString());
-            value.addValue(Locale.GERMANY, UUID.randomUUID().toString());
-            value.addValue(Locale.UK, UUID.randomUUID().toString());
+        final SecureRandom rnJesus = new SecureRandom();
+
+        final Supplier<NodeAspectsCacheSet> comparisonValueSupplier = () -> {
+            final NodeAspectsCacheSet value = new NodeAspectsCacheSet();
+
+            final int countAspects = (ASPECT_QNAMES.length / 2) + rnJesus.nextInt(ASPECT_QNAMES.length / 2);
+            while (value.size() < countAspects)
+            {
+                value.add(ASPECT_QNAMES[rnJesus.nextInt(ASPECT_QNAMES.length)]);
+            }
 
             return value;
         };
 
-        super.serialisationEfficiencyComparison(referenceGrid, grid, "MLText", referenceSerialisationType, serialisationType,
+        super.serialisationEfficiencyComparison(referenceGrid, grid, "NodeAspectsCacheSet", referenceSerialisationType, serialisationType,
                 comparisonValueSupplier, marginFraction);
     }
 }

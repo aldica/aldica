@@ -4,29 +4,24 @@
 package org.aldica.repo.ignite.binary;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.aldica.common.ignite.GridTestsBase;
+import org.aldica.repo.ignite.ExpensiveTestCategory;
 import org.alfresco.repo.cache.lookup.CacheRegionKey;
-import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.marshaller.Marshaller;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.experimental.categories.Category;
 
 /**
  * @author Axel Faust
@@ -34,9 +29,7 @@ import org.slf4j.LoggerFactory;
 public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CacheRegionKeyBinarySerializerTests.class);
-
-    protected static IgniteConfiguration createConfiguration(final boolean serialForm, final String... regionNames)
+    protected static IgniteConfiguration createConfiguration(final boolean serialForm)
     {
         final IgniteConfiguration conf = createConfiguration(1, false, null);
 
@@ -46,26 +39,11 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
         binaryTypeConfigurationForCacheRegionKey.setTypeName(CacheRegionKey.class.getName());
         final CacheRegionKeyBinarySerializer serializer = new CacheRegionKeyBinarySerializer();
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
         binaryTypeConfigurationForCacheRegionKey.setSerializer(serializer);
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForCacheRegionKey));
         conf.setBinaryConfiguration(binaryConfiguration);
-
-        final DataStorageConfiguration dataConf = new DataStorageConfiguration();
-        final List<DataRegionConfiguration> regionConfs = new ArrayList<>();
-        for (final String regionName : regionNames)
-        {
-            final DataRegionConfiguration regionConf = new DataRegionConfiguration();
-            regionConf.setName(regionName);
-            // all regions are 10-100 MiB
-            regionConf.setInitialSize(10 * 1024 * 1024);
-            regionConf.setMaxSize(100 * 1024 * 1024);
-            regionConf.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
-            regionConf.setMetricsEnabled(true);
-            regionConfs.add(regionConf);
-        }
-        dataConf.setDataRegionConfigurations(regionConfs.toArray(new DataRegionConfiguration[0]));
-        conf.setDataStorageConfiguration(dataConf);
 
         return conf;
     }
@@ -77,31 +55,22 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
         this.correctnessImpl(conf);
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void defaultFormEfficiency()
     {
         final IgniteConfiguration referenceConf = createConfiguration(1, false, null);
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(false, "values");
-
-        referenceConf.setDataStorageConfiguration(conf.getDataStorageConfiguration());
+        final IgniteConfiguration conf = createConfiguration(false);
 
         try
         {
             final Ignite referenceGrid = Ignition.start(referenceConf);
             final Ignite grid = Ignition.start(conf);
 
-            final CacheConfiguration<Long, CacheRegionKey> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
-
-            cacheConfig.setName("values");
-            cacheConfig.setDataRegionName("values");
-            final IgniteCache<Long, CacheRegionKey> referenceCache = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, CacheRegionKey> cache = grid.getOrCreateCache(cacheConfig);
-
             // saving potential is substantial, but variable depending on region
-            // expect average of 15%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", 0.15);
+            // expect average of 33%
+            this.efficiencyImpl(referenceGrid, grid, "aldica optimised", "Ignite default", 0.33);
         }
         finally
         {
@@ -116,28 +85,21 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
         this.correctnessImpl(conf);
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void rawSerialFormEfficiency()
     {
-        final IgniteConfiguration referenceConf = createConfiguration(false, "values");
+        final IgniteConfiguration referenceConf = createConfiguration(false);
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(true, "values");
+        final IgniteConfiguration conf = createConfiguration(true);
 
         try
         {
             final Ignite referenceGrid = Ignition.start(referenceConf);
             final Ignite grid = Ignition.start(conf);
 
-            final CacheConfiguration<Long, CacheRegionKey> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
-
-            cacheConfig.setName("values");
-            cacheConfig.setDataRegionName("values");
-            final IgniteCache<Long, CacheRegionKey> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, CacheRegionKey> cache1 = grid.getOrCreateCache(cacheConfig);
-
-            // saving potential is limited - 2%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.02);
+            // saving potential is limited - 21%
+            this.efficiencyImpl(referenceGrid, grid, "aldica raw serial", "aldica optimised", 0.21);
         }
         finally
         {
@@ -149,66 +111,81 @@ public class CacheRegionKeyBinarySerializerTests extends GridTestsBase
     {
         try (Ignite grid = Ignition.start(conf))
         {
-            final CacheConfiguration<Long, CacheRegionKey> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setName("cacheRegionKey");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
-            final IgniteCache<Long, CacheRegionKey> cache = grid.getOrCreateCache(cacheConfig);
+            @SuppressWarnings("deprecation")
+            final Marshaller marshaller = grid.configuration().getMarshaller();
 
             CacheRegionKey controlValue;
-            CacheRegionKey cacheValue;
+            CacheRegionKey serialisedValue;
 
+            // default region + String key
             controlValue = new CacheRegionKey(CacheRegion.DEFAULT.getCacheRegionName(), "value1");
-            cache.put(1l, controlValue);
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
 
-            cacheValue = cache.get(1l);
-
-            Assert.assertEquals(controlValue, cacheValue);
+            Assert.assertEquals(controlValue, serialisedValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, serialisedValue);
 
-            // random instead of well known region
+            // default region + Long key
+            controlValue = new CacheRegionKey(CacheRegion.DEFAULT.getCacheRegionName(), Long.valueOf(1234));
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
+
+            Assert.assertEquals(controlValue, serialisedValue);
+            // check deep serialisation was actually involved
+            Assert.assertNotSame(controlValue, serialisedValue);
+
+            // default region + arbitrary key
+            controlValue = new CacheRegionKey(CacheRegion.DEFAULT.getCacheRegionName(), Instant.now());
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
+
+            Assert.assertEquals(controlValue, serialisedValue);
+            // check deep serialisation was actually involved
+            Assert.assertNotSame(controlValue, serialisedValue);
+
+            // random region + String key
             controlValue = new CacheRegionKey(UUID.randomUUID().toString(), "value2");
-            cache.put(2l, controlValue);
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
 
-            cacheValue = cache.get(2l);
-
-            Assert.assertEquals(controlValue, cacheValue);
+            Assert.assertEquals(controlValue, serialisedValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, serialisedValue);
+
+            // random region + Long key
+            controlValue = new CacheRegionKey(UUID.randomUUID().toString(), Long.valueOf(1234));
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
+
+            Assert.assertEquals(controlValue, serialisedValue);
+            // check deep serialisation was actually involved
+            Assert.assertNotSame(controlValue, serialisedValue);
+
+            // random region + arbitrary key
+            controlValue = new CacheRegionKey(UUID.randomUUID().toString(), Instant.now());
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
+
+            Assert.assertEquals(controlValue, serialisedValue);
+            // check deep serialisation was actually involved
+            Assert.assertNotSame(controlValue, serialisedValue);
+        }
+        catch (final IgniteCheckedException ice)
+        {
+            throw new IllegalStateException("Serialisation failed in correctness test", ice);
         }
     }
 
-    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final IgniteCache<Long, CacheRegionKey> referenceCache,
-            final IgniteCache<Long, CacheRegionKey> cache, final String serialisationType, final String referenceSerialisationType,
-            final double marginFraction)
+    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final String serialisationType,
+            final String referenceSerialisationType, final double marginFraction)
     {
-        LOGGER.info(
-                "Running CacheRegionKey serialisation benchmark of 100k instances, comparing {} vs. {} serialisation, expecting relative improvement margin / difference fraction of {}",
-                referenceSerialisationType, serialisationType, marginFraction);
-
         final CacheRegion[] regions = CacheRegion.values();
-
         final SecureRandom rnJesus = new SecureRandom();
-        for (int idx = 0; idx < 100000; idx++)
-        {
-            final String region = regions[rnJesus.nextInt(regions.length - 1)].getCacheRegionName();
-            final CacheRegionKey value = new CacheRegionKey(region, UUID.randomUUID().toString());
 
-            referenceCache.put(Long.valueOf(idx), value);
-            cache.put(Long.valueOf(idx), value);
-        }
+        final Supplier<CacheRegionKey> comparisonValueSupplier = () -> {
+            final String region = regions[rnJesus.nextInt(regions.length - 2)].getCacheRegionName();
+            // 1 billion possible IDs is more than sufficient for testing - rarely seen in production, more in benchmarks
+            final CacheRegionKey value = new CacheRegionKey(region, Long.valueOf(rnJesus.nextInt(1000000000)));
 
-        @SuppressWarnings("unchecked")
-        final String regionName = cache.getConfiguration(CacheConfiguration.class).getDataRegionName();
-        final DataRegionMetrics referenceMetrics = referenceGrid.dataRegionMetrics(regionName);
-        final DataRegionMetrics metrics = grid.dataRegionMetrics(regionName);
+            return value;
+        };
 
-        // sufficient to compare used pages - byte-exact memory usage cannot be determined due to potential partial page fill
-        final long referenceTotalUsedPages = referenceMetrics.getTotalUsedPages();
-        final long totalUsedPages = metrics.getTotalUsedPages();
-        final long allowedMax = referenceTotalUsedPages - (long) (marginFraction * referenceTotalUsedPages);
-        LOGGER.info("Benchmark resulted in {} vs {} (expected max of {}) total used pages", referenceTotalUsedPages, totalUsedPages,
-                allowedMax);
-        Assert.assertTrue(totalUsedPages <= allowedMax);
+        super.serialisationEfficiencyComparison(referenceGrid, grid, "CacheRegionKey", referenceSerialisationType, serialisationType,
+                comparisonValueSupplier, marginFraction);
     }
 }
