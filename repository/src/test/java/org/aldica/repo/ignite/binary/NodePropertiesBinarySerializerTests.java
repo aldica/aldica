@@ -10,13 +10,13 @@ import java.time.Month;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.aldica.common.ignite.GridTestsBase;
+import org.aldica.repo.ignite.ExpensiveTestCategory;
 import org.aldica.repo.ignite.cache.NodePropertiesCacheMap;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.MimetypeMap;
@@ -32,23 +32,17 @@ import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.StoreRef;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
-import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.marshaller.Marshaller;
 import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.experimental.categories.Category;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 
@@ -72,8 +66,6 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             Locale.SIMPLIFIED_CHINESE };
 
     private static final int UNIQUE_CONTENT_DATA_COUNT = 100;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(NodePropertiesBinarySerializerTests.class);
 
     protected static GenericApplicationContext createApplicationContext()
     {
@@ -99,8 +91,7 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
         final SecureRandom rnJesus = new SecureRandom();
         for (int idx = 0; idx < UNIQUE_CONTENT_DATA_COUNT; idx++)
         {
-            final ContentDataWithId value = new ContentDataWithId(new ContentData(urlProvider
-                    .createNewFileStoreUrl(),
+            final ContentDataWithId value = new ContentDataWithId(new ContentData(urlProvider.createNewFileStoreUrl(),
                     MIMETYPES[rnJesus.nextInt(MIMETYPES.length)], rnJesus.nextInt(Integer.MAX_VALUE),
                     ENCODINGS[rnJesus.nextInt(ENCODINGS.length)], LOCALES[rnJesus.nextInt(LOCALES.length)]), Long.valueOf(idx));
 
@@ -114,7 +105,7 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
     }
 
     protected static IgniteConfiguration createConfiguration(final ApplicationContext applicationContext, final boolean idsWhenReasonable,
-            final boolean idsWhenPossible, final boolean serialForm, final String... regionNames)
+            final boolean idsWhenPossible, final boolean serialForm)
     {
         final IgniteConfiguration conf = createConfiguration(1, false, null);
 
@@ -125,6 +116,7 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
         serializer.setUseIdsWhenReasonable(idsWhenReasonable);
         serializer.setUseIdsWhenPossible(idsWhenPossible);
         serializer.setUseRawSerialForm(serialForm);
+        serializer.setUseVariableLengthIntegers(serialForm);
 
         final BinaryTypeConfiguration binaryTypeConfigurationForNodePropertiesCacheMap = new BinaryTypeConfiguration();
         binaryTypeConfigurationForNodePropertiesCacheMap.setTypeName(NodePropertiesCacheMap.class.getName());
@@ -132,22 +124,6 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
 
         binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForNodePropertiesCacheMap));
         conf.setBinaryConfiguration(binaryConfiguration);
-
-        final DataStorageConfiguration dataConf = new DataStorageConfiguration();
-        final List<DataRegionConfiguration> regionConfs = new ArrayList<>();
-        for (final String regionName : regionNames)
-        {
-            final DataRegionConfiguration regionConf = new DataRegionConfiguration();
-            regionConf.setName(regionName);
-            // all regions are 10-250 MiB
-            regionConf.setInitialSize(10 * 1024 * 1024);
-            regionConf.setMaxSize(250 * 1024 * 1024);
-            regionConf.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
-            regionConf.setMetricsEnabled(true);
-            regionConfs.add(regionConf);
-        }
-        dataConf.setDataRegionConfigurations(regionConfs.toArray(new DataRegionConfiguration[0]));
-        conf.setDataStorageConfiguration(dataConf);
 
         return conf;
     }
@@ -185,6 +161,7 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
         }
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void defaultFormEfficiency()
     {
@@ -193,17 +170,12 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             final IgniteConfiguration referenceConf = createConfiguration(1, false, null);
             referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
 
-            final IgniteConfiguration defaultConf = createConfiguration(null, false, false, false, "comparison1", "comparison2",
-                    "comparison3", "comparison4", "comparison5", "comparison6");
-            final IgniteConfiguration useQNameIdConf = createConfiguration(appContext, true, false, false, "comparison1", "comparison2",
-                    "comparison3", "comparison4", "comparison5", "comparison6");
-            final IgniteConfiguration useAllIdConf = createConfiguration(appContext, true, true, false, "comparison1", "comparison2",
-                    "comparison3", "comparison4", "comparison5", "comparison6");
+            final IgniteConfiguration defaultConf = createConfiguration(null, false, false, false);
+            final IgniteConfiguration useQNameIdConf = createConfiguration(appContext, true, false, false);
+            final IgniteConfiguration useAllIdConf = createConfiguration(appContext, true, true, false);
 
             useQNameIdConf.setIgniteInstanceName(useQNameIdConf.getIgniteInstanceName() + "-qnameIdSubstitution");
             useAllIdConf.setIgniteInstanceName(useQNameIdConf.getIgniteInstanceName() + "-allIdSubstitution");
-
-            referenceConf.setDataStorageConfiguration(defaultConf.getDataStorageConfiguration());
 
             final ContentDataDAO contentDataDAO = appContext.getBean("contentDataDAO", ContentDataDAO.class);
 
@@ -214,69 +186,35 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final Ignite useQNameIdGrid = Ignition.start(useQNameIdConf);
                 final Ignite useAllIdGrid = Ignition.start(useAllIdConf);
 
-                final CacheConfiguration<Long, NodePropertiesCacheMap> cacheConfig = new CacheConfiguration<>();
-                cacheConfig.setCacheMode(CacheMode.LOCAL);
-
-                cacheConfig.setName("comparison1");
-                cacheConfig.setDataRegionName("comparison1");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
-
                 // default uses HashMap.writeObject and Serializable all the way through, which is already very efficient
-                // without ID substitution, our serialisation cannot come close
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, contentDataDAO, "aldica optimised",
-                        "Ignite default", -0.75);
-
-                cacheConfig.setName("comparison2");
-                cacheConfig.setDataRegionName("comparison2");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache2 = useQNameIdGrid.getOrCreateCache(cacheConfig);
+                // this actually intrinsically deduplicates common objects / values (e.g. namespace URIs)
+                // without ID substitution (or our custom QNameBinarySerializer), our serialisation cannot come close - -77%
+                this.efficiencyImpl(referenceGrid, defaultGrid, contentDataDAO, "aldica optimised", "Ignite default", -0.77);
 
                 // replacing full QName with ID saves a lot and overcomes base disadvantage
-                // 20%
-                this.efficiencyImpl(referenceGrid, useQNameIdGrid, referenceCache2, cache2, contentDataDAO,
-                        "aldica optimised (QName ID substitution)", "Ignite default", 0.2);
-
-                cacheConfig.setName("comparison3");
-                cacheConfig.setDataRegionName("comparison3");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache3 = useQNameIdGrid.getOrCreateCache(cacheConfig);
+                // 26%
+                this.efficiencyImpl(referenceGrid, useQNameIdGrid, contentDataDAO, "aldica optimised (QName ID substitution)",
+                        "Ignite default", 0.26);
 
                 // savings are more pronounced compared to our own base
-                // 53%
-                this.efficiencyImpl(defaultGrid, useQNameIdGrid, referenceCache3, cache3, contentDataDAO,
-                        "aldica optimised (QName ID substitution)", "aldica optimised", 0.53);
-
-                cacheConfig.setName("comparison4");
-                cacheConfig.setDataRegionName("comparison4");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache4 = referenceGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache4 = useAllIdGrid.getOrCreateCache(cacheConfig);
+                // 58%
+                this.efficiencyImpl(defaultGrid, useQNameIdGrid, contentDataDAO, "aldica optimised (QName ID substitution)",
+                        "aldica optimised", 0.58);
 
                 // savings should be more pronounced with both QName and ContentDataWithId replaced
-                // 54%
-                this.efficiencyImpl(referenceGrid, useAllIdGrid, referenceCache4, cache4,
-                        contentDataDAO,
-                        "aldica optimised (QName + ContentData ID substitution)", "Ignite default", 0.54);
-
-                cacheConfig.setName("comparison5");
-                cacheConfig.setDataRegionName("comparison5");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache5 = defaultGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache5 = useAllIdGrid.getOrCreateCache(cacheConfig);
+                // 61%
+                this.efficiencyImpl(referenceGrid, useAllIdGrid, contentDataDAO, "aldica optimised (QName + ContentData ID substitution)",
+                        "Ignite default", 0.61);
 
                 // savings are extremely more pronounced compared to our own base
-                // 72%
-                this.efficiencyImpl(defaultGrid, useAllIdGrid, referenceCache5, cache5, contentDataDAO,
-                        "aldica optimised (QName + ContentData ID substitution)", "aldica optimised", 0.72);
-
-                cacheConfig.setName("comparison6");
-                cacheConfig.setDataRegionName("comparison6");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache6 = useQNameIdGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache6 = useAllIdGrid.getOrCreateCache(cacheConfig);
+                // 78%
+                this.efficiencyImpl(defaultGrid, useAllIdGrid, contentDataDAO, "aldica optimised (QName + ContentData ID substitution)",
+                        "aldica optimised", 0.78);
 
                 // ContentDataWithId is quite complex, so significant savings in addition to QName ID substitution if sparse metadata
-                // 38%
-                this.efficiencyImpl(useQNameIdGrid, useAllIdGrid, referenceCache6, cache6, contentDataDAO,
-                        "aldica optimised (QName + ContentData ID substitution)", "aldica optimised (QName ID substitution)", 0.38);
+                // 47%
+                this.efficiencyImpl(useQNameIdGrid, useAllIdGrid, contentDataDAO, "aldica optimised (QName + ContentData ID substitution)",
+                        "aldica optimised (QName ID substitution)", 0.47);
             }
             finally
             {
@@ -318,21 +256,18 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
         }
     }
 
+    @Category(ExpensiveTestCategory.class)
     @Test
     public void rawSerialFormEfficiency()
     {
         try (final GenericApplicationContext appContext = createApplicationContext())
         {
-            final IgniteConfiguration referenceConf = createConfiguration(null, false, false, false, "comparison1", "comparison2",
-                    "comparison3", "comparison4", "comparison5", "comparison6");
+            final IgniteConfiguration referenceConf = createConfiguration(null, false, false, false);
             referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
 
-            final IgniteConfiguration defaultConf = createConfiguration(null, false, false, true, "comparison1", "comparison2",
-                    "comparison3", "comparison4", "comparison5", "comparison6");
-            final IgniteConfiguration useQNameIdConf = createConfiguration(appContext, true, false, true, "comparison1", "comparison2",
-                    "comparison3", "comparison4", "comparison5", "comparison6");
-            final IgniteConfiguration useAllIdConf = createConfiguration(appContext, true, true, true, "comparison1", "comparison2",
-                    "comparison3", "comparison4", "comparison5", "comparison6");
+            final IgniteConfiguration defaultConf = createConfiguration(null, false, false, true);
+            final IgniteConfiguration useQNameIdConf = createConfiguration(appContext, true, false, true);
+            final IgniteConfiguration useAllIdConf = createConfiguration(appContext, true, true, true);
 
             useQNameIdConf.setIgniteInstanceName(useQNameIdConf.getIgniteInstanceName() + "-qnameIdSubstitution");
             useAllIdConf.setIgniteInstanceName(useAllIdConf.getIgniteInstanceName() + "-allIdSubstitution");
@@ -346,65 +281,31 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final Ignite useQNameIdGrid = Ignition.start(useQNameIdConf);
                 final Ignite useAllIdGrid = Ignition.start(useAllIdConf);
 
-                final CacheConfiguration<Long, NodePropertiesCacheMap> cacheConfig = new CacheConfiguration<>();
-                cacheConfig.setCacheMode(CacheMode.LOCAL);
-
-                cacheConfig.setName("comparison1");
-                cacheConfig.setDataRegionName("comparison1");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
-
                 // virtually no difference as map handling has almost no overhead to reduce
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, contentDataDAO, "aldica raw serial",
-                        "aldica optimised", -0.01);
-
-                cacheConfig.setName("comparison2");
-                cacheConfig.setDataRegionName("comparison2");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache2 = useQNameIdGrid.getOrCreateCache(cacheConfig);
+                this.efficiencyImpl(referenceGrid, defaultGrid, contentDataDAO, "aldica raw serial", "aldica optimised", -0.01);
 
                 // QNames are expensive due to namespace + local name
-                // 54%
-                this.efficiencyImpl(referenceGrid, useQNameIdGrid, referenceCache2, cache2, contentDataDAO,
-                        "aldica raw serial (ID substitution)", "aldica optimised", 0.54);
+                // 64%
+                this.efficiencyImpl(referenceGrid, useQNameIdGrid, contentDataDAO, "aldica raw serial (ID substitution)",
+                        "aldica optimised", 0.64);
 
-                cacheConfig.setName("comparison3");
-                cacheConfig.setDataRegionName("comparison3");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache3 = useQNameIdGrid.getOrCreateCache(cacheConfig);
-
-                // 54%
-                this.efficiencyImpl(defaultGrid, useQNameIdGrid, referenceCache3, cache3, contentDataDAO,
-                        "aldica raw serial (ID substitution)", "aldica raw serial", 0.54);
-
-                cacheConfig.setName("comparison4");
-                cacheConfig.setDataRegionName("comparison4");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache4 = referenceGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache4 = useAllIdGrid.getOrCreateCache(cacheConfig);
+                // 64%
+                this.efficiencyImpl(defaultGrid, useQNameIdGrid, contentDataDAO, "aldica raw serial (ID substitution)", "aldica raw serial",
+                        0.64);
 
                 // savings should be more pronounced with both QName and ContentDataWithId replaced
-                // 72%
-                this.efficiencyImpl(referenceGrid, useAllIdGrid, referenceCache4, cache4, contentDataDAO,
-                        "aldica raw serial (QName + ContentData ID substitution)", "aldica optimised", 0.72);
+                // 86%
+                this.efficiencyImpl(referenceGrid, useAllIdGrid, contentDataDAO, "aldica raw serial (QName + ContentData ID substitution)",
+                        "aldica optimised", 0.86);
 
-                cacheConfig.setName("comparison5");
-                cacheConfig.setDataRegionName("comparison5");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache5 = defaultGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache5 = useAllIdGrid.getOrCreateCache(cacheConfig);
-
-                // 72%
-                this.efficiencyImpl(defaultGrid, useAllIdGrid, referenceCache5, cache5, contentDataDAO,
-                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial", 0.72);
-
-                cacheConfig.setName("comparison6");
-                cacheConfig.setDataRegionName("comparison6");
-                final IgniteCache<Long, NodePropertiesCacheMap> referenceCache6 = useQNameIdGrid.getOrCreateCache(cacheConfig);
-                final IgniteCache<Long, NodePropertiesCacheMap> cache6 = useAllIdGrid.getOrCreateCache(cacheConfig);
+                // 86%
+                this.efficiencyImpl(defaultGrid, useAllIdGrid, contentDataDAO, "aldica raw serial (QName + ContentData ID substitution)",
+                        "aldica raw serial", 0.86);
 
                 // ContentDataWithId is quite complex, so significant savings in addition to QName ID substitution if sparse metadata
-                // 42%
-                this.efficiencyImpl(useQNameIdGrid, useAllIdGrid, referenceCache6, cache6, contentDataDAO,
-                        "aldica raw serial (QName + ContentData ID substitution)", "aldica raw serial (QName ID substitution)", 0.42);
+                // 61%
+                this.efficiencyImpl(useQNameIdGrid, useAllIdGrid, contentDataDAO, "aldica raw serial (QName + ContentData ID substitution)",
+                        "aldica raw serial (QName ID substitution)", 0.61);
             }
             finally
             {
@@ -417,16 +318,14 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
     {
         try (Ignite grid = Ignition.start(conf))
         {
-            final CacheConfiguration<Long, NodePropertiesCacheMap> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setName("contentData");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
-            final IgniteCache<Long, NodePropertiesCacheMap> cache = grid.getOrCreateCache(cacheConfig);
+            @SuppressWarnings("deprecation")
+            final Marshaller marshaller = grid.configuration().getMarshaller();
 
             NodePropertiesCacheMap controlValue;
-            NodePropertiesCacheMap cacheValue;
+            NodePropertiesCacheMap serialisedValue;
             ArrayList<NodeRef> categories;
 
-            controlValue = new NodePropertiesCacheMap(Collections.emptyMap());
+            controlValue = new NodePropertiesCacheMap();
             controlValue.put(ContentModel.PROP_CREATOR, "admin");
             controlValue.put(ContentModel.PROP_CREATED,
                     Date.from(LocalDateTime.of(2020, Month.JANUARY, 1, 6, 0, 0).toInstant(ZoneOffset.UTC)));
@@ -441,32 +340,28 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             categories.add(new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, UUID.randomUUID().toString()));
             controlValue.put(ContentModel.PROP_CATEGORIES, categories);
 
-            cache.put(1l, controlValue);
+            serialisedValue = marshaller.unmarshal(marshaller.marshal(controlValue), this.getClass().getClassLoader());
 
-            cacheValue = cache.get(1l);
-
-            Assert.assertEquals(controlValue, cacheValue);
+            Assert.assertEquals(controlValue, serialisedValue);
             // check deep serialisation was actually involved (different value instances)
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, serialisedValue);
+        }
+        catch (final IgniteCheckedException ice)
+        {
+            throw new IllegalStateException("Serialisation failed in correctness test", ice);
         }
     }
 
-    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite defaultGrid,
-            final IgniteCache<Long, NodePropertiesCacheMap> referenceCache, final IgniteCache<Long, NodePropertiesCacheMap> cache,
-            final ContentDataDAO contentDataDAO, final String serialisationType,
-            final String referenceSerialisationType,
-            final double marginFraction)
+    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final ContentDataDAO contentDataDAO,
+            final String serialisationType, final String referenceSerialisationType, final double marginFraction)
     {
-        LOGGER.info(
-                "Running NodePropertiesCacheMap serialisation benchmark of 100k instances, comparing {} vs. {} serialisation, expecting relative improvement margin / difference fraction of {}",
-                referenceSerialisationType, serialisationType, marginFraction);
-
         final int msPerYear = 365 * 24 * 60 * 60 * 1000;
         final long msOffset = LocalDateTime.of(2020, Month.JANUARY, 1, 0, 0, 0).toInstant(ZoneOffset.UTC).toEpochMilli();
 
         final SecureRandom rnJesus = new SecureRandom();
-        for (int idx = 0; idx < 100000; idx++)
-        {
+
+        final Supplier<NodePropertiesCacheMap> comparisonValueSupplier = () -> {
+            final int idx = 1000 + rnJesus.nextInt(100000000);
             final NodePropertiesCacheMap value = new NodePropertiesCacheMap();
 
             final int msOffsetCreated = rnJesus.nextInt(msPerYear / 2);
@@ -480,21 +375,10 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             value.put(ContentModel.PROP_CONTENT,
                     contentDataDAO.getContentData(Long.valueOf(rnJesus.nextInt(UNIQUE_CONTENT_DATA_COUNT))).getSecond());
 
-            referenceCache.put(Long.valueOf(idx), value);
-            cache.put(Long.valueOf(idx), value);
-        }
+            return value;
+        };
 
-        @SuppressWarnings("unchecked")
-        final String regionName = cache.getConfiguration(CacheConfiguration.class).getDataRegionName();
-        final DataRegionMetrics referenceMetrics = referenceGrid.dataRegionMetrics(regionName);
-        final DataRegionMetrics metrics = defaultGrid.dataRegionMetrics(regionName);
-
-        // sufficient to compare used pages - byte-exact memory usage cannot be determined due to potential partial page fill
-        final long referenceTotalUsedPages = referenceMetrics.getTotalUsedPages();
-        final long totalUsedPages = metrics.getTotalUsedPages();
-        final long allowedMax = referenceTotalUsedPages - (long) (marginFraction * referenceTotalUsedPages);
-        LOGGER.info("Benchmark resulted in {} vs {} (expected max of {}) total used pages", referenceTotalUsedPages, totalUsedPages,
-                allowedMax);
-        Assert.assertTrue(totalUsedPages <= allowedMax);
+        super.serialisationEfficiencyComparison(referenceGrid, grid, "NodePropertiesCacheMap", referenceSerialisationType,
+                serialisationType, comparisonValueSupplier, marginFraction);
     }
 }

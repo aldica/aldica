@@ -14,7 +14,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 
 /**
@@ -26,7 +25,7 @@ import org.apache.ignite.binary.BinaryWriter;
  *
  * @author Axel Faust
  */
-public class StoreRefBinarySerializer implements BinarySerializer
+public class StoreRefBinarySerializer extends AbstractCustomBinarySerializer
 {
 
     private static final String TYPE = "type";
@@ -75,17 +74,6 @@ public class StoreRefBinarySerializer implements BinarySerializer
         }
     }
 
-    protected boolean useRawSerialForm = false;
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
-    }
-
     /**
      *
      * {@inheritDoc}
@@ -112,9 +100,9 @@ public class StoreRefBinarySerializer implements BinarySerializer
             rawWriter.writeByte(protocolType);
             if (protocolType == CUSTOM_PROTOCOL)
             {
-                rawWriter.writeString(protocol);
+                this.write(protocol, rawWriter);
             }
-            rawWriter.writeString(id);
+            this.write(id, rawWriter);
         }
         else
         {
@@ -153,9 +141,9 @@ public class StoreRefBinarySerializer implements BinarySerializer
 
             if (protocolType == CUSTOM_PROTOCOL)
             {
-                protocol = rawReader.readString();
+                protocol = this.readString(rawReader);
             }
-            id = rawReader.readString();
+            id = this.readString(rawReader);
         }
         else
         {

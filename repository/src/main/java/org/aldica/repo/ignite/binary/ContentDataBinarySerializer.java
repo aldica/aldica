@@ -16,7 +16,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -32,7 +31,7 @@ import org.springframework.context.ApplicationContextAware;
  *
  * @author Axel Faust
  */
-public class ContentDataBinarySerializer implements BinarySerializer, ApplicationContextAware
+public class ContentDataBinarySerializer extends AbstractCustomBinarySerializer implements ApplicationContextAware
 {
 
     private static final String ID = "id";
@@ -53,18 +52,20 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
 
     private static final String LOCALE_ID = "localeId";
 
-    private static final byte FLAG_MIMETYPE_NULL = 1;
+    private static final byte FLAG_CONTENT_URL_NULL = 1;
 
-    private static final byte FLAG_MIMETYPE_ID = 2;
+    private static final byte FLAG_MIMETYPE_NULL = 2;
 
-    private static final byte FLAG_ENCODING_NULL = 4;
+    private static final byte FLAG_MIMETYPE_ID = 4;
 
-    private static final byte FLAG_ENCODING_ID = 8;
+    private static final byte FLAG_ENCODING_NULL = 8;
+
+    private static final byte FLAG_ENCODING_ID = 16;
 
     // locale is technically never null in ContentData (ensured via constructor)
-    private static final byte FLAG_LOCALE_NULL = 16;
+    private static final byte FLAG_LOCALE_NULL = 32;
 
-    private static final byte FLAG_LOCALE_ID = 32;
+    private static final byte FLAG_LOCALE_ID = 64;
 
     private static final Field CONTENT_URL_FIELD;
 
@@ -112,8 +113,6 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
 
     protected boolean useIdsWhenReasonable = false;
 
-    protected boolean useRawSerialForm = false;
-
     /**
      * {@inheritDoc}
      */
@@ -130,15 +129,6 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
     public void setUseIdsWhenReasonable(final boolean useIdsWhenReasonable)
     {
         this.useIdsWhenReasonable = useIdsWhenReasonable;
-    }
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
     }
 
     /**
@@ -176,12 +166,10 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
     {
         if (contentData instanceof ContentDataWithId)
         {
-            rawWriter.writeLong(((ContentDataWithId) contentData).getId());
+            this.writeDbId(((ContentDataWithId) contentData).getId(), rawWriter);
         }
 
-        rawWriter.writeString(contentData.getContentUrl());
-        rawWriter.writeLong(contentData.getSize());
-
+        final String contentUrl = contentData.getContentUrl();
         final String mimetype = contentData.getMimetype();
         Long mimetypeId = null;
         final String encoding = contentData.getEncoding();
@@ -190,6 +178,12 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
         Long localeId = null;
 
         byte flags = 0;
+
+        if (contentUrl == null)
+        {
+            flags = (byte) (flags | FLAG_CONTENT_URL_NULL);
+        }
+
         if (mimetype == null)
         {
             flags = (byte) (flags | FLAG_MIMETYPE_NULL);
@@ -233,31 +227,37 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
         }
         rawWriter.writeByte(flags);
 
+        if (contentUrl != null)
+        {
+            this.writeContentURL(contentUrl, rawWriter);
+        }
+        this.writeFileSize(contentData.getSize(), rawWriter);
+
         if (mimetypeId != null)
         {
-            rawWriter.writeLong(mimetypeId);
+            this.writeDbId(mimetypeId, rawWriter);
         }
         else if (mimetype != null)
         {
-            rawWriter.writeString(mimetype);
+            this.write(mimetype, rawWriter);
         }
 
         if (encodingId != null)
         {
-            rawWriter.writeLong(encodingId);
+            this.writeDbId(encodingId, rawWriter);
         }
         else if (encoding != null)
         {
-            rawWriter.writeString(encoding);
+            this.write(encoding, rawWriter);
         }
 
         if (localeId != null)
         {
-            rawWriter.writeLong(localeId);
+            this.writeDbId(localeId, rawWriter);
         }
         else if (locale != null)
         {
-            rawWriter.writeObject(locale);
+            this.write(locale, rawWriter);
         }
     }
 
@@ -367,7 +367,7 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
     {
         if (contentData instanceof ContentDataWithId)
         {
-            final long id = rawReader.readLong();
+            final long id = this.readDbId(rawReader);
             try
             {
                 ID_FIELD.set(contentData, id);
@@ -378,9 +378,7 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
             }
         }
 
-        final String contentUrl = rawReader.readString();
-        final long size = rawReader.readLong();
-
+        String contentUrl = null;
         String mimetype = null;
         String encoding = null;
         Locale locale = null;
@@ -391,9 +389,15 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
             throw new BinaryObjectException("Serializer is not configured to use IDs in place of content data fragments");
         }
 
+        if ((flags & FLAG_CONTENT_URL_NULL) == 0)
+        {
+            contentUrl = this.readContentURL(rawReader);
+        }
+        final long size = this.readFileSize(rawReader);
+
         if ((flags & FLAG_MIMETYPE_ID) == FLAG_MIMETYPE_ID)
         {
-            final long mimetypeId = rawReader.readLong();
+            final long mimetypeId = this.readDbId(rawReader);
             final Pair<Long, String> mimetypePair = this.mimetypeDAO.getMimetype(mimetypeId);
             if (mimetypePair != null)
             {
@@ -406,12 +410,12 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
         }
         else if ((flags & FLAG_MIMETYPE_NULL) == 0)
         {
-            mimetype = rawReader.readString();
+            mimetype = this.readString(rawReader);
         }
 
         if ((flags & FLAG_ENCODING_ID) == FLAG_ENCODING_ID)
         {
-            final long encodingId = rawReader.readLong();
+            final long encodingId = this.readDbId(rawReader);
             final Pair<Long, String> encodingPair = this.encodingDAO.getEncoding(encodingId);
             if (encodingPair != null)
             {
@@ -424,12 +428,12 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
         }
         else if ((flags & FLAG_ENCODING_NULL) == 0)
         {
-            encoding = rawReader.readString();
+            encoding = this.readString(rawReader);
         }
 
         if ((flags & FLAG_LOCALE_ID) == FLAG_LOCALE_ID)
         {
-            final long localeId = rawReader.readLong();
+            final long localeId = this.readDbId(rawReader);
             final Pair<Long, Locale> localePair = this.localeDAO.getLocalePair(localeId);
             if (localePair != null)
             {
@@ -442,7 +446,7 @@ public class ContentDataBinarySerializer implements BinarySerializer, Applicatio
         }
         else if ((flags & FLAG_LOCALE_NULL) == 0)
         {
-            locale = rawReader.readObject();
+            locale = this.readLocale(rawReader);
         }
 
         try

@@ -18,7 +18,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -32,7 +31,7 @@ import org.springframework.context.ApplicationContextAware;
  *
  * @author Axel Faust
  */
-public class NodeAspectsBinarySerializer implements BinarySerializer, ApplicationContextAware
+public class NodeAspectsBinarySerializer extends AbstractCustomBinarySerializer implements ApplicationContextAware
 {
 
     private static final String VALUES = "values";
@@ -42,8 +41,6 @@ public class NodeAspectsBinarySerializer implements BinarySerializer, Applicatio
     protected QNameDAO qnameDAO;
 
     protected boolean useIdsWhenReasonable = false;
-
-    protected boolean useRawSerialForm = false;
 
     /**
      * {@inheritDoc}
@@ -61,15 +58,6 @@ public class NodeAspectsBinarySerializer implements BinarySerializer, Applicatio
     public void setUseIdsWhenReasonable(final boolean useIdsWhenReasonable)
     {
         this.useIdsWhenReasonable = useIdsWhenReasonable;
-    }
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
     }
 
     /**
@@ -129,7 +117,8 @@ public class NodeAspectsBinarySerializer implements BinarySerializer, Applicatio
     protected void writeAspectsRawSerialForm(final NodeAspectsCacheSet aspects, final BinaryRawWriter rawWriter)
     {
         final int size = aspects.size();
-        rawWriter.writeInt(size);
+        this.write(size, true, rawWriter);
+        rawWriter.writeBoolean(this.useIdsWhenReasonable);
 
         for (final QName aspectQName : aspects)
         {
@@ -141,7 +130,7 @@ public class NodeAspectsBinarySerializer implements BinarySerializer, Applicatio
                 {
                     throw new AlfrescoRuntimeException("Cannot resolve " + aspectQName + " to DB ID");
                 }
-                rawWriter.writeLong(qnamePair.getFirst());
+                this.writeDbId(qnamePair.getFirst(), rawWriter);
             }
             else
             {
@@ -152,14 +141,20 @@ public class NodeAspectsBinarySerializer implements BinarySerializer, Applicatio
 
     protected void readAspectsRawSerialForm(final NodeAspectsCacheSet aspects, final BinaryRawReader rawReader) throws BinaryObjectException
     {
-        final int size = rawReader.readInt();
+        final int size = this.readInt(true, rawReader);
+        final boolean usesIds = rawReader.readBoolean();
+
+        if (usesIds && !this.useIdsWhenReasonable)
+        {
+            throw new BinaryObjectException("Serializer is not configured to use IDs in place of QName");
+        }
 
         for (int idx = 0; idx < size; idx++)
         {
             QName aspectQName;
-            if (this.useIdsWhenReasonable)
+            if (usesIds)
             {
-                final long id = rawReader.readLong();
+                final long id = this.readDbId(rawReader);
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(id);
                 if (qnamePair == null)
                 {
@@ -208,7 +203,7 @@ public class NodeAspectsBinarySerializer implements BinarySerializer, Applicatio
             {
                 if (!this.useIdsWhenReasonable)
                 {
-                    throw new BinaryObjectException("Serializer is not configured to use IDs in place of QName keys");
+                    throw new BinaryObjectException("Serializer is not configured to use IDs in place of QName");
                 }
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName((Long) value);
                 if (qnamePair == null)

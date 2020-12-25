@@ -14,7 +14,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 
 /**
@@ -24,7 +23,7 @@ import org.apache.ignite.binary.BinaryWriter;
  *
  * @author Axel Faust
  */
-public class NodeRefBinarySerializer implements BinarySerializer
+public class NodeRefBinarySerializer extends AbstractCustomBinarySerializer
 {
 
     public static final StoreRef REF_USER_ALFRESCO_USER_STORE = new StoreRef("user://alfrescoUserStore");
@@ -101,17 +100,6 @@ public class NodeRefBinarySerializer implements BinarySerializer
         }
     }
 
-    protected boolean useRawSerialForm = false;
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
-    }
-
     /**
      *
      * {@inheritDoc}
@@ -150,13 +138,13 @@ public class NodeRefBinarySerializer implements BinarySerializer
             rawWriter.writeByte(storeType);
             if (storeType == CUSTOM_STORE)
             {
-                rawWriter.writeString(storeRef.getProtocol());
+                this.write(storeRef.getProtocol(), rawWriter);
             }
             if (storeType == CUSTOM_STORE || storeType >= KNOWN_PROTOCOL)
             {
-                rawWriter.writeString(storeRef.getIdentifier());
+                this.write(storeRef.getIdentifier(), rawWriter);
             }
-            rawWriter.writeString(id);
+            this.write(id, rawWriter);
         }
         else
         {
@@ -199,8 +187,8 @@ public class NodeRefBinarySerializer implements BinarySerializer
 
             if (storeType == CUSTOM_STORE)
             {
-                final String protocol = rawReader.readString();
-                final String identifier = rawReader.readString();
+                final String protocol = this.readString(rawReader);
+                final String identifier = this.readString(rawReader);
                 storeRef = new StoreRef(protocol, identifier);
             }
             else if (storeType > KNOWN_PROTOCOL)
@@ -211,10 +199,10 @@ public class NodeRefBinarySerializer implements BinarySerializer
                     throw new BinaryObjectException("Read unsupported protocol flag value " + protocolType);
                 }
                 final String protocol = PROTOCOLS[protocolType];
-                final String identifier = rawReader.readString();
+                final String identifier = this.readString(rawReader);
                 storeRef = new StoreRef(protocol, identifier);
             }
-            id = rawReader.readString();
+            id = this.readString(rawReader);
         }
         else
         {
