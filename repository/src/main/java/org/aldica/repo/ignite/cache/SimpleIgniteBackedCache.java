@@ -215,7 +215,11 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
             // use withKeepBinary to avoid unnecessary deseralisation of values
             final IgniteCache<K, ?> cache = this.backingCache.withKeepBinary();
             cache.localEntries(CachePeekMode.ALL).forEach(entry -> {
-                final K key = entry.getKey();
+                K key = entry.getKey();
+                if (key instanceof BinaryObject)
+                {
+                    key = ((BinaryObject) key).deserialize();
+                }
                 keys.add(key);
             });
         }
@@ -229,7 +233,11 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
                 // use withKeepBinary to avoid unnecessary deseralisation of values
                 final IgniteCache<K, V> cache = Ignition.localIgnite().<K, V> getOrCreateCache(this.cacheName).withKeepBinary();
                 cache.localEntries(CachePeekMode.ALL).forEach(entry -> {
-                    final K key = entry.getKey();
+                    K key = entry.getKey();
+                    if (key instanceof BinaryObject)
+                    {
+                        key = ((BinaryObject) key).deserialize();
+                    }
                     localKeys.add(key);
                 });
                 return localKeys;
