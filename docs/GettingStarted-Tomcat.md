@@ -7,7 +7,7 @@ reference describing all the steps required for setting up a cluster solution re
 
 _Note: this also means that appropriate security precautions need to be taken before 
 trying this in production._ For production use, it is probably more convenient to use 
-the ![Docker setup](../docker) in the aldica documentation.
+the [Docker setup](../docker) in the aldica documentation.
 
 
 The Alfresco Community cluster setup will consist of the following components:
