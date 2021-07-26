@@ -7,7 +7,7 @@ reference describing all the steps required for setting up a cluster solution re
 
 _Note: this also means that appropriate security precautions need to be taken before 
 trying this in production._ For production use, it is probably more convenient to use 
-the Docker setup found [elsewhere](link to docker docs) in the aldica documentation.
+the ![Docker setup](../docker) in the aldica documentation.
 
 
 The Alfresco Community cluster setup will consist of the following components:
@@ -15,7 +15,7 @@ The Alfresco Community cluster setup will consist of the following components:
 * A simple Apache load balancer
 * A PostgreSQL database
 * An NFS-server
-* Two (or more) Alfreco Community 6.1.2 repositories.
+* Two (or more) Alfresco Community 6.1.2 repositories.
 
 
 ## Prerequisites
@@ -30,10 +30,20 @@ terms of CPUs, memory, harddisk space/speed and bandwidth.
 ## Load balancing
 
 A simple load balancer can be setup using an 
-[Apache HTTP Server](https://httpd.apache.org/). The load balancer can be 
+[Apache HTTP Server](https://httpd.apache.org/download.cgi). The load balancer can be 
 installed and configured as described below.
 
 ### Installing Apache
+
+> _Due to the [Ghostcat](https://www.chaitin.cn/en/ghostcat) security vulnerability, the `secret` parameter must be 
+> added as a separate parameter at the end of `ProxyPass or BalancerMember` parameters **if, the version of Tomcat that
+> is later installed is a patched version**. See the [Installing Tomcat](#installing-tomcat) section further below.
+> <br/> **This parameter is only available in Apache HTTP Server 2.4.42 and later**.
+> <br/> For example, <br/>
+> `ProxyPass        "/" "balancer://mycluster/" secret=93jee+/#7d9Bxa&7HR` (Substitute the value of **secret** for
+> something else and note that this must also match what is the **Tomcat's server.xml** file.)
+> <br/>could be added to the VirtualHost examples in the sections below._
+> <br/> For further information please consult the [Apache HTTP Server](https://httpd.apache.org/docs/trunk/mod/mod_proxy_ajp.html#usage) documentation.
 
 Install the Apache HTTP Server:
 ```
@@ -48,8 +58,9 @@ $ sudo a2enmod headers proxy proxy_http proxy_balancer lbmethod_byrequests slotm
 ### Sticky sessions
 
 Create the file 
-`/etc/apache2/sites-available/lb_sticky.conf` with the content shown below in order to set up a load balancer using sticky sessions. In this case all traffic from a given 
-client is passed on the same Alfresco repository each time a request hits the load balancer.
+`/etc/apache2/sites-available/lb_sticky.conf` with the content shown below, in order to set up a load balancer using 
+sticky sessions. In this case, all traffic from a given client will be forwarded to the same Alfresco repository, each
+time a request hits the load balancer.
 
 ```
 <VirtualHost *:80>
@@ -76,12 +87,13 @@ TODO: Test the above configuration (the `Header` line is maybe not needed)
 
 ### Round-robin
 
-Another option is to use a load balancer using a round-robin method to balance 
+Another option is to, use a load balancer using a round-robin method to balance 
 the incoming traffic, i.e. using the example given here, the first incoming request will 
-be proxied on to the first Alfresco repository in the cluster, and the next 
-request will be passed on to the second repository and so on.
+be proxied onto the first Alfresco repository in the cluster, and the next 
+request will be forwarded onto the second repository and so on.
 
-Create the file `/etc/apache2/sites-available/lb_byrequests.conf` containing these lines in order to set up a load balancer using the round-robin method:
+Create the file `/etc/apache2/sites-available/lb_byrequests.conf` containing these lines in order to set up a load 
+balancer using the round-robin method:
 
 ```
 <VirtualHost *:80>
@@ -104,11 +116,10 @@ Create the file `/etc/apache2/sites-available/lb_byrequests.conf` containing the
 ```
 
 Make sure that the hostnames of the load balancer and the Alfresco 
-repositories are 
-substituted into `<load balancer hostname>` and `<alfresco repo n hostname>`, 
+repositories are substituted into `<load balancer hostname>` and `<alfresco repo n hostname>`, 
 respectively. Please see the 
-[official Apache documentation](https://httpd.apache.org/docs/2.4/mod/mod_proxy_balancer.html) to get more info on how to configure load 
-balancers with Apache.
+[official Apache documentation](https://httpd.apache.org/docs/2.4/mod/mod_proxy_balancer.html) to get more info on how 
+to configure load balancers with Apache.
 
 ### Enabling the load balancer
 
@@ -312,8 +323,19 @@ application along with the aldica module.
 
 ### Installing Tomcat
 
-First, add a tomcat user and 
-group on both of the repository servers:
+#### Note:
+> _Please note the version of tomcat being installed as, there's a slight configuration change to be made to the 
+> AJP connector in server.xml file due to the patching against the [Ghostcat breach](https://www.chaitin.cn/en/ghostcat)
+> security vulnerability.<br/>The relevant changes will be highlighted separately in the appropriate section.
+> <br/> As this breach affected all tomcat versions at the time of discovery, patches were released for different 
+> tomcat versions starting from 7 upwards to 9, so if the version of tomcat being used is equal to or greater than the 
+> following versions, apply the highlighted changes as shown:
+>   <br/> **Apache Tomcat 9.x -> 9.0.31**
+>   <br/> **Apache Tomcat 8.x -> 8.5.51**
+>   <br/> **Apache Tomcat 7.x -> 7.0.100**
+>   <br/> **Apache Tomcat 6.x -> End of life, not patched.**_
+
+First, add a tomcat user and group on both of the repository servers:
 
 ```
 $ sudo adduser --system --disabled-login --disabled-password --group tomcat
@@ -323,7 +345,7 @@ Next, download Tomcat from the [Apache Tomcat website](https://tomcat.apache.org
 and extract into the `/opt` folder. In this guide, Tomcat version 8.5.34 is used:
 ```
 $ cd /opt
-$ sudo wget http://mirrors.dotsrc.org/apache/tomcat/tomcat-8/v8.5.46/bin/apache-tomcat-8.5.46.tar.gz
+$ sudo wget http://mirrors.dotsrc.org/apache/tomcat/tomcat-8/v8.5.34/bin/apache-tomcat-8.5.34.tar.gz
 $ sudo tar xvzf /path/to/apache-tomcat-8.5.34.tar.gz
 ```
 
@@ -344,6 +366,28 @@ $ sudo chown -R tomcat /opt/apache-tomcat-8.5.34/work
 $ sudo chown -R tomcat /opt/apache-tomcat-8.5.34/temp
 $ sudo chown -R tomcat /opt/apache-tomcat-8.5.34/logs
 ```
+
+A few changes are also required in the `/opt/tomcat/conf/server.xml`. Find the
+`<Connector>` elements with the attributes `port=8080` and `port=8009`, respectively,
+and add the attribute `URIEncoding="UTF-8"` to these two elements. Set the permissions
+of the file to 640:
+```
+$ sudo chmod 640 /opt/tomcat/conf/server.xml
+```
+
+> Due to the [Ghostcat breach](https://tomcat.apache.org/), the `secret` parameter, which is required by default
+> if installing any of the versions mentioned at the beginning of this section, must be added to the AJP connector as
+> shown in the example below (Substitute the actual secret value for something else): 
+> ``` 
+> <Connector protocol="AJP/1.3"
+> address="::1"
+> port="8009"
+> redirectPort="8443"
+> URIEncoding="UTF-8"
+> secret="93jee+/#7d9Bxa&7HR" />
+> ``` 
+> It is possible to disable this requirement but this is strictly not advisable. In the case that one wishes to do so, 
+> set the `secretRequired="false"` parameter instead (this is true by default).
 
 Finally, a configuration file for systemd should be added for easing the starting and 
 stopping of the Tomcat service. Add the file `/etc/systemd/system/tomcat.service` with 
@@ -420,13 +464,6 @@ Set the `shared.loader` property in the file `/opt/tomcat/conf/catalina.properti
 shared.loader=${catalina.base}/shared/classes
 ```
 
-A few changes are also required in the `/opt/tomcat/conf/server.xml`. Find the 
-`<Connector>` elements with the attributes `port=8080` and `port=8009`, respectively, 
-and add the attribute `URIEncoding="UTF-8"` to these two elements. Set the permissions 
-of the file to 640:
-```
-$ sudo chmod 640 /opt/tomcat/conf/server.xml
-```
 
 ### Downloading and installing the Alfresco files
 
@@ -556,56 +593,30 @@ $ sudo chmod 640 /opt/tomcat/shared/classes/alfresco-global.properties
 The final step in setting up the cluster concerns the installation of the aldica 
 AMP along with the supporting Acosix Alfresco Utility AMP.
 
-#### Building the Acosix Alfresco Utility AMP
+#### Download the Acosix Alfresco Utility AMP
 
 The GitHub page for the Acosix Alfresco Utility project can be found 
-[here](https://github.com/Acosix/alfresco-utility).  In order to 
-build the AMP, a toolchain configuration needs to 
-be provided. The instructions for setting this up can be found in the 
-[build](https://github.com/Acosix/alfresco-utility#build) section of the project 
-documentation. Once the toolchain has been setup, the AMP(s) can be build with
+[here](https://github.com/Acosix/alfresco-utility) with instructions
+on how to build it should you wish to do that instead.
 ```
-$ mvn clean package
+$ mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo:1.2.2:amp \
+-DoutputDirectory=<download directory> -B
 ```
-
-run from the root of the project. If the build was successful a message like
-```
-[INFO] ------------------------------------------------------------------------
-[INFO] Reactor Summary for Acosix Alfresco Utility - Parent 1.0.7.0:
-[INFO]
-[INFO] Acosix Alfresco Utility - Parent ................... SUCCESS [  0.865 s]
-[INFO] Acosix Alfresco Utility - Core Parent .............. SUCCESS [  0.008 s]
-[INFO] Acosix Alfresco Utility - Core Common Library ...... SUCCESS [  6.986 s]
-[INFO] Acosix Alfresco Utility - Core Repository Quartz 1.x Library SUCCESS [  4.541 s]
-[INFO] Acosix Alfresco Utility - Core Repository Quartz 2.x Library SUCCESS [  1.256 s]
-[INFO] Acosix Alfresco Utility - Core Repository Module ... SUCCESS [ 43.227 s]
-[INFO] Acosix Alfresco Utility - Core Share Module ........ SUCCESS [ 14.789 s]
-[INFO] Acosix Alfresco Utility - Full Parent .............. SUCCESS [  0.004 s]
-[INFO] Acosix Alfresco Utility - Full Repository Module ... SUCCESS [  6.080 s]
-[INFO] Acosix Alfresco Utility - Full Share Module ........ SUCCESS [  4.459 s]
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  01:22 min
-[INFO] Finished at: 2019-10-03T09:34:38+02:00
-[INFO] ------------------------------------------------------------------------
-```
-
-should appear in the terminal. The AMP required by aldica is the file found 
-here `repository/target/de.acosix.alfresco.utility.repo-1.0.3.0-SNAPSHOT.amp`.
+Again, substitute `<download directory>` for an appropriate directory
+(e.g. `/tmp` directory) to download the artifact.
 
 #### Building the aldica AMP
 
 As for the Acosix Alfresco Utility AMP, a toolchain configuration is required 
-(see the section above or the documentation found 
-[elsewhere](../README.md) in this project. Once this has been setup, the AMP(s) 
-can be build with
+(see the section above or the documentation found [elsewhere](../README.md)
+in this project. Once this has been setup, the AMP(s) 
+can be built with
 ```
 $ mvn clean package -DskipTests
 ```
 
 and the resulting aldica AMP can be found here 
-`repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp`.
+`repository/target/aldica-repo-ignite-1.1.0-SNAPSHOT.amp`.
 
 #### Deploying the AMPs
 
@@ -614,8 +625,8 @@ The AMPs above must be added to the `alfresco.war` file found in
 within the `tomcat` folder:
 ```
 $ sudo -u tomcat mkdir /opt/tomcat/amps
-$ sudo cp /path/to/alfresco-utility/repository/target/de.acosix.alfresco.utility.repo-1.0.3.0-SNAPSHOT.amp /opt/tomcat/amps
-$ sudo cp /path/to/aldica/repository/target/aldica-repo-ignite-1.0.0.0-SNAPSHOT.amp /opt/tomcat/amps
+$ sudo cp /path/to/download/directory/de.acosix.alfresco.utility.core.repo-1.2.2.amp /opt/tomcat/amps
+$ sudo cp /path/to/aldica/repository/target/aldica-repo-ignite-1.1.0-SNAPSHOT.amp /opt/tomcat/amps
 $ sudo chown tomcat. /opt/tomcat/amps/*
 ```
 
