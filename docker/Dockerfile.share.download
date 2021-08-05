@@ -6,8 +6,8 @@ FROM maven:3-jdk-11
 
 ARG ACOSIX_UTILS_VERSION
 
-RUN mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.share:${ACOSIX_UTILS_VERSION}:amp -DoutputDirectory=/tmp -B
-RUN mvn dependency:copy -Dartifact=org.aldica:aldica-share-ignite:1.0.1:amp -DoutputDirectory=/tmp -B
+RUN mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.share:${ACOSIX_UTILS_VERSION}:jar -DoutputDirectory=/tmp -B
+RUN mvn dependency:copy -Dartifact=org.aldica:aldica-share-ignite:1.0.1:jar -DoutputDirectory=/tmp -B
 
 # Build aldica-enabled Alfresco Share
 FROM alfresco/alfresco-share:6.2.0
@@ -17,8 +17,5 @@ ARG ACOSIX_UTILS_VERSION
 # Disable CSRF filter (do not use this in production)
 COPY docker/share-config-custom-dev.xml /usr/local/tomcat/shared/classes/alfresco/web-extension/share-config-custom-dev.xml
 
-COPY --from=0 /tmp/aldica-share-ignite-1.0.1.amp .
-COPY --from=0 /tmp/de.acosix.alfresco.utility.core.share-${ACOSIX_UTILS_VERSION}.amp .
-
-RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install de.acosix.alfresco.utility.core.share-${ACOSIX_UTILS_VERSION}.amp webapps/share -force -nobackup
-RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install aldica-share-ignite-1.0.1.amp webapps/share -nobackup
+COPY --from=0 /tmp/aldica-share-ignite-1.0.1.jar /usr/local/tomcat/webapps/share/WEB-INF/lib/
+COPY --from=0 /tmp/de.acosix.alfresco.utility.core.share-${ACOSIX_UTILS_VERSION}.jar /usr/local/tomcat/webapps/share/WEB-INF/lib/
