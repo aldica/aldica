@@ -6,20 +6,16 @@ FROM maven:3-jdk-11
 
 ARG ACOSIX_UTILS_VERSION
 
-RUN mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo:${ACOSIX_UTILS_VERSION}:amp -DoutputDirectory=/tmp -B
-RUN mvn dependency:copy -Dartifact=org.aldica:aldica-repo-ignite:1.0.1:amp -DoutputDirectory=/tmp -B
+RUN mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.repo:${ACOSIX_UTILS_VERSION}:jar -DoutputDirectory=/tmp -B
+RUN mvn dependency:copy -Dartifact=org.aldica:aldica-repo-ignite:1.0.1:jar -DoutputDirectory=/tmp -B
 
 # Build aldica-enabled Alfresco Repository
 FROM alfresco/alfresco-content-repository-community:6.2.0-ga
 
 ARG ACOSIX_UTILS_VERSION
 
-COPY --from=0 --chown=root:Alfresco /tmp/aldica-repo-ignite-1.0.1.amp .
-COPY --from=0 --chown=root:Alfresco /tmp/de.acosix.alfresco.utility.core.repo-${ACOSIX_UTILS_VERSION}.amp .
+COPY --from=0 --chown=root:Alfresco /tmp/aldica-repo-ignite-1.0.1.jar /usr/local/tomcat/webapps/alfresco/WEB-INF/lib/
+COPY --from=0 --chown=root:Alfresco /tmp/de.acosix.alfresco.utility.core.repo-${ACOSIX_UTILS_VERSION}.jar /usr/local/tomcat/webapps/alfresco/WEB-INF/lib/
 
-USER root
-
-RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install de.acosix.alfresco.utility.core.repo-${ACOSIX_UTILS_VERSION}.amp webapps/alfresco -nobackup
-RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install aldica-repo-ignite-1.0.1.amp webapps/alfresco -nobackup
 
 USER alfresco
