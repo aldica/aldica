@@ -42,7 +42,8 @@ public enum CacheRegion
     PROPERTY_SERIALIZABLE_VALUE("PropertySerializableValue"),
     PROPERTY_VALUE("PropertyValue"),
     PROPERTY("Property"),
-    CUSTOM(null);
+    CUSTOM(null),
+    NULL(null);
 
     private static final Map<String, CacheRegion> LOOKUP = new HashMap<>();
     static
@@ -82,7 +83,15 @@ public enum CacheRegion
      */
     public static CacheRegion getLiteral(final String cacheRegion)
     {
-        final CacheRegion literal = LOOKUP.getOrDefault(cacheRegion, CUSTOM);
+        final CacheRegion literal;
+        if (cacheRegion == null)
+        {
+            literal = NULL;
+        }
+        else
+        {
+            literal = LOOKUP.getOrDefault(cacheRegion, CUSTOM);
+        }
         return literal;
     }
 }

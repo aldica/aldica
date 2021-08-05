@@ -9,16 +9,25 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.aldica.common.ignite.discovery.CredentialsAwareTcpDiscoverySpi;
 import org.aldica.common.ignite.plugin.SimpleSecurityPluginConfiguration;
 import org.aldica.common.ignite.plugin.SimpleSecurityPluginProvider;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -54,8 +63,7 @@ public abstract class GridTestsBase
         return createConfiguration(no, assumeExisting, primaryCredentials, validCredentials, null, null, null);
     }
 
-    protected static IgniteConfiguration createConfiguration(final int no,
-            final boolean assumeExisting,
+    protected static IgniteConfiguration createConfiguration(final int no, final boolean assumeExisting,
             final SecurityCredentials primaryCredentials, final Collection<SecurityCredentials> validCredentials,
             final String nodeTierAttributeKey, final String nodeTierAttributeValue, final Collection<String> allowedNodeTierAttributeValues)
     {
@@ -143,5 +151,44 @@ public abstract class GridTestsBase
         spi.setIpFinder(discoIpFinder);
 
         return spi;
+    }
+
+    protected <T> void serialisationEfficiencyComparison(final Ignite referenceGrid, final Ignite grid, final String testName,
+            final String referenceSerialisationType, final String serialisationType, final Supplier<T> valueSupplier,
+            final double allowedMarginFraction)
+    {
+        final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+        logger.info(
+                "Running {} serialisation benchmark of 100k instances, comparing {} vs. {} serialisation, expecting relative improvement margin / difference fraction of {}",
+                testName, referenceSerialisationType, serialisationType, allowedMarginFraction);
+
+        @SuppressWarnings("deprecation")
+        final Marshaller referenceMarshaller = referenceGrid.configuration().getMarshaller();
+        @SuppressWarnings("deprecation")
+        final Marshaller marshaller = grid.configuration().getMarshaller();
+
+        final AtomicLong referenceBytesWritten = new AtomicLong(0);
+        final AtomicLong bytesWritten = new AtomicLong(0);
+
+        try
+        {
+            for (int idx = 0; idx < 100000; idx++)
+            {
+                final T value = valueSupplier.get();
+
+                referenceBytesWritten.addAndGet(IgniteUtils.marshal(referenceMarshaller, value).length);
+                bytesWritten.addAndGet(IgniteUtils.marshal(marshaller, value).length);
+            }
+        }
+        catch (final IgniteCheckedException ice)
+        {
+            throw new IllegalStateException("Serialisation failed in efficiency test", ice);
+        }
+
+        final long allowedMax = referenceBytesWritten.get() - (long) (allowedMarginFraction * referenceBytesWritten.get());
+        logger.info("Benchmark resulted in {} vs {} (expected max of {}) total written kebibytes", referenceBytesWritten.get() / 1024,
+                bytesWritten.get() / 1024, allowedMax / 1024);
+        Assert.assertTrue(bytesWritten.get() <= allowedMax);
     }
 }
