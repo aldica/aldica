@@ -34,34 +34,7 @@
         <appender-ref ref="ERROUT" />
     </root>
 
-    <logger name="${project.basePackage}.binary.TransactionalCacheRegionKeyBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.CacheRegionKeyBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.CacheRegionValueKeyBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.QNameBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.StoreRefBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.NodeRefBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.ContentDataBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.ModuleVersionNumberBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.MLTextBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.NodePropertiesBinarySerializerTests" additivity="false">
+    <logger name="${project.basePackage}.binary" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
 
