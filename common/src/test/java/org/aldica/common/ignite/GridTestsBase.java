@@ -7,10 +7,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.aldica.common.ignite.discovery.CredentialsAwareTcpDiscoverySpi;
 import org.aldica.common.ignite.plugin.SimpleSecurityPluginConfiguration;
 import org.aldica.common.ignite.plugin.SimpleSecurityPluginProvider;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -51,13 +48,12 @@ public abstract class GridTestsBase
     protected static IgniteConfiguration createConfiguration(final int no, final boolean assumeExisting,
             final SecurityCredentials primaryCredentials, final Collection<SecurityCredentials> validCredentials)
     {
-        return createConfiguration(no, assumeExisting, primaryCredentials, validCredentials, null, null, null);
+        return createConfiguration(no, assumeExisting, primaryCredentials, validCredentials, null, null);
     }
 
-    protected static IgniteConfiguration createConfiguration(final int no,
-            final boolean assumeExisting,
+    protected static IgniteConfiguration createConfiguration(final int no, final boolean assumeExisting,
             final SecurityCredentials primaryCredentials, final Collection<SecurityCredentials> validCredentials,
-            final String nodeTierAttributeKey, final String nodeTierAttributeValue, final Collection<String> allowedNodeTierAttributeValues)
+            final String nodeTierAttributeValue, final Collection<String> allowedNodeTierAttributeValues)
     {
         final IgniteConfiguration conf = new IgniteConfiguration();
         conf.setIgniteInstanceName("testGrid" + no);
@@ -66,37 +62,20 @@ public abstract class GridTestsBase
         conf.setWorkDirectory(Paths.get("target", "IgniteWork").toAbsolutePath().toString());
 
         conf.setCommunicationSpi(createCommunicationSpi());
-        conf.setDiscoverySpi(createDiscoverySpi(primaryCredentials, assumeExisting));
+        conf.setDiscoverySpi(createDiscoverySpi(assumeExisting));
 
-        final SimpleSecurityPluginConfiguration secConf = new SimpleSecurityPluginConfiguration();
-        if (validCredentials != null)
+        if (primaryCredentials != null || validCredentials != null || nodeTierAttributeValue != null
+                || allowedNodeTierAttributeValues != null)
         {
-            secConf.setEnabled(true);
-            secConf.setAllowedNodeCredentials(validCredentials);
-        }
-        else if (primaryCredentials != null)
-        {
-            secConf.setEnabled(true);
-            secConf.setAllowedNodeCredentials(Collections.singleton(primaryCredentials));
-        }
+            final SimpleSecurityPluginConfiguration secConf = new SimpleSecurityPluginConfiguration();
+            secConf.setCredentials(primaryCredentials);
+            secConf.setAllowedNodeCredentials(validCredentials != null ? validCredentials
+                    : (primaryCredentials != null ? Collections.singleton(primaryCredentials) : null));
 
-        secConf.setNodeTierAttributeKey(nodeTierAttributeKey);
-        secConf.setAllowedNodeTierAttributeValues(allowedNodeTierAttributeValues);
+            secConf.setTierAttributeValue(nodeTierAttributeValue);
+            secConf.setAllowedNodeTierAttributeValues(allowedNodeTierAttributeValues != null ? allowedNodeTierAttributeValues
+                    : (nodeTierAttributeValue != null ? Collections.singleton(nodeTierAttributeValue) : null));
 
-        if (nodeTierAttributeKey != null)
-        {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> userAttributes = (Map<String, Object>) conf.getUserAttributes();
-            if (userAttributes == null)
-            {
-                userAttributes = new HashMap<>();
-                conf.setUserAttributes(userAttributes);
-            }
-            userAttributes.put(nodeTierAttributeKey, nodeTierAttributeValue);
-        }
-
-        if (secConf.isEnabled())
-        {
             final SimpleSecurityPluginProvider secProvider = new SimpleSecurityPluginProvider();
             secProvider.setConfiguration(secConf);
             conf.setPluginProviders(secProvider);
@@ -113,19 +92,9 @@ public abstract class GridTestsBase
         return spi;
     }
 
-    protected static TcpDiscoverySpi createDiscoverySpi(final SecurityCredentials credentials, final boolean assumeExistingMember)
+    protected static TcpDiscoverySpi createDiscoverySpi(final boolean assumeExistingMember)
     {
-        TcpDiscoverySpi spi;
-
-        if (credentials != null)
-        {
-            spi = new CredentialsAwareTcpDiscoverySpi();
-            ((CredentialsAwareTcpDiscoverySpi) spi).setCredentials(credentials);
-        }
-        else
-        {
-            spi = new TcpDiscoverySpi();
-        }
+        final TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setLocalPort(TEST_DISCO_PORT);
         spi.setLocalPortRange(TEST_PORT_RANGE);

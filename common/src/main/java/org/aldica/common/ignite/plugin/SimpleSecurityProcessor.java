@@ -12,10 +12,13 @@ import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -36,7 +39,11 @@ import org.slf4j.LoggerFactory;
 public class SimpleSecurityProcessor implements GridSecurityProcessor
 {
 
+    public static final String ATTR_SECURITY_TIER = IgniteNodeAttributes.ATTR_PREFIX + ".security.tier";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSecurityProcessor.class);
+
+    protected final PluginContext ctx;
 
     protected final SimpleSecurityPluginConfiguration configuration;
 
@@ -45,56 +52,43 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
     /**
      * Initialises a new instance of this class with an explicit plugin configuration.
      *
+     * @param ctx
+     *     the plugin context
      * @param configuration
-     *            the configuration of the plugin
+     *     the configuration of the plugin
      */
-    public SimpleSecurityProcessor(final SimpleSecurityPluginConfiguration configuration)
+    public SimpleSecurityProcessor(final PluginContext ctx, final SimpleSecurityPluginConfiguration configuration)
     {
         if (configuration == null)
         {
             throw new IllegalStateException("No configuration for SimplePassphraseSecurityPlugin has been defined");
         }
+        this.ctx = ctx;
         this.configuration = configuration;
 
-        final String nodeTierAttributeKey = configuration.getNodeTierAttributeKey();
         final Collection<String> allowedNodeTierAttributeValues = configuration.getAllowedNodeTierAttributeValues();
 
-        final Collection<SecurityCredentials> allowedClientCredentials = this.configuration.getAllowedClientCredentials();
         final Collection<SecurityCredentials> allowedNodeCredentials = this.configuration.getAllowedNodeCredentials();
-        if (allowedClientCredentials == null || allowedClientCredentials.isEmpty())
-        {
-            LOGGER.info("No allowed client credentials have been configured - no client will be allowed to connect");
-        }
+        final Collection<SecurityCredentials> allowedClientCredentials = this.configuration.getAllowedClientCredentials();
+
         if (allowedNodeCredentials == null || allowedNodeCredentials.isEmpty())
         {
-            LOGGER.warn("No allowed node credentials have been configured - no node will be allowed to connect");
+            LOGGER.info("No allowed node credentials have been configured - no nodes will be allowed to connect");
         }
 
-        if (nodeTierAttributeKey != null)
+        if (allowedClientCredentials == null || allowedClientCredentials.isEmpty())
         {
-            if (nodeTierAttributeKey.trim().isEmpty())
-            {
-                LOGGER.warn("The node-tier attribute key was configured to an effectively empty string - any node is allowed to connect");
-                configuration.setNodeTierAttributeKey(null);
-            }
-            else
-            {
-                configuration.setNodeTierAttributeKey(nodeTierAttributeKey.trim());
-
-                if (allowedNodeTierAttributeValues == null)
-                {
-                    LOGGER.info("No allowed values for the node-tier attribute have been configured - any node is allowed to connect");
-                }
-                else if (allowedNodeTierAttributeValues.isEmpty())
-                {
-                    LOGGER.warn(
-                            "An empty list of allowed values for the node-tier attribute have been configured - no node will effectively be allowed to connect");
-                }
-            }
+            LOGGER.info("No allowed client credentials have been configured - no clients will be allowed to connect");
         }
-        else
+
+        if (allowedNodeTierAttributeValues == null)
         {
-            LOGGER.info("No node-tier attribute key name has been configured - any node is allowed to connect");
+            LOGGER.info("No allowed values for the node-tier attribute have been configured - any node is allowed to connect");
+        }
+        else if (allowedNodeTierAttributeValues.isEmpty())
+        {
+            LOGGER.warn(
+                    "An empty list of allowed values for the node-tier attribute have been configured - no node will be allowed to connect");
         }
     }
 
@@ -136,55 +130,34 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
             throw new SecurityException("Unable to authenticate without subject type");
         }
 
-        boolean failedPrecondition = false;
         final SecurityContext securityContext;
 
         switch (ctx.subjectType())
         {
             case REMOTE_CLIENT:
-                final Collection<SecurityCredentials> allowedClientCredentials = this.configuration.getAllowedClientCredentials();
-                if (allowedClientCredentials == null)
-                {
-                    LOGGER.info("Rejecting client {} ({}) as no allowed client credentials have been configured", ctx
-                            .subjectId(),
-                            ctx.address());
-                    failedPrecondition = true;
-                }
-
-                securityContext = failedPrecondition ? null : this.validateCredentials(ctx, allowedClientCredentials);
+                securityContext = this.validateCredentials(ctx, true);
                 break;
             case REMOTE_NODE:
-                final Collection<SecurityCredentials> allowedNodeCredentials = this.configuration.getAllowedNodeCredentials();
-                if (allowedNodeCredentials == null)
-                {
-                    LOGGER.info("Rejecting node {} ({}) as no allowed node credentials have been configured", ctx
-                            .subjectId(),
-                            ctx.address());
-                    failedPrecondition = true;
-                }
-
-                final String nodeTierAttributeKey = this.configuration.getNodeTierAttributeKey();
+                boolean failedPrecondition = false;
                 final Collection<String> nodeTierAttributeValues = this.configuration.getAllowedNodeTierAttributeValues();
-                if (nodeTierAttributeKey != null && nodeTierAttributeValues != null)
+                if (nodeTierAttributeValues != null)
                 {
-                    final Object tierValueO = ctx.nodeAttributes().get(nodeTierAttributeKey);
+                    final Object tierValueO = ctx.nodeAttributes().get(ATTR_SECURITY_TIER);
                     if (!(tierValueO instanceof String))
                     {
-                        LOGGER.info("Rejecting node {} ({}) due to incompatible node-tier attribute value {}", ctx
-                                .subjectId(),
+                        LOGGER.info("Rejecting node {} ({}) due to incompatible node-tier attribute value {}", ctx.subjectId(),
                                 ctx.address(), tierValueO);
                         failedPrecondition = true;
                     }
                     else if (!nodeTierAttributeValues.contains(tierValueO))
                     {
-                        LOGGER.info("Rejecting node {} ({}) due to unallowed node-tier attribute value {}", ctx.subjectId(), ctx
-                                .address(),
+                        LOGGER.info("Rejecting node {} ({}) due to unallowed node-tier attribute value {}", ctx.subjectId(), ctx.address(),
                                 tierValueO);
                         failedPrecondition = true;
                     }
                 }
 
-                securityContext = failedPrecondition ? null : this.validateCredentials(ctx, allowedNodeCredentials);
+                securityContext = failedPrecondition ? null : this.validateCredentials(ctx, false);
                 break;
             default:
                 throw new SecurityException("Unsupported / unexpected subject type");
@@ -218,7 +191,26 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
     @Override
     public void start() throws IgniteCheckedException
     {
-        // NO-OP
+        final IgniteConfiguration igniteConfiguration = this.ctx.igniteConfiguration();
+
+        // need to decouple since it may be an unmodifiable / empty map (see
+        // IgniteNamedInstance#initializeConfiguration(IgniteConfiguration) )
+        @SuppressWarnings("unchecked")
+        Map<String, Object> userAttributes = (Map<String, Object>) igniteConfiguration.getUserAttributes();
+        userAttributes = userAttributes != null ? new HashMap<>(userAttributes) : new HashMap<>();
+        igniteConfiguration.setUserAttributes(userAttributes);
+
+        final SecurityCredentials credentials = this.configuration.getCredentials();
+        if (credentials != null)
+        {
+            userAttributes.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, credentials);
+        }
+
+        final String tierAttributeValue = this.configuration.getTierAttributeValue();
+        if (tierAttributeValue != null)
+        {
+            userAttributes.put(ATTR_SECURITY_TIER, tierAttributeValue);
+        }
     }
 
     /**
@@ -368,21 +360,33 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
         return true;
     }
 
-    protected SecurityContext validateCredentials(final AuthenticationContext ctx,
-            final Collection<SecurityCredentials> allowedNodeCredentials)
+    protected SecurityContext validateCredentials(final AuthenticationContext ctx, final boolean asClient)
     {
         final SecurityContext securityContext;
-        if (allowedNodeCredentials.contains(ctx.credentials()))
+        final Collection<SecurityCredentials> allowedCredentials = asClient ? this.configuration.getAllowedClientCredentials()
+                : this.configuration.getAllowedNodeCredentials();
+        final SecurityCredentials providedCredentials = ctx.credentials();
+
+        if (allowedCredentials != null && !allowedCredentials.isEmpty())
         {
-            LOGGER.debug("Accepting {} ({}) as provided credentials match", ctx.subjectId(), ctx.address());
-            final SecuritySubject securitySubject = new SimpleSecuritySubject(ctx.subjectId(), ctx.subjectType(),
-                    ctx.credentials().getLogin(), ctx.address(), new NoopSecurityPermissionSet());
-            this.authenticatedSubjects.put(ctx.subjectId(), securitySubject);
-            securityContext = new NoopSecurityContext(securitySubject);
+            if (providedCredentials != null && allowedCredentials.contains(providedCredentials))
+            {
+                LOGGER.debug("Accepting {} ({}) as provided credentials match", ctx.subjectId(), ctx.address());
+                final SecuritySubject securitySubject = new SimpleSecuritySubject(ctx.subjectId(), ctx.subjectType(),
+                        providedCredentials.getLogin(), ctx.address(), new NoopSecurityPermissionSet());
+                this.authenticatedSubjects.put(ctx.subjectId(), securitySubject);
+                securityContext = new NoopSecurityContext(securitySubject);
+            }
+            else
+            {
+                LOGGER.info("Rejecting {} ({}) as provided credentials do not match", ctx.subjectId(), ctx.address());
+                securityContext = null;
+            }
         }
         else
         {
-            LOGGER.info("Rejecting {} ({}) as provided credentials do not match", ctx.subjectId(), ctx.address());
+            LOGGER.info("Rejecting {} ({}) as no allowed credentials have been configured for type of subject", ctx.subjectId(),
+                    ctx.address());
             securityContext = null;
         }
         return securityContext;

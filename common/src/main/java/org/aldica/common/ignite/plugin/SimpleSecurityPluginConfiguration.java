@@ -5,6 +5,7 @@ package org.aldica.common.ignite.plugin;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -15,31 +16,31 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 public class SimpleSecurityPluginConfiguration implements PluginConfiguration
 {
 
-    protected boolean enabled;
+    protected SecurityCredentials credentials;
 
     protected Collection<SecurityCredentials> allowedNodeCredentials;
 
     protected Collection<SecurityCredentials> allowedClientCredentials;
 
-    protected String nodeTierAttributeKey;
+    protected String tierAttributeValue;
 
     protected Collection<String> allowedNodeTierAttributeValues;
 
     /**
-     * @return the enabled
+     * @return the credentials
      */
-    public boolean isEnabled()
+    public SecurityCredentials getCredentials()
     {
-        return this.enabled;
+        return this.credentials != null ? asDecoupledCredentials(this.credentials) : null;
     }
 
     /**
-     * @param enabled
-     *            the enabled to set
+     * @param credentials
+     *     the credentials to set
      */
-    public void setEnabled(final boolean enabled)
+    public void setCredentials(final SecurityCredentials credentials)
     {
-        this.enabled = enabled;
+        this.credentials = credentials;
     }
 
     /**
@@ -52,7 +53,7 @@ public class SimpleSecurityPluginConfiguration implements PluginConfiguration
 
     /**
      * @param allowedNodeCredentials
-     *            the allowedNodeCredentials to set
+     *     the allowedNodeCredentials to set
      */
     public void setAllowedNodeCredentials(final Collection<SecurityCredentials> allowedNodeCredentials)
     {
@@ -68,20 +69,20 @@ public class SimpleSecurityPluginConfiguration implements PluginConfiguration
     }
 
     /**
-     * @return the nodeTierAttributeKey
+     * @return the tierAttributeValue
      */
-    public String getNodeTierAttributeKey()
+    public String getTierAttributeValue()
     {
-        return this.nodeTierAttributeKey;
+        return this.tierAttributeValue;
     }
 
     /**
-     * @param nodeTierAttributeKey
-     *            the nodeTierAttributeKey to set
+     * @param tierAttributeValue
+     *     the tierAttributeValue to set
      */
-    public void setNodeTierAttributeKey(final String nodeTierAttributeKey)
+    public void setTierAttributeValue(final String tierAttributeValue)
     {
-        this.nodeTierAttributeKey = nodeTierAttributeKey;
+        this.tierAttributeValue = tierAttributeValue;
     }
 
     /**
@@ -94,7 +95,7 @@ public class SimpleSecurityPluginConfiguration implements PluginConfiguration
 
     /**
      * @param allowedNodeTierAttributeValues
-     *            the allowedNodeTierAttributeValues to set
+     *     the allowedNodeTierAttributeValues to set
      */
     public void setAllowedNodeTierAttributeValues(final Collection<String> allowedNodeTierAttributeValues)
     {
@@ -103,7 +104,7 @@ public class SimpleSecurityPluginConfiguration implements PluginConfiguration
 
     /**
      * @param allowedClientCredentials
-     *            the allowedClientCredentials to set
+     *     the allowedClientCredentials to set
      */
     public void setAllowedClientCredentials(final Collection<SecurityCredentials> allowedClientCredentials)
     {
@@ -116,19 +117,8 @@ public class SimpleSecurityPluginConfiguration implements PluginConfiguration
         if (credentials != null)
         {
             result = new HashSet<>(credentials.size());
-            credentials.forEach(cred -> {
-                if (cred != null)
-                {
-                    // data is mutable => need to copy
-                    final SecurityCredentials cred2 = new SecurityCredentials();
-
-                    cred2.setLogin(cred.getLogin());
-                    cred2.setPassword(cred.getPassword());
-                    cred2.setUserObject(cred.getUserObject());
-
-                    result.add(cred2);
-                }
-            });
+            credentials.stream().filter(Objects::nonNull).map(SimpleSecurityPluginConfiguration::asDecoupledCredentials)
+                    .forEach(result::add);
         }
         else
         {
@@ -137,4 +127,14 @@ public class SimpleSecurityPluginConfiguration implements PluginConfiguration
         return result;
     }
 
+    protected static SecurityCredentials asDecoupledCredentials(final SecurityCredentials credentials)
+    {
+        final SecurityCredentials cred2 = new SecurityCredentials();
+
+        cred2.setLogin(credentials.getLogin());
+        cred2.setPassword(credentials.getPassword());
+        cred2.setUserObject(credentials.getUserObject());
+
+        return cred2;
+    }
 }

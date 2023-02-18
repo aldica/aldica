@@ -30,7 +30,7 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
 
     /**
      * @param configuration
-     *            the configuration to set
+     *     the configuration to set
      */
     public void setConfiguration(final SimpleSecurityPluginConfiguration configuration)
     {
@@ -54,7 +54,7 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
     @Override
     public String version()
     {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     /**
@@ -64,7 +64,7 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
     @Override
     public String copyright()
     {
-        return "Copyright 2020 Acosix GmbH, Copyright 2020 MAGENTA ApS";
+        return "Copyright 2020 - 2023 Acosix GmbH, Copyright 2020 - 2021 MAGENTA ApS";
     }
 
     /**
@@ -99,7 +99,7 @@ public class SimpleSecurityPluginProvider implements PluginProvider<SimpleSecuri
         T component = null;
         if (cls.isAssignableFrom(GridSecurityProcessor.class) && this.configuration != null)
         {
-            component = cls.cast(new SimpleSecurityProcessor(this.configuration));
+            component = cls.cast(new SimpleSecurityProcessor(ctx, this.configuration));
         }
         return component;
     }

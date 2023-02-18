@@ -469,7 +469,7 @@ public class GridAddressResolutionManager implements AddressResolver, IgniteInst
                         localAddresses.get2(), effectiveExternalHostAddr, effectiveExternalHostName, localTimePort, localTimePortRange,
                         this.externalTimePortBase);
             }
-            catch (IOException | IgniteCheckedException e)
+            catch (final IOException e)
             {
                 LOGGER.warn("Error resolving local/external addresses for grid address resolution", e);
             }
@@ -647,10 +647,10 @@ public class GridAddressResolutionManager implements AddressResolver, IgniteInst
         final Map<InetSocketAddress, Collection<InetSocketAddress>> effectiveSocketMappings = new HashMap<>();
 
         final BiConsumer<String, String> hostMappingProcessor = (from, to) -> {
-            effectiveHostMappings.computeIfAbsent(from, (k) -> new LinkedHashSet<>()).add(to);
+            effectiveHostMappings.computeIfAbsent(from, k -> new LinkedHashSet<>()).add(to);
         };
         final BiConsumer<InetSocketAddress, InetSocketAddress> socketMappingProcessor = (from, to) -> {
-            effectiveSocketMappings.computeIfAbsent(from, (k) -> new LinkedHashSet<>()).add(to);
+            effectiveSocketMappings.computeIfAbsent(from, k -> new LinkedHashSet<>()).add(to);
         };
 
         this.ownHostMappings.forEach(hostMappingProcessor);

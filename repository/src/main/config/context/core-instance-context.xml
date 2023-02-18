@@ -89,7 +89,6 @@
 
         <property name="userAttributes">
             <map>
-                <entry key="${moduleId}.tier" value="repository" />
                 <entry key="${moduleId}.role" value="repository-server" />
             </map>
         </property>
@@ -231,9 +230,8 @@
     </bean>
 
     <bean id="DiscoverySPI.${moduleId}.core" abstract="true"
-        class="${aldica.ignite-common.basePackage}.discovery.CredentialsAwareTcpDiscoverySpi">
+        class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
         <property name="ipFinder" ref="DiscoverySPI.${moduleId}.core.MemberFinder" />
-        <property name="credentials" ref="DiscoverySPI.${moduleId}.core.credentials" />
 
         <property name="localPort" value="\${${moduleId}.core.local.disco.port}" />
         <property name="localPortRange" value="\${${moduleId}.core.local.disco.portRange}" />
@@ -315,13 +313,13 @@
 
     <bean id="PluginConfiguration.${moduleId}.core.security" abstract="true"
         class="${aldica.ignite-common.basePackage}.plugin.SimpleSecurityPluginConfiguration">
-        <property name="enabled" value="true" />
+        <property name="credentials" ref="DiscoverySPI.${moduleId}.core.credentials" />
         <property name="allowedNodeCredentials">
             <list>
                 <ref bean="DiscoverySPI.${moduleId}.core.credentials" />
             </list>
         </property>
-        <property name="nodeTierAttributeKey" value="${moduleId}.tier" />
+        <property name="tierAttributeValue" value="repository" />
         <property name="allowedNodeTierAttributeValues">
             <list>
                 <value>repository</value>
