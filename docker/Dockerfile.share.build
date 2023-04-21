@@ -10,7 +10,7 @@ ARG ACOSIX_UTILS_VERSION
 WORKDIR /aldica
 
 # Copy Acosix dependency to image
-RUN mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.share:${ACOSIX_UTILS_VERSION}:amp -DoutputDirectory=deps -B
+RUN mvn dependency:copy -Dartifact=de.acosix.alfresco.utility:de.acosix.alfresco.utility.core.share:${ACOSIX_UTILS_VERSION}:jar -DoutputDirectory=deps -B
 
 ADD docker/toolchains.xml /root/.m2/
 
@@ -37,8 +37,5 @@ FROM alfresco/alfresco-share:6.2.0
 
 ARG ACOSIX_UTILS_VERSION
 
-COPY --from=0 /aldica/share/target/aldica-share-ignite-*.amp ./amps_share/
-COPY --from=0 /aldica/deps/de.acosix.alfresco.utility.core.share-${ACOSIX_UTILS_VERSION}.amp ./amps_share/
-
-RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install ./amps_share/de.acosix.alfresco.utility.core.share-${ACOSIX_UTILS_VERSION}.amp webapps/share -force -nobackup
-RUN java -jar alfresco-mmt/alfresco-mmt-6.0.jar install ./amps_share/aldica-share-ignite-*.amp webapps/share -nobackup
+COPY --from=0 /aldica/share/target/aldica-share-ignite-*.jar /usr/local/tomcat/webapps/share/WEB-INF/lib/
+COPY --from=0 /aldica/deps/de.acosix.alfresco.utility.core.share-${ACOSIX_UTILS_VERSION}.jar /usr/local/tomcat/webapps/share/WEB-INF/lib/
