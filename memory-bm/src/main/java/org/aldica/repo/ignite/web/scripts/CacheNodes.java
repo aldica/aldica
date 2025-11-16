@@ -46,6 +46,8 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
 
     protected SearchService searchService;
 
+    protected String loadUserName;
+
     /**
      *
      * {@inheritDoc}
@@ -57,11 +59,12 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
         PropertyCheck.mandatory(this, "qnameDAO", this.qnameDAO);
         PropertyCheck.mandatory(this, "nodeService", this.nodeService);
         PropertyCheck.mandatory(this, "searchService", this.searchService);
+        PropertyCheck.mandatory(this, "loadUserName", this.loadUserName);
     }
 
     /**
      * @param transactionService
-     *            the transactionService to set
+     *     the transactionService to set
      */
     public void setTransactionService(final TransactionService transactionService)
     {
@@ -70,7 +73,7 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
 
     /**
      * @param qnameDAO
-     *            the qnameDAO to set
+     *     the qnameDAO to set
      */
     public void setQnameDAO(final QNameDAO qnameDAO)
     {
@@ -79,7 +82,7 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
 
     /**
      * @param nodeService
-     *            the nodeService to set
+     *     the nodeService to set
      */
     public void setNodeService(final NodeService nodeService)
     {
@@ -88,11 +91,20 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
 
     /**
      * @param searchService
-     *            the searchService to set
+     *     the searchService to set
      */
     public void setSearchService(final SearchService searchService)
     {
         this.searchService = searchService;
+    }
+
+    /**
+     * @param loadUserName
+     *     the loadUserName to set
+     */
+    public void setLoadUserName(String loadUserName)
+    {
+        this.loadUserName = loadUserName;
     }
 
     /**
@@ -125,7 +137,7 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
                 }
 
                 return null;
-            }, true);
+            }, true, true);
         }
 
         final String nameSuffix = " of " + count;
@@ -136,7 +148,7 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
     {
         final int batchSize = 25;
 
-        final BatchProcessWorkProvider<String> provider = new BatchProcessWorkProvider<String>()
+        final BatchProcessWorkProvider<String> provider = new BatchProcessWorkProvider<>()
         {
 
             private int totalProvided = 0;
@@ -188,7 +200,7 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
             public void beforeProcess() throws Throwable
             {
                 AuthenticationUtil.pushAuthentication();
-                AuthenticationUtil.setRunAsUserSystem();
+                AuthenticationUtil.setRunAsUser(CacheNodes.this.loadUserName);
             }
 
             /**
@@ -202,6 +214,11 @@ public class CacheNodes extends AbstractWebScript implements InitializingBean
                         SearchService.LANGUAGE_FTS_ALFRESCO, query);
                 try
                 {
+                    if (resultSet.getNumberFound() == 0)
+                    {
+                        throw new IllegalArgumentException("Did not find node for name " + entry);
+                    }
+
                     for (final NodeRef node : resultSet.getNodeRefs())
                     {
                         LOGGER.trace("{}", CacheNodes.this.nodeService.getProperties(node));

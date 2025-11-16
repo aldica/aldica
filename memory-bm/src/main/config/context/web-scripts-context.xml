@@ -19,9 +19,12 @@
         parent="webscript">
         <property name="transactionService" ref="TransactionService" />
         <property name="nodeService" ref="NodeService" />
+        <property name="permissionService" ref="PermissionService" />
+        <property name="personService" ref="PersonService" />
         <property name="contentService" ref="ContentService" />
         <property name="ruleService" ref="RuleService" />
         <property name="behaviourFilter" ref="policyBehaviourFilter" />
+        <property name="guaranteedAccessUserName" value="${aldica.bm.loadUserName}" />
     </bean>
 
     <bean id="webscript.org.aldica.ignite.cacheNodes.get" class="${project.basePackage}.web.scripts.CacheNodes"
@@ -30,6 +33,7 @@
         <property name="qnameDAO" ref="qnameDAO" />
         <property name="nodeService" ref="NodeService" />
         <property name="searchService" ref="SearchService" />
+        <property name="loadUserName" value="${aldica.bm.loadUserName}" />
     </bean>
 
 </beans>
