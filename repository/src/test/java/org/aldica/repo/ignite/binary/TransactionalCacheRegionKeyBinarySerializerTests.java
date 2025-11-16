@@ -92,16 +92,17 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, CacheRegionKey> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("values");
             cacheConfig.setDataRegionName("values");
             final IgniteCache<Long, CacheRegionKey> referenceCache = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, CacheRegionKey> cache = grid.getOrCreateCache(cacheConfig);
 
-            // no savings expected - we cannot optimise away any well-known value as tenant domains (cache regions) are dynamic
+            // we cannot optimise away any well-known value as tenant domains (cache regions) are dynamic
+            // still some savings by avoiding hashCode
             // TODO Consider substituting tenant ID for domain (low priority as multi-tenancy is not used often)
-            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", -0.01);
+            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", 0.03);
         }
         finally
         {
@@ -129,15 +130,15 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, CacheRegionKey> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("values");
             cacheConfig.setDataRegionName("values");
             final IgniteCache<Long, CacheRegionKey> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, CacheRegionKey> cache1 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.02);
+            // saving potential is virtually non-existent (field metadata only) - 3%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.03);
         }
         finally
         {
@@ -151,7 +152,7 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
         {
             final CacheConfiguration<Long, CacheRegionKey> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("cacheRegionKey");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
             final IgniteCache<Long, CacheRegionKey> cache = grid.getOrCreateCache(cacheConfig);
 
             CacheRegionKey controlValue;
@@ -164,7 +165,7 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
 
             // random instead of well known region
             controlValue = new CacheRegionKey(UUID.randomUUID().toString(), "value2");
@@ -174,10 +175,11 @@ public class TransactionalCacheRegionKeyBinarySerializerTests extends GridTestsB
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
         }
     }
 
+    @SuppressWarnings("deprecation")
     protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final IgniteCache<Long, CacheRegionKey> referenceCache,
             final IgniteCache<Long, CacheRegionKey> cache, final String serialisationType, final String referenceSerialisationType,
             final double marginFraction)

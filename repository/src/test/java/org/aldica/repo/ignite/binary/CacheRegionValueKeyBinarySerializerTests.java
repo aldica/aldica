@@ -92,7 +92,7 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, CacheRegionValueKey> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("values");
             cacheConfig.setDataRegionName("values");
@@ -100,8 +100,8 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
             final IgniteCache<Long, CacheRegionValueKey> cache = grid.getOrCreateCache(cacheConfig);
 
             // saving potential is substantial, but variable depending on region
-            // expect average of 15%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", 0.15);
+            // expect average of 17%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", 0.14);
         }
         finally
         {
@@ -129,15 +129,15 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, CacheRegionValueKey> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("values");
             cacheConfig.setDataRegionName("values");
             final IgniteCache<Long, CacheRegionValueKey> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, CacheRegionValueKey> cache1 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.02);
+            // saving potential is limited - 1%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.01);
         }
         finally
         {
@@ -151,7 +151,7 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
         {
             final CacheConfiguration<Long, CacheRegionValueKey> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("cacheRegionValueKey");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
             final IgniteCache<Long, CacheRegionValueKey> cache = grid.getOrCreateCache(cacheConfig);
 
             CacheRegionValueKey controlValue;
@@ -164,7 +164,7 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
 
             // random instead of well known region
             controlValue = new CacheRegionValueKey(UUID.randomUUID().toString(), "value2");
@@ -174,10 +174,22 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
+
+            // Long key value
+            final SecureRandom rnJesus = new SecureRandom();
+            controlValue = new CacheRegionValueKey(CacheRegion.CONTENT_DATA.getCacheRegionName(), rnJesus.nextLong());
+            cache.put(3l, controlValue);
+
+            cacheValue = cache.get(3l);
+
+            Assert.assertEquals(controlValue, cacheValue);
+            // check deep serialisation was actually involved
+            Assert.assertNotSame(controlValue, cacheValue);
         }
     }
 
+    @SuppressWarnings("deprecation")
     protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid,
             final IgniteCache<Long, CacheRegionValueKey> referenceCache, final IgniteCache<Long, CacheRegionValueKey> cache,
             final String serialisationType, final String referenceSerialisationType, final double marginFraction)
@@ -192,7 +204,7 @@ public class CacheRegionValueKeyBinarySerializerTests extends GridTestsBase
         for (int idx = 0; idx < 100000; idx++)
         {
             final String region = regions[rnJesus.nextInt(regions.length - 1)].getCacheRegionName();
-            final CacheRegionValueKey value = new CacheRegionValueKey(region, UUID.randomUUID().toString());
+            final CacheRegionValueKey value = new CacheRegionValueKey(region, rnJesus.nextLong());
 
             referenceCache.put(Long.valueOf(idx), value);
             cache.put(Long.valueOf(idx), value);

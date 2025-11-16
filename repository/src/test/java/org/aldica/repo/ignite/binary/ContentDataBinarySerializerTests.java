@@ -7,11 +7,14 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
 import org.aldica.common.ignite.GridTestsBase;
+import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.content.filestore.FileContentUrlProvider;
@@ -23,6 +26,7 @@ import org.alfresco.repo.domain.mimetype.MimetypeDAO;
 import org.alfresco.repo.domain.mimetype.ibatis.MimetypeDAOImpl;
 import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.service.cmr.repository.ContentData;
+import org.alfresco.util.GUID;
 import org.alfresco.util.Pair;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
@@ -105,8 +109,7 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
         return appContext;
     }
 
-    protected static IgniteConfiguration createConfiguration(final ApplicationContext applicationContext,
-            final boolean idsWhenReasonable,
+    protected static IgniteConfiguration createConfiguration(final ApplicationContext applicationContext, final boolean idsWhenReasonable,
             final boolean serialForm, final String... regionNames)
     {
         final IgniteConfiguration conf = createConfiguration(1, false, null);
@@ -187,33 +190,33 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
                 final Ignite useIdGrid = Ignition.start(useIdConf);
 
                 final CacheConfiguration<Long, ContentData> cacheConfig = new CacheConfiguration<>();
-                cacheConfig.setCacheMode(CacheMode.LOCAL);
+                cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
                 cacheConfig.setName("comparison1");
                 cacheConfig.setDataRegionName("comparison1");
                 final IgniteCache<Long, ContentData> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, ContentData> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-                // this case should actually be identical
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", 0);
+                // we cut down on size of internal Locale by using stringified form + parse/lookup on read - 12%
+                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", 0.12);
 
                 cacheConfig.setName("comparison2");
                 cacheConfig.setDataRegionName("comparison2");
                 final IgniteCache<Long, ContentData> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, ContentData> cache2 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // replacing 3 non-trivial fields with IDs is substantial - 23%
+                // replacing 2 textual fields with IDs and using Locale as ID too - 21%
                 this.efficiencyImpl(referenceGrid, useIdGrid, referenceCache2, cache2, "aldica optimised (ID substitution)",
-                        "Ignite default", 0.23);
+                        "Ignite default", 0.21);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
                 final IgniteCache<Long, ContentData> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, ContentData> cache3 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // replacing 3 non-trivial fields with IDs is substantial - 23%
+                // our baseline was already improved, so ID substitution has less of an impact - 10%
                 this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3, "aldica optimised (ID substitution)",
-                        "aldica optimised", 0.23);
+                        "aldica optimised", 0.10);
             }
             finally
             {
@@ -258,33 +261,33 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
                 final Ignite useIdGrid = Ignition.start(useIdConf);
 
                 final CacheConfiguration<Long, ContentData> cacheConfig = new CacheConfiguration<>();
-                cacheConfig.setCacheMode(CacheMode.LOCAL);
+                cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
                 cacheConfig.setName("comparison1");
                 cacheConfig.setDataRegionName("comparison1");
                 final IgniteCache<Long, ContentData> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, ContentData> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-                // saving potential is limited - 1.5%
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.015);
+                // save on metadata + smaller numeral values (at cost of 2 byte flag overhead) - 8%
+                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.08);
 
                 cacheConfig.setName("comparison2");
                 cacheConfig.setDataRegionName("comparison2");
                 final IgniteCache<Long, ContentData> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, ContentData> cache2 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // replacing 3 non-trivial fields with IDs is substantial - 27%
+                // replacing 3 non-trivial fields with IDs is substantial - 24%
                 this.efficiencyImpl(referenceGrid, useIdGrid, referenceCache2, cache2, "aldica raw serial (ID substitution)",
-                        "aldica optimised", 0.27);
+                        "aldica optimised", 0.24);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
                 final IgniteCache<Long, ContentData> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, ContentData> cache3 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // replacing 3 non-trivial fields with IDs is substantial - 25%
+                // replacing 3 non-trivial fields with IDs is substantial, but baseline already had various improvements - 16%
                 this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3, "aldica raw serial (ID substitution)",
-                        "aldica raw serial", 0.25);
+                        "aldica raw serial", 0.16);
             }
             finally
             {
@@ -299,7 +302,7 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
         {
             final CacheConfiguration<Long, ContentData> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("contentData");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
             final IgniteCache<Long, ContentData> cache = grid.getOrCreateCache(cacheConfig);
 
             ContentData controlValue;
@@ -317,7 +320,7 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved (different value instances)
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
 
             // test values not in any mocked DAOs
             controlValue = new ContentData(urlProvider.createNewFileStoreUrl(), MimetypeMap.MIMETYPE_EXCEL, 123l,
@@ -329,7 +332,7 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved (different value instances)
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
 
             // test null values for reference elements
             controlValue = new ContentData(urlProvider.createNewFileStoreUrl(), null, 123l, null, null);
@@ -340,7 +343,7 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved (different value instances)
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
 
             // test content data with ID extension
             controlValue = new ContentData(urlProvider.createNewFileStoreUrl(), MimetypeMap.MIMETYPE_PDF, 123l,
@@ -353,27 +356,34 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved (different value instances)
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
+
+            // test minimal entity
+            controlValue = new ContentData(null, null, 0, null);
+
+            cache.put(5l, controlValue);
+
+            cacheValue = cache.get(5l);
+
+            Assert.assertEquals(controlValue, cacheValue);
+            // check deep serialisation was actually involved (different value instances)
+            Assert.assertNotSame(controlValue, cacheValue);
         }
     }
 
+    @SuppressWarnings("deprecation")
     protected void efficiencyImpl(final Ignite referenceGrid, final Ignite defaultGrid, final IgniteCache<Long, ContentData> referenceCache,
-            final IgniteCache<Long, ContentData> cache, final String serialisationType,
-            final String referenceSerialisationType,
+            final IgniteCache<Long, ContentData> cache, final String serialisationType, final String referenceSerialisationType,
             final double marginFraction)
     {
         LOGGER.info(
                 "Running ContentData serialisation benchmark of 100k instances, comparing {} vs. {} serialisation, expecting relative improvement margin / difference fraction of {}",
                 referenceSerialisationType, serialisationType, marginFraction);
 
-        // default Alfresco classes are inaccessible (package-protected visibility)
-        final FileContentUrlProvider urlProvider = () -> FileContentStore.STORE_PROTOCOL + "://" + UUID.randomUUID().toString();
-
         final SecureRandom rnJesus = new SecureRandom();
         for (int idx = 0; idx < 100000; idx++)
         {
-            ContentData value = new ContentData(urlProvider.createNewFileStoreUrl(), MIMETYPES[rnJesus.nextInt(
-                    MIMETYPES.length)],
+            ContentData value = new ContentData(createNewFileStoreUrl(0), MIMETYPES[rnJesus.nextInt(MIMETYPES.length)],
                     rnJesus.nextInt(Integer.MAX_VALUE), ENCODINGS[rnJesus.nextInt(ENCODINGS.length)],
                     LOCALES[rnJesus.nextInt(LOCALES.length)]);
 
@@ -399,5 +409,41 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
         LOGGER.info("Benchmark resulted in {} vs {} (expected max of {}) total used pages", referenceTotalUsedPages, totalUsedPages,
                 allowedMax);
         Assert.assertTrue(totalUsedPages <= allowedMax);
+    }
+
+    private static String createTimeBasedPath(int bucketsPerMinute)
+    {
+        Calendar calendar = new GregorianCalendar();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH) + 1; // 0-based
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
+        // create the URL
+        StringBuilder sb = new StringBuilder(20);
+        sb.append(year).append('/')
+                .append(month).append('/')
+                .append(day).append('/')
+                .append(hour).append('/')
+                .append(minute).append('/');
+
+        if (bucketsPerMinute != 0)
+        {
+            long seconds = System.currentTimeMillis() % (60 * 1000);
+            int actualBucket = (int) seconds / ((60 * 1000) / bucketsPerMinute);
+            sb.append(actualBucket).append('/');
+        }
+        // done
+        return sb.toString();
+    }
+
+    private static String createNewFileStoreUrl(int minuteBucketCount)
+    {
+        StringBuilder sb = new StringBuilder(20);
+        sb.append(FileContentStore.STORE_PROTOCOL);
+        sb.append(ContentStore.PROTOCOL_DELIMITER);
+        sb.append(createTimeBasedPath(minuteBucketCount));
+        sb.append(GUID.generate()).append(".bin");
+        return sb.toString();
     }
 }

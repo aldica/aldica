@@ -3,8 +3,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.repo.ignite.binary;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,8 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.aldica.common.ignite.GridTestsBase;
-import org.alfresco.model.ContentModel;
-import org.alfresco.service.namespace.QName;
+import org.alfresco.repo.domain.permissions.AuthorityEntity;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -34,35 +31,10 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Axel Faust
  */
-public class QNameBinarySerializerTests extends GridTestsBase
+public class AuthorityEntityBinarySerializerTests extends GridTestsBase
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QNameBinarySerializerTests.class);
-
-    private static final QName[] QNAMES;
-
-    static
-    {
-        try
-        {
-            final List<QName> qnames = new ArrayList<>();
-            final Field[] fields = ContentModel.class.getDeclaredFields();
-            for (final Field field : fields)
-            {
-                if (Modifier.isStatic(field.getModifiers()) && Modifier.isPublic(field.getModifiers())
-                        && QName.class.equals(field.getType()))
-                {
-                    final QName qname = (QName) field.get(null);
-                    qnames.add(qname);
-                }
-            }
-            QNAMES = qnames.toArray(new QName[0]);
-        }
-        catch (final IllegalAccessException iaex)
-        {
-            throw new RuntimeException("Failed to initialise QName test data set", iaex);
-        }
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthorityEntityBinarySerializerTests.class);
 
     protected static IgniteConfiguration createConfiguration(final boolean serialForm, final String... regionNames)
     {
@@ -70,13 +42,13 @@ public class QNameBinarySerializerTests extends GridTestsBase
 
         final BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
 
-        final BinaryTypeConfiguration binaryTypeConfigurationForQName = new BinaryTypeConfiguration();
-        binaryTypeConfigurationForQName.setTypeName(QName.class.getName());
-        final QNameBinarySerializer serializer = new QNameBinarySerializer();
-        serializer.setUseRawSerialForm(serialForm);
-        binaryTypeConfigurationForQName.setSerializer(serializer);
+        final BinaryTypeConfiguration binaryTypeConfigurationForAuthorityEntity = new BinaryTypeConfiguration();
+        binaryTypeConfigurationForAuthorityEntity.setTypeName(AuthorityEntity.class.getName());
+        final AuthorityEntityBinarySerializer authorityEntitySerializer = new AuthorityEntityBinarySerializer();
+        authorityEntitySerializer.setUseRawSerialForm(serialForm);
+        binaryTypeConfigurationForAuthorityEntity.setSerializer(authorityEntitySerializer);
 
-        binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForQName));
+        binaryConfiguration.setTypeConfigurations(Arrays.asList(binaryTypeConfigurationForAuthorityEntity));
         conf.setBinaryConfiguration(binaryConfiguration);
 
         final DataStorageConfiguration dataConf = new DataStorageConfiguration();
@@ -110,25 +82,25 @@ public class QNameBinarySerializerTests extends GridTestsBase
     {
         final IgniteConfiguration referenceConf = createConfiguration(1, false, null);
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(false, "values");
 
-        referenceConf.setDataStorageConfiguration(conf.getDataStorageConfiguration());
+        final IgniteConfiguration defaultConf = createConfiguration(false, "comparison1");
+        referenceConf.setDataStorageConfiguration(defaultConf.getDataStorageConfiguration());
 
         try
         {
             final Ignite referenceGrid = Ignition.start(referenceConf);
-            final Ignite grid = Ignition.start(conf);
+            final Ignite defaultGrid = Ignition.start(defaultConf);
 
-            final CacheConfiguration<Long, QName> cacheConfig = new CacheConfiguration<>();
+            final CacheConfiguration<Long, AuthorityEntity> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
-            cacheConfig.setName("values");
-            cacheConfig.setDataRegionName("values");
-            final IgniteCache<Long, QName> referenceCache = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, QName> cache = grid.getOrCreateCache(cacheConfig);
+            cacheConfig.setName("comparison1");
+            cacheConfig.setDataRegionName("comparison1");
+            final IgniteCache<Long, AuthorityEntity> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
+            final IgniteCache<Long, AuthorityEntity> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-            // savings on namespace should be substantial - 25%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", 0.25);
+            // virtually no difference
+            this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", 0.00);
         }
         finally
         {
@@ -146,25 +118,27 @@ public class QNameBinarySerializerTests extends GridTestsBase
     @Test
     public void rawSerialFormEfficiency()
     {
-        final IgniteConfiguration referenceConf = createConfiguration(false, "values");
+        final IgniteConfiguration referenceConf = createConfiguration(false, "comparison1");
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(true, "values");
+
+        final IgniteConfiguration defaultConf = createConfiguration(true, "comparison1");
+        referenceConf.setDataStorageConfiguration(defaultConf.getDataStorageConfiguration());
 
         try
         {
             final Ignite referenceGrid = Ignition.start(referenceConf);
-            final Ignite grid = Ignition.start(conf);
+            final Ignite defaultGrid = Ignition.start(defaultConf);
 
-            final CacheConfiguration<Long, QName> cacheConfig = new CacheConfiguration<>();
+            final CacheConfiguration<Long, AuthorityEntity> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
-            cacheConfig.setName("values");
-            cacheConfig.setDataRegionName("values");
-            final IgniteCache<Long, QName> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
-            final IgniteCache<Long, QName> cache1 = grid.getOrCreateCache(cacheConfig);
+            cacheConfig.setName("comparison1");
+            cacheConfig.setDataRegionName("comparison1");
+            final IgniteCache<Long, AuthorityEntity> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
+            final IgniteCache<Long, AuthorityEntity> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.02);
+            // small overhead reduction and better numerics - 7% 
+            this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.07);
         }
         finally
         {
@@ -176,53 +150,73 @@ public class QNameBinarySerializerTests extends GridTestsBase
     {
         try (Ignite grid = Ignition.start(conf))
         {
-            final CacheConfiguration<Long, QName> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setName("qname");
+            final CacheConfiguration<Long, AuthorityEntity> cacheConfig = new CacheConfiguration<>();
+            cacheConfig.setName("authorityEntity");
             cacheConfig.setCacheMode(CacheMode.REPLICATED);
-            final IgniteCache<Long, QName> cache = grid.getOrCreateCache(cacheConfig);
+            final IgniteCache<Long, AuthorityEntity> cache = grid.getOrCreateCache(cacheConfig);
 
-            QName controlValue;
-            QName cacheValue;
+            AuthorityEntity controlValue;
+            AuthorityEntity cacheValue;
 
-            controlValue = ContentModel.ASPECT_AUDITABLE;
+            controlValue = new AuthorityEntity();
+
+            controlValue.setId(987654l);
+            controlValue.setVersion(12l);
+            controlValue.setAuthority(UUID.randomUUID().toString());
+            controlValue.setCrc(987654321l);
+
             cache.put(1l, controlValue);
 
             cacheValue = cache.get(1l);
 
-            Assert.assertEquals(controlValue, cacheValue);
-            // check deep serialisation was actually involved
+            // only shallow equals() in AuthorityEntity
+            // we do a deep check ourselves
             Assert.assertNotSame(controlValue, cacheValue);
-            Assert.assertNotSame(controlValue.getLocalName(), cacheValue.getLocalName());
-            // namespace should be reused for well-known ones
-            Assert.assertSame(controlValue.getNamespaceURI(), cacheValue.getNamespaceURI());
+            Assert.assertEquals(controlValue.getId(), cacheValue.getId());
+            Assert.assertEquals(controlValue.getVersion(), cacheValue.getVersion());
+            Assert.assertEquals(controlValue.getAuthority(), cacheValue.getAuthority());
+            Assert.assertEquals(controlValue.getCrc(), cacheValue.getCrc());
 
-            // random value, no well known namespace
-            controlValue = QName.createQName(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+            controlValue = new AuthorityEntity();
+
+            controlValue.setId(Long.MAX_VALUE);
+            controlValue.setVersion(-12l);
+            controlValue.setAuthority("1234567890qwertzuiopasdfghjklyxcvbnm");
+            controlValue.setCrc(Long.MIN_VALUE);
+
             cache.put(2l, controlValue);
 
             cacheValue = cache.get(2l);
 
-            Assert.assertEquals(controlValue, cacheValue);
-            // check deep serialisation was actually involved
+            // only shallow equals() in AuthorityEntity
+            // we do a deep check ourselves
             Assert.assertNotSame(controlValue, cacheValue);
-            Assert.assertNotSame(controlValue.getLocalName(), cacheValue.getLocalName());
-            Assert.assertNotSame(controlValue.getNamespaceURI(), cacheValue.getNamespaceURI());
+            Assert.assertEquals(controlValue.getId(), cacheValue.getId());
+            Assert.assertEquals(controlValue.getVersion(), cacheValue.getVersion());
+            Assert.assertEquals(controlValue.getAuthority(), cacheValue.getAuthority());
+            Assert.assertEquals(controlValue.getCrc(), cacheValue.getCrc());
         }
     }
 
     @SuppressWarnings("deprecation")
-    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final IgniteCache<Long, QName> referenceCache,
-            final IgniteCache<Long, QName> cache, final String serialisationType, final String referenceSerialisationType,
+    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final IgniteCache<Long, AuthorityEntity> referenceCache,
+            final IgniteCache<Long, AuthorityEntity> cache, final String serialisationType, final String referenceSerialisationType,
             final double marginFraction)
     {
         LOGGER.info(
-                "Running QName serialisation benchmark of 100k instances, comparing {} vs. {} serialisation, expecting relative improvement margin / difference fraction of {}",
+                "Running AuthorityEntity serialisation benchmark of 100k instances, comparing {} vs. {} serialisation, expecting relative improvement margin / difference fraction of {}",
                 referenceSerialisationType, serialisationType, marginFraction);
 
         final SecureRandom rnJesus = new SecureRandom();
         for (int idx = 0; idx < 100000; idx++)
         {
-            final QName value = QNAMES[rnJesus.nextInt(QNAMES.length)];
+            final AuthorityEntity value = new AuthorityEntity();
+
+            value.setId(rnJesus.nextLong());
+            value.setVersion(Long.valueOf(rnJesus.nextInt(100)));
+            value.setAuthority(UUID.randomUUID().toString());
+            value.setCrc(rnJesus.nextLong());
+
             referenceCache.put(Long.valueOf(idx), value);
             cache.put(Long.valueOf(idx), value);
         }

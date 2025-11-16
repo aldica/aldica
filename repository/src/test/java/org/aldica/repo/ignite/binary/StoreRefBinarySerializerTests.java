@@ -40,11 +40,15 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
 
     private static final int MODE_RANDOM_ID = 1;
 
+    private static final int MODE_KNOWN = 2;
+
     private static final String PROTOCOL_USER = "user";
 
     private static final String PROTOCOL_SYSTEM = "system";
 
     private static final String[] PROTOCOLS = { PROTOCOL_USER, PROTOCOL_SYSTEM, StoreRef.PROTOCOL_ARCHIVE, StoreRef.PROTOCOL_WORKSPACE };
+
+    protected static final String[] IDS = { "SpacesStore", "version2Store", "alfrescoUserStore", "system" };
 
     protected static IgniteConfiguration createConfiguration(final boolean serialForm, final String... regionNames)
     {
@@ -92,7 +96,7 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
     {
         final IgniteConfiguration referenceConf = createConfiguration(1, false, null);
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(false, "fullyRandom", "randomId");
+        final IgniteConfiguration conf = createConfiguration(false, "fullyRandom", "randomId", "known");
 
         referenceConf.setDataStorageConfiguration(conf.getDataStorageConfiguration());
 
@@ -102,7 +106,7 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, StoreRef> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("fullyRandom");
             cacheConfig.setDataRegionName("fullyRandom");
@@ -120,8 +124,16 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
             final IgniteCache<Long, StoreRef> cache2 = grid.getOrCreateCache(cacheConfig);
 
             // fixed, short store protocols are small fraction of overall store reference with UUID as identifier
-            // savings are thus limited in our test, but definitely more pronounced in real life
-            this.efficiencyImpl(referenceGrid, grid, referenceCache2, cache2, "aldica optimised", "Ignite default", MODE_RANDOM_ID, 0.09);
+            // savings are thus limited in our test, but definitely more pronounced in real life (shorter String)
+            this.efficiencyImpl(referenceGrid, grid, referenceCache2, cache2, "aldica optimised", "Ignite default", MODE_RANDOM_ID, 0.08);
+
+            cacheConfig.setName("known");
+            cacheConfig.setDataRegionName("known");
+            final IgniteCache<Long, StoreRef> referenceCache3 = referenceGrid.getOrCreateCache(cacheConfig);
+            final IgniteCache<Long, StoreRef> cache3 = grid.getOrCreateCache(cacheConfig);
+
+            // normal case, significant savings due to known values
+            this.efficiencyImpl(referenceGrid, grid, referenceCache3, cache3, "aldica optimised", "Ignite default", MODE_KNOWN, 0.22);
         }
         finally
         {
@@ -139,9 +151,9 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
     @Test
     public void rawSerialFormEfficiency()
     {
-        final IgniteConfiguration referenceConf = createConfiguration(false, "fullyRandom", "randomId");
+        final IgniteConfiguration referenceConf = createConfiguration(false, "fullyRandom", "randomId", "known");
         referenceConf.setIgniteInstanceName(referenceConf.getIgniteInstanceName() + "-reference");
-        final IgniteConfiguration conf = createConfiguration(true, "fullyRandom", "randomId");
+        final IgniteConfiguration conf = createConfiguration(true, "fullyRandom", "randomId", "known");
 
         try
         {
@@ -149,24 +161,32 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, StoreRef> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("fullyRandom");
             cacheConfig.setDataRegionName("fullyRandom");
             final IgniteCache<Long, StoreRef> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, StoreRef> cache1 = grid.getOrCreateCache(cacheConfig);
-            // saving potential is limited - 3%
+            // saving potential is limited - 6%
             this.efficiencyImpl(referenceGrid, grid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", MODE_FULLY_RANDOM,
-                    0.03);
+                    0.06);
 
             cacheConfig.setName("randomId");
             cacheConfig.setDataRegionName("randomId");
             final IgniteCache<Long, StoreRef> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, StoreRef> cache2 = grid.getOrCreateCache(cacheConfig);
 
-            // saving potential is limited - 2% (fewer fields optimised away than in fully random case)
+            // saving potential is limited - 4% (fewer fields optimised away than in fully random case)
             this.efficiencyImpl(referenceGrid, grid, referenceCache2, cache2, "aldica raw serial", "aldica optimised", MODE_RANDOM_ID,
-                    0.02);
+                    0.04);
+
+            cacheConfig.setName("known");
+            cacheConfig.setDataRegionName("known");
+            final IgniteCache<Long, StoreRef> referenceCache3 = referenceGrid.getOrCreateCache(cacheConfig);
+            final IgniteCache<Long, StoreRef> cache3 = grid.getOrCreateCache(cacheConfig);
+
+            // both regular + raw form are optimised for known values - only marginal difference
+            this.efficiencyImpl(referenceGrid, grid, referenceCache3, cache3, "aldica raw serial", "aldica optimised", MODE_KNOWN, 0.008);
         }
         finally
         {
@@ -180,7 +200,7 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
         {
             final CacheConfiguration<Long, StoreRef> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("storeRef");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
             final IgniteCache<Long, StoreRef> cache = grid.getOrCreateCache(cacheConfig);
 
             StoreRef controlValue;
@@ -193,10 +213,10 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
-            Assert.assertFalse(controlValue.getIdentifier() == cacheValue.getIdentifier());
+            Assert.assertNotSame(controlValue, cacheValue);
+            Assert.assertNotSame(controlValue.getIdentifier(), cacheValue.getIdentifier());
             // well-known protocol should use same value
-            Assert.assertTrue(controlValue.getProtocol() == cacheValue.getProtocol());
+            Assert.assertSame(controlValue.getProtocol(), cacheValue.getProtocol());
 
             controlValue = new StoreRef("my", "store");
             cache.put(2l, controlValue);
@@ -205,12 +225,13 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
-            Assert.assertFalse(controlValue.getIdentifier() == cacheValue.getIdentifier());
-            Assert.assertFalse(controlValue.getProtocol() == cacheValue.getProtocol());
+            Assert.assertNotSame(controlValue, cacheValue);
+            Assert.assertNotSame(controlValue.getIdentifier(), cacheValue.getIdentifier());
+            Assert.assertNotSame(controlValue.getProtocol(), cacheValue.getProtocol());
         }
     }
 
+    @SuppressWarnings("deprecation")
     protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final IgniteCache<Long, StoreRef> referenceCache,
             final IgniteCache<Long, StoreRef> cache, final String serialisationType, final String referenceSerialisationType,
             final int mode, final double marginFraction)
@@ -223,6 +244,9 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
                 break;
             case MODE_RANDOM_ID:
                 modeStr = "random store IDs";
+                break;
+            case MODE_KNOWN:
+                modeStr = "known protocol/IDs";
                 break;
         }
 
@@ -241,6 +265,9 @@ public class StoreRefBinarySerializerTests extends GridTestsBase
                     break;
                 case MODE_RANDOM_ID:
                     value = new StoreRef(PROTOCOLS[rnJesus.nextInt(PROTOCOLS.length)], UUID.randomUUID().toString());
+                    break;
+                case MODE_KNOWN:
+                    value = new StoreRef(PROTOCOLS[rnJesus.nextInt(PROTOCOLS.length)], IDS[rnJesus.nextInt(IDS.length)]);
                     break;
             }
             referenceCache.put(Long.valueOf(idx), value);

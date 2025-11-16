@@ -4,6 +4,7 @@
 package org.aldica.common.ignite.binary;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.util.PropertyCheck;
-import org.apache.ibatis.javassist.Modifier;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;

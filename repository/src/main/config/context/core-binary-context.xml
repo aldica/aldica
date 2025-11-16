@@ -1,0 +1,146 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <bean id="Configuration.${moduleId}.core.binary" abstract="true" class="org.apache.ignite.configuration.BinaryConfiguration" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.configurableRelevantFields" abstract="true"
+        class="${aldica.ignite-common.basePackage}.binary.SelectivelyReflectiveBinarySerializer">
+        <property name="relevantFieldsProvider">
+            <bean class="${aldica.ignite-common.basePackage}.binary.ConfigurableSerializationRelevantFieldsProvider">
+                <property name="basePropertyKey" value="${moduleId}.core.binary.relevantFields" />
+                <property name="propertiesSource" ref="global-properties" />
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheRegionKey" abstract="true"
+        class="${project.basePackage}.binary.TransactionalCacheRegionKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.txnCacheKey.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheValueHolder" abstract="true"
+        class="${project.basePackage}.binary.TransactionalCacheValueHolderBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.txnValueHolder.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionKey" abstract="true"
+        class="${project.basePackage}.binary.CacheRegionKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.cacheKey.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionValueKey" abstract="true"
+        class="${project.basePackage}.binary.CacheRegionValueKeyBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.cacheValueKey.useRawSerial}" />
+    </bean>
+    
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedStoreRef" abstract="true"
+        class="${project.basePackage}.binary.StoreRefBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.storeRef.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeRef" abstract="true"
+        class="${project.basePackage}.binary.NodeRefBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeRef.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedQName" abstract="true"
+        class="${project.basePackage}.binary.QNameBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.qname.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedMLText" abstract="true"
+        class="${project.basePackage}.binary.MLTextBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.mlText.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.mlText.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedContentData" abstract="true"
+        class="${project.basePackage}.binary.ContentDataBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.contentData.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.contentData.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedModuleVersionNumber" abstract="true"
+        class="${project.basePackage}.binary.ModuleVersionNumberBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.moduleVersionNumber.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeEntity" abstract="true"
+        class="${project.basePackage}.binary.NodeEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeEntity.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedContentUrlEntity" abstract="true"
+        class="${project.basePackage}.binary.ContentUrlEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.contentUrlEntity.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedAclEntity" abstract="true"
+        class="${project.basePackage}.binary.AclEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.aclEntity.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedAuthorityEntity" abstract="true"
+        class="${project.basePackage}.binary.AuthorityEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.authorityEntity.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedPermissionEntity" abstract="true"
+        class="${project.basePackage}.binary.PermissionEntityBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.permissionEntity.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedSimpleAccessControlList" abstract="true"
+        class="${project.basePackage}.binary.SimpleAccessControlListBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.simpleAccessControlList.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.simpleAccessControlList.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedSimpleAccessControlListProperties" abstract="true"
+        class="${project.basePackage}.binary.SimpleAccessControlListPropertiesBinarySerializer">
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.simpleAccessControlListProperties.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedSimpleAccessControlEntry" abstract="true"
+        class="${project.basePackage}.binary.SimpleAccessControlEntryBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.simpleAccessControlEntry.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.simpleAccessControlEntry.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedSimplePermissionReference" abstract="true"
+        class="${project.basePackage}.binary.SimplePermissionReferenceBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.simplePermissionReference.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.simplePermissionReference.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeAspects" abstract="true"
+        class="${project.basePackage}.binary.NodeAspectsBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.nodeAspects.useIdsWhenReasonable}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeAspects.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeProperties" abstract="true"
+        class="${project.basePackage}.binary.NodePropertiesBinarySerializer">
+        <property name="useIdsWhenReasonable" value="\${${moduleId}.core.binary.optimisation.nodeProperties.useIdsWhenReasonable}" />
+        <property name="useIdsWhenPossible" value="\${${moduleId}.core.binary.optimisation.nodeProperties.useIdsWhenPossible}" />
+        <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.nodeProperties.useRawSerial}" />
+    </bean>
+
+    <bean id="Configuration.${moduleId}.core.binary.binaryTypeConfigurationBeanEmitter"
+        class="${aldica.ignite-common.basePackage}.spring.BinaryTypeConfigurationBeanDefinitionEmitter">
+        <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
+        <property name="propertyPrefix" value="${moduleId}.core.binary.type." />
+        <property name="binaryConfigurationBeanDefinitionName">
+            <idref bean="Configuration.${moduleId}.core.binary" />
+        </property>
+        <property name="binaryTypeConfigurationBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.binary.type." />
+        <property name="instanceNameProperty" value="${moduleId}.core.name" />
+        <property name="propertiesSource" ref="global-properties" />
+    </bean>
+</beans>
