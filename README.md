@@ -15,33 +15,22 @@ This module project provides a distributed caching and data grid module for Alfr
 
 ## Compatibility
 
-The module of this project is built to be compatible with Alfresco Content Services 6.0.7 GA / Alfresco Share 6.0.c and above. Since the Alfresco core APIs on which this module relies have remained stable in the 6.x release lines, the module should also be compatible with Alfresco Content Services 5.2.g / Alfresco Share 5.2.f.
-
-**Note**: Alfresco Enterprise Edition already ships with custom cache implementations that are tied directly to its Enterprise clustering feature. Though we have managed to install aldica and use its cache provider on a trial version of Alfresco Enterprise Edition with only a minor bit of tinkering, we cannot generally support Alfresco Enterprise Edition. Its code is not open to us and may change without notice / disclosure in any service pack or hotfix release, so we cannot safely adapt aldica to work without risk to Enterprise features in the range of versions of Alfresco Content Services that we would like to support. Furthermore, Enterprise customers choosing to install aldica would likely be left in a system state that Alfresco Support could rightfully refuse to support when issues are filed for problems remotely related to caching. As an open source project, we cannot take on the warranty / liability of such systems either.
-
-### Known Issue(s) / Limitation(s) with Alfresco 5.2
-
-Due to an issue with transactional resource and cleanup handling (e.g. [SPR-15194](https://jira.spring.io/browse/SPR-15194)) fixed only with an upgraded Spring library in Alfresco 6.x, parts of aldica's serialisation improvements to reduce the memory footprint of cached values cannot be used on Alfresco 5.2. These must be disabled by setting the following Repository-tier global properties:
-
-```
-aldica.core.binary.optimisation.useIdsWhenReasonable=false
-aldica.core.binary.optimisation.useIdsWhenPossible=false
-```
+The module of this project is built to be compatible with Alfresco Content Services 7.0 / Alfresco Share 7.0 and above. The change in the minimal supported version compared to earlier versions of this module has been dictated by an update of the Apache Ignite library, requiring use of Java 11 at minimum. While some 6.x versions already used Java 11 in the default Docker images, most were still compiled against Java 8 and Java 8 listed in the supported platforms.
 
 ## Published Release / SNAPSHOT Artifacts
 
-All artifacts of released versions of this module will be published on Maven Central, using the group ID _org.aldica_ . SNAPSHOT versions of artifacts will be published on the [Sonatype Open Source Software Repository Hosting](https://oss.sonatype.org) service. In order to reference SNAPSHOT versions in Maven-based projects, an appropriate repository section has to be added to the project's POM file:
+All artifacts of released versions and SNAPSHOTS of this module will be published on Maven Central, using the group ID _org.aldica_ . In order to use Snapshots from Maven Central, an explicit repository has to be added in POMs since Maven by default only uses Maven Central to lookup release artifacts.
 
 ```xml
-    <repositories>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
+<repositories>
+    <repository>
+        <id>central-snapshots</id>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
 ```
 
 ## Dependencies
@@ -66,11 +55,8 @@ The documentation is maintained as part of the source code of the alternative/Al
     - [ACS configuration scenarios](./docs/GettingStarted-ACS-Scenarios.md)
     - [Share configuration scenarios](./docs/GettingStarted-Share-Scenarios.md)
     - [Repository companion application](./docs/GettingStarted-Companion-App.md) 
-    - [Tomcat](./docs/GettingStarted-Tomcat.md) (to be reviewed / updated)
 - Installation / Configuration
-    - [Install via Alfresco SDK](./docs/Installation-SDK4.md)
     - [Install via Docker Build](./docs/Installation-Docker.md)
-    - [Install via Kubernetes](./docs/Installation-Kubernetes.md)
     - [Java Virtual Machine (JVM) Properties](./docs/Configuration-JVMProperties.md)
     - [Repository Configuration Reference](./docs/Configuration-RepoReference.md)
     - [Share Configuration Reference](./docs/Configuration-ShareReference.md)
