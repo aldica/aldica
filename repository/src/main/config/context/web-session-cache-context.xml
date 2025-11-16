@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <!-- we need to handle DependencyInjectedFilter via a proxy to deal with different Servlet APIs dependant on ACS version -->
+    <bean id="${moduleId}-webSessionCacheFilter" class="org.springframework.aop.framework.ProxyFactoryBean">
+        <property name="proxyInterfaces">
+            <list>
+                <value>org.springframework.extensions.webscripts.servlet.DependencyInjectedFilter</value>
+            </list>
+        </property>
+        <property name="target" ref="${moduleId}-webSessionCacheFilterImpl" />
+        <property name="interceptorNames">
+            <list>
+                <idref bean="${moduleId}-webSessionCacheFilterImpl-Interceptor" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="${moduleId}-webSessionCacheFilterImpl-Interceptor"
+        class="${aldica.ignite-common.basePackage}.web.DependencyInjectedFilterInterceptor" />
+
+    <bean id="${moduleId}-webSessionCacheFilterImpl" class="${aldica.ignite-common.basePackage}.web.JakartaSessionFilter">
+        <property name="enabled" value="\${${moduleId}.webSessionCache.enabled}" />
+        <property name="igniteInstanceName" value="\${${moduleId}.webSessionCache.instanceName}" />
+        <property name="igniteCacheName" value="\${${moduleId}.webSessionCache.cacheName}" />
+        <property name="retries" value="\${${moduleId}.webSessionCache.retriesOnFailure}" />
+        <property name="retriesTimeout" value="\${${moduleId}.webSessionCache.retriesTimeout}" />
+    </bean>
+
+    <bean id="${moduleId}-webSessionCacheFilterImpl-javaxEnabler"
+        class="de.acosix.alfresco.utility.common.spring.ImplementationClassReplacingBeanFactoryPostProcessor">
+        <property name="condition">
+            <bean class="de.acosix.alfresco.utility.common.spring.condition.ClassDefinedCondition">
+                <property name="className" value="javax.servlet.Filter" />
+            </bean>
+        </property>
+        <property name="enabled" value="true" />
+        <property name="targetBeanName" value="${moduleId}-webSessionCacheFilterImpl" />
+        <property name="originalClassName" value="${aldica.ignite-common.basePackage}.web.JakartaSessionFilter" />
+        <property name="replacementClassName" value="${aldica.ignite-common.basePackage}.web.JavaxSessionFilter" />
+    </bean>
+
+</beans>

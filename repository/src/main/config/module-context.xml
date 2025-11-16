@@ -19,5 +19,6 @@
     <import resource="classpath:alfresco/module/${moduleId}/context/caches-context.xml" />
     <import resource="classpath:alfresco/module/${moduleId}/context/behaviours-context.xml" />
     <import resource="classpath:alfresco/module/${moduleId}/context/webscripts-context.xml" />
+    <import resource="classpath:alfresco/module/${moduleId}/context/web-session-cache-context.xml" />
 
 </beans>
