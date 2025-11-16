@@ -1,0 +1,189 @@
+version: '3.8'
+
+services:
+
+    ${moduleId}-postgres:
+        image: postgres:${postgres.docker.version}
+        shm_size: 2g
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - postgres
+        restart: unless-stopped
+        command: postgres -c max_connections=300
+        volumes:
+          - ${moduleId}-alf_psql:/srv/postgresql
+        environment:
+          PGDATA: /srv/postgresql/data
+          POSTGRES_DB: alfresco
+          POSTGRES_USER: alfresco
+          POSTGRES_PASSWORD: alfresco
+
+    ${moduleId}-repository-ignite:
+        image: ${moduleId}-repository:latest
+        build:
+            context: ./repository
+            dockerfile: Dockerfile
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - repository
+        restart: unless-stopped
+        depends_on:
+          ${moduleId}-postgres:
+            condition: service_started
+          ${moduleId}-activemq:
+            condition: service_started
+        volumes:
+          - ${moduleId}-contentstore:${alfresco.repo.docker.data.path}
+          - ${moduleId}-repo_logs:${alfresco.repo.docker.tomcat.path}/logs
+        ports:
+          - 4000:4000
+          - ${alfresco.repo.docker.port}:8080
+          - ${alfresco.repo.docker.debugPort}:8888
+        # disables security manager
+        command:
+          - catalina.sh
+          - run
+        environment:
+            JAVA_OPTS: >-
+              -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
+              -javaagent:/usr/local/tomcat/glowroot/glowroot.jar
+              -Xms2g -Xmx2g -XX:+UseG1GC -XX:+ParallelRefProcEnabled
+              -XX:+UseStringDeduplication -XX:+ScavengeBeforeFullGC
+              -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+              --add-opens=java.base/java.io=ALL-UNNAMED
+              --add-opens=java.base/java.lang=ALL-UNNAMED
+              --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+              --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+              --add-opens=java.base/java.math=ALL-UNNAMED
+              --add-opens=java.base/java.net=ALL-UNNAMED
+              --add-opens=java.base/java.nio=ALL-UNNAMED
+              --add-opens=java.base/java.text=ALL-UNNAMED
+              --add-opens=java.base/java.time=ALL-UNNAMED
+              --add-opens=java.base/java.util=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+              --add-opens=java.base/javax.crypto=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+              --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+              --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+              --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+              --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+              --add-opens=java.management/sun.management=ALL-UNNAMED
+              --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+              --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+              -Dfile.encoding=UTF-8
+              -Djava.net.preferIPv4Stack=true
+              -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+              -DIGNITE_QUIET=true
+              -DIGNITE_NO_ASCII=true
+              -DIGNITE_UPDATE_NOTIFIER=false
+              -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+              -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+              -Drepo.event2.enabled=false
+              -D${baseModuleId}.caches.remoteSupport.enabled=true
+              -D${baseModuleId}.core.publicThreadPoolSize=16
+              -D${baseModuleId}.core.local.id=repository
+              -D${baseModuleId}.core.local.host=repository
+              -D${baseModuleId}.core.local.comm.port=${alfresco.repo.docker.commPort}
+              -D${baseModuleId}.core.local.disco.port=${alfresco.repo.docker.discoPort}
+              -D${baseModuleId}.core.local.time.port=${alfresco.repo.docker.timePort}
+              -D${baseModuleId}.core.storage.defaultStorageRegion.initialSize=104857600
+              -D${baseModuleId}.core.storage.defaultStorageRegion.maxSize=524288000
+              -D${baseModuleId}.core.binary.optimisation.enabled=true
+              -D${baseModuleId}.core.binary.optimisation.useIdsWhenReasonable=true
+              -D${baseModuleId}.core.binary.optimisation.useIdsWhenPossible=true
+              -Dencryption.keystore.type=JCEKS
+              -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
+              -Dencryption.keyAlgorithm=DESede
+              -Dencryption.keystore.location=${alfresco.repo.docker.tomcat.path}/shared/classes/alfresco/extension/keystore/keystore
+              -Dmetadata-keystore.password=mp6yc0UD9e
+              -Dmetadata-keystore.aliases=metadata
+              -Dmetadata-keystore.metadata.password=oKIWzVdEdA
+              -Dmetadata-keystore.metadata.algorithm=DESede
+              -Dsolr.secureComms=secret
+              -Dsolr.sharedSecret=secret1
+#-D${baseModuleId}.core.storage.defaultStorageRegion.swapPath=null
+#-D${baseModuleId}.core.storage.region.nodes.swapPath=null
+#-D${baseModuleId}.core.storage.region.nodeAspects.swapPath=null
+#-D${baseModuleId}.core.storage.region.nodeProperties.swapPath=null
+#-D${baseModuleId}.core.storage.region.contentData.swapPath=null
+#-D${baseModuleId}.core.storage.region.contentUrl.swapPath=null
+#-D${baseModuleId}.core.storage.region.acl.swapPath=null
+        healthcheck:
+            test: curl -f localhost:8080/alfresco/
+            interval: 30s
+            timeout: 30s
+            retries: 3
+
+    ${moduleId}-activemq:
+        image: alfresco/alfresco-activemq:${alfresco.activemq.docker.version}
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - activemq
+
+    ${moduleId}-repository-default:
+        image: ${moduleId}-repository:latest
+        build:
+            context: ./repository
+            dockerfile: Dockerfile
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - repository-default
+        restart: unless-stopped
+        depends_on:
+          ${moduleId}-postgres:
+            condition: service_started
+          ${moduleId}-activemq:
+            condition: service_started
+        volumes:
+          - ${moduleId}-contentstore:${alfresco.repo.docker.data.path}
+          - ${moduleId}-repo_logs_2:${alfresco.repo.docker.tomcat.path}/logs
+        ports:
+          - 4100:4000
+          - ${alfresco.repo.docker.port2}:8080
+          - ${alfresco.repo.docker.debugPort2}:8888
+        # disables security manager (less overhead)
+        command:
+          - catalina.sh
+          - run
+        environment:
+            JAVA_OPTS: >-
+              -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
+              -javaagent:/usr/local/tomcat/glowroot/glowroot.jar
+              -Xms8g -Xmx8g -XX:+UseG1GC -XX:+ParallelRefProcEnabled
+              -XX:+UseStringDeduplication -XX:+ScavengeBeforeFullGC
+              -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+              -Dfile.encoding=UTF-8
+              -Djava.net.preferIPv4Stack=true
+              -Dencryption.keystore.type=JCEKS
+              -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
+              -Dencryption.keyAlgorithm=DESede
+              -Dencryption.keystore.location=${alfresco.repo.docker.tomcat.path}/shared/classes/alfresco/extension/keystore/keystore
+              -Dmetadata-keystore.password=mp6yc0UD9e
+              -Dmetadata-keystore.aliases=metadata
+              -Dmetadata-keystore.metadata.password=oKIWzVdEdA
+              -Dmetadata-keystore.metadata.algorithm=DESede
+              -Dsolr.secureComms=secret
+              -Dsolr.sharedSecret=secret1
+              -Drepo.event2.enabled=false
+              -D${baseModuleId}.core.enabled=false
+        healthcheck:
+            test: curl -f localhost:8080/alfresco/
+            interval: 30s
+            timeout: 30s
+            retries: 3
+
+networks:
+    ${moduleId}-network:
+
+volumes:
+    ${moduleId}-alf_psql:
+    ${moduleId}-contentstore:
+    ${moduleId}-repo_logs:
+    ${moduleId}-repo_logs_2:

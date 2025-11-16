@@ -8,8 +8,8 @@
 
     <parent>
         <groupId>de.acosix.alfresco.maven</groupId>
-        <artifactId>de.acosix.alfresco.maven.project.parent-6.1.2</artifactId>
-        <version>1.4.1</version>
+        <artifactId>de.acosix.alfresco.maven.project.parent-7.0.0</artifactId>
+        <version>1.6.0</version>
     </parent>
 
     <groupId>org.aldica</groupId>
@@ -79,95 +79,93 @@
         <project.longNameNoWs>AlternativeAlfrescoDistributedCache</project.longNameNoWs>
         <project.basePackage>org.aldica</project.basePackage>
 
-        <maven.shade.version>3.2.3</maven.shade.version>
+        <maven.shade.version>3.6.0</maven.shade.version>
 
         <aldica.ignite-common.artifactId>aldica-common-ignite</aldica.ignite-common.artifactId>
         <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
         <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
 
-        <acosix.utility.version>1.2.2</acosix.utility.version>
-        <ootbee.support-tools.version>1.1.0.0</ootbee.support-tools.version>
-        <apache.ignite.version>2.13.0</apache.ignite.version>
+        <acosix.utility.version>1.5.0</acosix.utility.version>
+        <ootbee.support-tools.version>1.2.3.0</ootbee.support-tools.version>
+
+        <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
+        <!-- making aldica compatible with JDK 17 (e.g. ACS 23.x) requires Ignite 2.14.0 at least -->
+        <!-- Ignite 2.17.0 requires JDK 11, so precludes any ACS version prior to 6.1 -->
+        <!-- so we set our minimum to ACS 7.0.0, since ACS 6.x is quite old at this point -->
+        <apache.ignite.version>2.17.0</apache.ignite.version>
         <easymock.version>4.2</easymock.version>
 
-        <!-- Note: IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK is hopefully temporary until https://github.com/aldica/aldica/issues/39 is fixed upstream -->
-        <docker.tests.igniteCommonJavaOpts><![CDATA[
-            --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
-            --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-            --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-            --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-            --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-            --illegal-access=permit
-            -XX:+UseG1GC
-            -XX:+ParallelRefProcEnabled
-            -XX:+UseStringDeduplication
-            -XX:+ScavengeBeforeFullGC
-            -XX:+DisableExplicitGC
-            -XX:+AlwaysPreTouch
-            -Dfile.encoding=UTF-8
-            -Djava.net.preferIPv4Stack=true
-            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
-            -DIGNITE_QUIET=true
-            -DIGNITE_NO_ASCII=true
-            -DIGNITE_UPDATE_NOTIFIER=false
-            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
-            -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
-        ]]></docker.tests.igniteCommonJavaOpts>
-        <docker.tests.repositoryCommonJavaOpts><![CDATA[
-            ${docker.tests.igniteCommonJavaOpts}
-            ${docker.tests.repositoryVersionSpecificJavaOpts}
-            -Ddb.driver=org.postgresql.Driver
-            -Ddb.username=alfresco
-            -Ddb.password=alfresco
-            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
-            -Dsolr.host=search
-            -Dsolr.port=${docker.tests.internalSearchPort}
-            -Dsolr.secureComms=none
-            -Dsolr.base.url=${docker.tests.searchBaseUrl}
-            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
-            -Dcsrf.filter.enabled=false
-            -D${moduleId}.caches.remoteSupport.enabled=true
-            -D${moduleId}.core.storage.defaultStorageRegion.initialSize=268935456
-            -D${moduleId}.core.storage.defaultStorageRegion.maxSize=536870912
-            -Xms2g -Xmx2g
-        ]]></docker.tests.repositoryCommonJavaOpts>
-        <docker.tests.shareCommonJavaOpts><![CDATA[
-            ${docker.tests.igniteCommonJavaOpts}
-            -Xms512m -Xmx512m
-        ]]></docker.tests.shareCommonJavaOpts>
-        
-        <!-- override the inherited default ports to align with ports we previously used -->
-        <docker.tests.repositoryPort>8180</docker.tests.repositoryPort>
-        <docker.tests.repositoryDebugPort>8185</docker.tests.repositoryDebugPort>
-        <docker.tests.repositoryPort2>8280</docker.tests.repositoryPort2>
-        <docker.tests.repositoryDebugPort2>8285</docker.tests.repositoryDebugPort2>
-        <docker.tests.repositoryPort3>8380</docker.tests.repositoryPort3>
-        <docker.tests.repositoryDebugPort3>8385</docker.tests.repositoryDebugPort3>
+        <postgres.docker.version>16</postgres.docker.version>
 
-        <docker.tests.sharePort>8181</docker.tests.sharePort>
-        <docker.tests.shareDebugPort>8186</docker.tests.shareDebugPort>
-        <docker.tests.sharePort2>8281</docker.tests.sharePort2>
-        <docker.tests.shareDebugPort2>8286</docker.tests.shareDebugPort2>
+        <alfresco.activemq.docker.version>5.18-jre17-rockylinux8</alfresco.activemq.docker.version>
+
+        <alfresco.repo.docker.image>alfresco/alfresco-content-repository-community</alfresco.repo.docker.image>
+        <alfresco.repo.docker.version>25.2.0</alfresco.repo.docker.version>
+        <alfresco.repo.docker.tomcat.path>/usr/local/tomcat</alfresco.repo.docker.tomcat.path>
+        <alfresco.repo.docker.amp.path>/usr/local/tomcat/amps</alfresco.repo.docker.amp.path>
+        <alfresco.repo.docker.mmt.path>/usr/local/tomcat/alfresco-mmt</alfresco.repo.docker.mmt.path>
+        <alfresco.repo.docker.data.path>/usr/local/tomcat/alf_data</alfresco.repo.docker.data.path>
+        <alfresco.repo.docker.port>8180</alfresco.repo.docker.port>
+        <alfresco.repo.docker.debugPort>8185</alfresco.repo.docker.debugPort>
+        <alfresco.repo.docker.commPort>47100</alfresco.repo.docker.commPort>
+        <alfresco.repo.docker.discoPort>47110</alfresco.repo.docker.discoPort>
+        <alfresco.repo.docker.timePort>47120</alfresco.repo.docker.timePort>
+        <alfresco.repo.docker.port2>8280</alfresco.repo.docker.port2>
+        <alfresco.repo.docker.debugPort2>8285</alfresco.repo.docker.debugPort2>
+        <alfresco.repo.docker.commPort2>47102</alfresco.repo.docker.commPort2>
+        <alfresco.repo.docker.discoPort2>47112</alfresco.repo.docker.discoPort2>
+        <alfresco.repo.docker.timePort2>47122</alfresco.repo.docker.timePort2>
+        <alfresco.repo.docker.build.preRun>USER root</alfresco.repo.docker.build.preRun>
+        <alfresco.repo.docker.build.postRun>USER alfresco</alfresco.repo.docker.build.postRun>
+        <alfresco.repo.docker.chown.mask>alfresco:Alfresco</alfresco.repo.docker.chown.mask>
+
+        <alfresco.share.docker.image>alfresco/alfresco-share</alfresco.share.docker.image>
+        <alfresco.share.docker.version>25.2.0</alfresco.share.docker.version>
+        <alfresco.share.docker.tomcat.path>/usr/local/tomcat</alfresco.share.docker.tomcat.path>
+        <alfresco.share.docker.amp.path>/usr/local/tomcat/share_amps</alfresco.share.docker.amp.path>
+        <alfresco.share.docker.mmt.path>/usr/local/tomcat/alfresco-mmt</alfresco.share.docker.mmt.path>
+        <alfresco.share.docker.port>8181</alfresco.share.docker.port>
+        <alfresco.share.docker.debugPort>8186</alfresco.share.docker.debugPort>
+        <alfresco.share.docker.port2>8281</alfresco.share.docker.port2>
+        <alfresco.share.docker.debugPort2>8286</alfresco.share.docker.debugPort2>
+        
+        <aldica.companion.docker.image>openjdk</aldica.companion.docker.image>
+        <aldica.companion.docker.version>11-jdk-slim</aldica.companion.docker.version>
+        <aldica.companion.docker.debugPort>8190</aldica.companion.docker.debugPort>
+        <aldica.companion.docker.debugPort2>8290</aldica.companion.docker.debugPort2>
+
+        <alfresco.aio.docker.version>5.1.5</alfresco.aio.docker.version>
+        <alfresco.solr6.docker.version>2.0.12</alfresco.solr6.docker.version>
     </properties>
 
     <repositories>
         <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>central-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
         </repository>
     </repositories>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>central-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
     <distributionManagement>
         <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>central</id>
+            <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
         </repository>
         <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>central</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -225,39 +223,9 @@
 
             <dependency>
                 <groupId>de.acosix.alfresco.utility</groupId>
-                <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
-                <version>${acosix.utility.version}</version>
-                <classifier>installable</classifier>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>de.acosix.alfresco.utility</groupId>
                 <artifactId>de.acosix.alfresco.utility.core.share</artifactId>
                 <version>${acosix.utility.version}</version>
                 <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>de.acosix.alfresco.utility</groupId>
-                <artifactId>de.acosix.alfresco.utility.core.share</artifactId>
-                <version>${acosix.utility.version}</version>
-                <classifier>installable</classifier>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.orderofthebee.support-tools</groupId>
-                <artifactId>support-tools-repo</artifactId>
-                <version>${ootbee.support-tools.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.orderofthebee.support-tools</groupId>
-                <artifactId>support-tools-share</artifactId>
-                <version>${ootbee.support-tools.version}</version>
-                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -292,8 +260,77 @@
                     <version>${maven.shade.version}</version>
                 </plugin>
 
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <argLine><![CDATA[
+                            -Xmx512M
+                            -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication
+                            -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+                            --add-opens=java.base/java.lang=ALL-UNNAMED
+                            --add-opens=java.base/java.io=ALL-UNNAMED
+                            --add-opens=java.base/java.nio=ALL-UNNAMED
+                            --add-opens=java.base/java.util=ALL-UNNAMED
+                            --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+                            --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                            --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                            --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                            --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                            --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+                            --illegal-access=permit
+                            -Dfile.encoding=UTF-8
+                            -Djava.net.preferIPv4Stack=true
+                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                            -DIGNITE_QUIET=true
+                            -DIGNITE_NO_ASCII=true
+                            -DIGNITE_UPDATE_NOTIFIER=false
+                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                        ]]></argLine>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <configuration>
+                        <argLine><![CDATA[
+                            -Xmx512M
+                            -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication
+                            -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+                            --add-opens=java.base/java.lang=ALL-UNNAMED
+                            --add-opens=java.base/java.io=ALL-UNNAMED
+                            --add-opens=java.base/java.nio=ALL-UNNAMED
+                            --add-opens=java.base/java.util=ALL-UNNAMED
+                            --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+                            --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                            --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                            --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                            --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                            --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+                            --illegal-access=permit
+                            -Dfile.encoding=UTF-8
+                            -Djava.net.preferIPv4Stack=true
+                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+                            -DIGNITE_QUIET=true
+                            -DIGNITE_NO_ASCII=true
+                            -DIGNITE_UPDATE_NOTIFIER=false
+                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+                        ]]></argLine>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
     </build>
 
     <modules>
@@ -319,6 +356,14 @@
                     </plugins>
                 </pluginManagement>
             </build>
+        </profile>
+
+        <profile>
+            <id>dockerTest</id>
+
+            <modules>
+                <module>docker-test</module>
+            </modules>
         </profile>
     </profiles>
 </project>

@@ -1,0 +1,489 @@
+version: '3.8'
+
+services:
+
+    ${moduleId}-postgres:
+        image: postgres:${postgres.docker.version}
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - postgres
+        restart: unless-stopped
+        command: postgres -c max_connections=300
+        volumes:
+          - ${moduleId}-alf_psql:/srv/postgresql
+        environment:
+          PGDATA: /srv/postgresql/data
+          POSTGRES_DB: alfresco
+          POSTGRES_USER: alfresco
+          POSTGRES_PASSWORD: alfresco
+
+    ${moduleId}-repository-1:
+        image: ${moduleId}-repository:latest
+        build:
+            context: ./repository
+            dockerfile: Dockerfile
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - repository-1 
+        restart: unless-stopped
+        depends_on:
+          ${moduleId}-postgres:
+            condition: service_started
+          ${moduleId}-activemq:
+            condition: service_started
+          ${moduleId}-transform-core-aio:
+            condition: service_started
+        volumes:
+          - ${moduleId}-contentstore:${alfresco.repo.docker.data.path}
+          - ${moduleId}-repo1_logs:${alfresco.repo.docker.tomcat.path}/logs
+        ports:
+          - ${alfresco.repo.docker.port}:8080
+          - ${alfresco.repo.docker.debugPort}:8888
+          # identical inner/outer port to support connecting from
+          # both inside + outside Docker container network
+          - ${alfresco.repo.docker.commPort}:${alfresco.repo.docker.commPort}
+          - ${alfresco.repo.docker.discoPort}:${alfresco.repo.docker.discoPort}
+          - ${alfresco.repo.docker.timePort}:${alfresco.repo.docker.timePort}
+        environment:
+            JAVA_OPTS: >-
+              -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
+              -Xms2g -Xmx2g -XX:+UseG1GC -XX:+ParallelRefProcEnabled
+              -XX:+UseStringDeduplication -XX:+ScavengeBeforeFullGC
+              -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+              --add-opens=java.base/java.io=ALL-UNNAMED
+              --add-opens=java.base/java.lang=ALL-UNNAMED
+              --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+              --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+              --add-opens=java.base/java.math=ALL-UNNAMED
+              --add-opens=java.base/java.net=ALL-UNNAMED
+              --add-opens=java.base/java.nio=ALL-UNNAMED
+              --add-opens=java.base/java.text=ALL-UNNAMED
+              --add-opens=java.base/java.time=ALL-UNNAMED
+              --add-opens=java.base/java.util=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+              --add-opens=java.base/javax.crypto=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+              --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+              --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+              --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+              --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+              --add-opens=java.management/sun.management=ALL-UNNAMED
+              --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+              --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+              -Dfile.encoding=UTF-8
+              -Djava.net.preferIPv4Stack=true
+              -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+              -DIGNITE_QUIET=true
+              -DIGNITE_NO_ASCII=true
+              -DIGNITE_UPDATE_NOTIFIER=false
+              -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+              -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+              -Dencryption.keystore.type=JCEKS
+              -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
+              -Dencryption.keyAlgorithm=DESede
+              -Dencryption.keystore.location=${alfresco.repo.docker.tomcat.path}/shared/classes/alfresco/extension/keystore/keystore
+              -Dmetadata-keystore.password=mp6yc0UD9e
+              -Dmetadata-keystore.aliases=metadata
+              -Dmetadata-keystore.metadata.password=oKIWzVdEdA
+              -Dmetadata-keystore.metadata.algorithm=DESede
+              -Dsolr.secureComms=secret
+              -Dsolr.sharedSecret=secret1
+              -Drepo.event2.enabled=false
+              -D${moduleId}.caches.remoteSupport.enabled=true
+              -D${moduleId}.core.local.id=repository-1
+              -D${moduleId}.core.local.host=repository-1
+              -D${moduleId}.core.local.comm.port=${alfresco.repo.docker.commPort}
+              -D${moduleId}.core.local.disco.port=${alfresco.repo.docker.discoPort}
+              -D${moduleId}.core.local.time.port=${alfresco.repo.docker.timePort}
+              -D${moduleId}.core.storage.defaultStorageRegion.initialSize=4294967296
+              -D${moduleId}.core.storage.defaultStorageRegion.maxSize=8589934592
+        healthcheck:
+            test: curl -f localhost:8080/alfresco/
+            interval: 30s
+            timeout: 30s
+            retries: 3
+
+    ${moduleId}-repository-2:
+        image: ${moduleId}-repository:latest
+        build:
+            context: ./repository
+            dockerfile: Dockerfile
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - repository-2
+        restart: unless-stopped
+        depends_on:
+          ${moduleId}-postgres:
+            condition: service_started
+          ${moduleId}-activemq:
+            condition: service_started
+          ${moduleId}-transform-core-aio:
+            condition: service_started
+          ${moduleId}-repository-1:
+            condition: service_healthy
+            restart: false
+            required: false
+        volumes:
+          - ${moduleId}-contentstore:${alfresco.repo.docker.data.path}
+          - ${moduleId}-repo2_logs:${alfresco.repo.docker.tomcat.path}/logs
+        ports:
+          - ${alfresco.repo.docker.port2}:8080
+          - ${alfresco.repo.docker.debugPort2}:8888
+          # identical inner/outer port to support connecting from
+          # both inside + outside Docker container network
+          - ${alfresco.repo.docker.commPort2}:${alfresco.repo.docker.commPort2}
+          - ${alfresco.repo.docker.discoPort2}:${alfresco.repo.docker.discoPort2}
+          - ${alfresco.repo.docker.timePort2}:${alfresco.repo.docker.timePort2}
+        environment:
+            JAVA_OPTS: >-
+              -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
+              -Xms2g -Xmx2g -XX:+UseG1GC -XX:+ParallelRefProcEnabled
+              -XX:+UseStringDeduplication -XX:+ScavengeBeforeFullGC
+              -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+              --add-opens=java.base/java.io=ALL-UNNAMED
+              --add-opens=java.base/java.lang=ALL-UNNAMED
+              --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+              --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+              --add-opens=java.base/java.math=ALL-UNNAMED
+              --add-opens=java.base/java.net=ALL-UNNAMED
+              --add-opens=java.base/java.nio=ALL-UNNAMED
+              --add-opens=java.base/java.text=ALL-UNNAMED
+              --add-opens=java.base/java.time=ALL-UNNAMED
+              --add-opens=java.base/java.util=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+              --add-opens=java.base/javax.crypto=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+              --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+              --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+              --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+              --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+              --add-opens=java.management/sun.management=ALL-UNNAMED
+              --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+              --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+              -Dfile.encoding=UTF-8
+              -Djava.net.preferIPv4Stack=true
+              -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+              -DIGNITE_QUIET=true
+              -DIGNITE_NO_ASCII=true
+              -DIGNITE_UPDATE_NOTIFIER=false
+              -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+              -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+              -Dencryption.keystore.type=JCEKS
+              -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
+              -Dencryption.keyAlgorithm=DESede
+              -Dencryption.keystore.location=${alfresco.repo.docker.tomcat.path}/shared/classes/alfresco/extension/keystore/keystore
+              -Dmetadata-keystore.password=mp6yc0UD9e
+              -Dmetadata-keystore.aliases=metadata
+              -Dmetadata-keystore.metadata.password=oKIWzVdEdA
+              -Dmetadata-keystore.metadata.algorithm=DESede
+              -Dsolr.secureComms=secret
+              -Dsolr.sharedSecret=secret
+              -Drepo.event2.enabled=false
+              -D${moduleId}.caches.remoteSupport.enabled=true
+              -D${moduleId}.core.local.id=repository-2
+              -D${moduleId}.core.local.host=repository-2
+              -D${moduleId}.core.local.comm.port=${alfresco.repo.docker.commPort2}
+              -D${moduleId}.core.local.disco.port=${alfresco.repo.docker.discoPort2}
+              -D${moduleId}.core.local.time.port=${alfresco.repo.docker.timePort2}
+              -D${moduleId}.core.storage.defaultStorageRegion.initialSize=4294967296
+              -D${moduleId}.core.storage.defaultStorageRegion.maxSize=8589934592
+        healthcheck:
+            test: curl -f localhost:8080/alfresco/
+            interval: 30s
+            timeout: 30s
+            retries: 3
+
+    ${moduleId}-share-1:
+        image: ${moduleId}-share:latest
+        build:
+            context: ./share
+            dockerfile: Dockerfile
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - share-1
+        depends_on:
+          ${moduleId}-repository-1:
+            condition: service_healthy
+            restart: false
+        ports:
+          - ${alfresco.share.docker.port}:8080
+          - ${alfresco.share.docker.debugPort}:8888
+        volumes:
+          - ${moduleId}-share1_logs:${alfresco.share.docker.tomcat.path}/logs
+        environment:
+            REPO_HOST: repository-1
+            REPO_PORT: 8080
+            JAVA_OPTS: >-
+              -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
+              -Xms512m -Xmx512m
+              -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication
+              -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+              --add-opens=java.base/java.io=ALL-UNNAMED
+              --add-opens=java.base/java.lang=ALL-UNNAMED
+              --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+              --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+              --add-opens=java.base/java.math=ALL-UNNAMED
+              --add-opens=java.base/java.net=ALL-UNNAMED
+              --add-opens=java.base/java.nio=ALL-UNNAMED
+              --add-opens=java.base/java.text=ALL-UNNAMED
+              --add-opens=java.base/java.time=ALL-UNNAMED
+              --add-opens=java.base/java.util=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+              --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+              --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+              --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+              --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+              --add-opens=java.management/sun.management=ALL-UNNAMED
+              --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+              --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+              -Dfile.encoding=UTF-8
+              -Djava.net.preferIPv4Stack=true
+              -D${moduleId}.core.local.id=share-1
+              -D${moduleId}.core.local.host=share-1
+              -D${moduleId}.core.initialMembers=share-1,share-2
+              -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+              -DIGNITE_QUIET=true
+              -DIGNITE_NO_ASCII=true
+              -DIGNITE_UPDATE_NOTIFIER=false
+              -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+              -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+
+    ${moduleId}-share-2:
+        image: ${moduleId}-share:latest
+        build:
+            context: ./share
+            dockerfile: Dockerfile
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - share-2
+        depends_on:
+          ${moduleId}-repository-2:
+            condition: service_healthy
+            restart: false
+        ports:
+          - ${alfresco.share.docker.port2}:8080
+          - ${alfresco.share.docker.debugPort2}:8888
+        volumes:
+          - ${moduleId}-share2_logs:${alfresco.share.docker.tomcat.path}/logs
+        environment:
+            REPO_HOST: repository-2
+            REPO_PORT: 8080
+            JAVA_OPTS: >-
+              -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
+              -Xms512m -Xmx512m
+              -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication
+              -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+              --add-opens=java.base/java.io=ALL-UNNAMED
+              --add-opens=java.base/java.lang=ALL-UNNAMED
+              --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+              --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+              --add-opens=java.base/java.math=ALL-UNNAMED
+              --add-opens=java.base/java.net=ALL-UNNAMED
+              --add-opens=java.base/java.nio=ALL-UNNAMED
+              --add-opens=java.base/java.text=ALL-UNNAMED
+              --add-opens=java.base/java.time=ALL-UNNAMED
+              --add-opens=java.base/java.util=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+              --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+              --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+              --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+              --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+              --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+              --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+              --add-opens=java.management/sun.management=ALL-UNNAMED
+              --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+              --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+              -Dfile.encoding=UTF-8
+              -Djava.net.preferIPv4Stack=true
+              -D${moduleId}.core.local.id=share-2
+              -D${moduleId}.core.local.host=share-2
+              -D${moduleId}.core.initialMembers=share-1,share-2
+              -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+              -DIGNITE_QUIET=true
+              -DIGNITE_NO_ASCII=true
+              -DIGNITE_UPDATE_NOTIFIER=false
+              -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+              -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+
+    ${moduleId}-keepalive01:
+        image: ${moduleId}-companion:latest
+        build:
+            context: ./companion
+            dockerfile: Dockerfile
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - keepalive01
+        depends_on:
+          ${moduleId}-repository-1:
+            condition: service_healthy
+            restart: false
+            required: false
+        ports:
+          - ${aldica.companion.docker.debugPort}:8888
+        command: >-
+          java -Xms512M -Xmx512M
+          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8888
+          -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication
+          -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+          --add-opens=java.base/java.io=ALL-UNNAMED
+          --add-opens=java.base/java.lang=ALL-UNNAMED
+          --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+          --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+          --add-opens=java.base/java.math=ALL-UNNAMED
+          --add-opens=java.base/java.net=ALL-UNNAMED
+          --add-opens=java.base/java.nio=ALL-UNNAMED
+          --add-opens=java.base/java.text=ALL-UNNAMED
+          --add-opens=java.base/java.time=ALL-UNNAMED
+          --add-opens=java.base/java.util=ALL-UNNAMED
+          --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+          --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+          --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+          --add-opens=java.base/javax.crypto=ALL-UNNAMED
+          --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+          --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+          --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+          --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+          --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+          --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+          --add-opens=java.management/sun.management=ALL-UNNAMED
+          --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+          --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+          --illegal-access=permit
+          -Dfile.encoding=UTF-8
+          -Djava.net.preferIPv4Stack=true
+          -D${moduleId}.core.initialMembers=repository-1,repository-2,keepalive02
+          -D${moduleId}.core.local.id=keepalive01
+          -D${moduleId}.core.local.host=keepalive01
+          -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+          -DIGNITE_QUIET=true
+          -DIGNITE_NO_ASCII=true
+          -DIGNITE_UPDATE_NOTIFIER=false
+          -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+          -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+          -jar aldica-repo-ignite-companion-${project.version}.jar
+        restart: unless-stopped
+
+    ${moduleId}-keepalive02:
+        image: ${moduleId}-companion:latest
+        build:
+            context: ./companion
+            dockerfile: Dockerfile
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - keepalive02
+        depends_on:
+          ${moduleId}-repository-1:
+            condition: service_healthy
+            restart: false
+            required: false
+        ports:
+          - ${aldica.companion.docker.debugPort2}:8888
+        command: >-
+          java -Xms512M -Xmx512M
+          -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8888
+          -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication
+          -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+          --add-opens=java.base/java.io=ALL-UNNAMED
+          --add-opens=java.base/java.lang=ALL-UNNAMED
+          --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+          --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+          --add-opens=java.base/java.math=ALL-UNNAMED
+          --add-opens=java.base/java.net=ALL-UNNAMED
+          --add-opens=java.base/java.nio=ALL-UNNAMED
+          --add-opens=java.base/java.text=ALL-UNNAMED
+          --add-opens=java.base/java.time=ALL-UNNAMED
+          --add-opens=java.base/java.util=ALL-UNNAMED
+          --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+          --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+          --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+          --add-opens=java.base/javax.crypto=ALL-UNNAMED
+          --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+          --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+          --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+          --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+          --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+          --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+          --add-opens=java.management/sun.management=ALL-UNNAMED
+          --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+          --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+          --illegal-access=permit
+          -Dfile.encoding=UTF-8
+          -Djava.net.preferIPv4Stack=true
+          -D${moduleId}.core.initialMembers=repository-1,repository-2,keepalive01
+          -D${moduleId}.core.local.id=keepalive02
+          -D${moduleId}.core.local.host=keepalive02
+          -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+          -DIGNITE_QUIET=true
+          -DIGNITE_NO_ASCII=true
+          -DIGNITE_UPDATE_NOTIFIER=false
+          -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
+          -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
+          -jar aldica-repo-ignite-companion-${project.version}.jar
+        restart: unless-stopped
+
+    ${moduleId}-solr6:
+        image: alfresco/alfresco-search-services:${alfresco.solr6.docker.version}
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - solr6
+        depends_on:
+          ${moduleId}-repository-1:
+            condition: service_healthy
+        environment:
+            SOLR_ALFRESCO_HOST: repository-1
+            SOLR_ALFRESCO_PORT: 8080
+            SOLR_SOLR_HOST: solr6
+            SOLR_SOLR_PORT: 8983
+            SOLR_CREATE_ALFRESCO_DEFAULTS: alfresco
+            ALFRESCO_SECURE_COMMS: secret
+            JAVA_TOOL_OPTIONS: -Dalfresco.secureComms.secret=secret
+            SOLR_JAVA_MEM: -Xms2g -Xmx2g
+
+    ${moduleId}-activemq:
+        image: alfresco/alfresco-activemq:${alfresco.activemq.docker.version}
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - activemq
+
+    ${moduleId}-transform-core-aio:
+        image: alfresco/alfresco-transform-core-aio:${alfresco.aio.docker.version}
+        networks:
+          ${moduleId}-network:
+            aliases:
+              - transform-core-aio
+        environment:
+            JAVA_OPTS: " -Xms256m -Xmx1536m"
+            ACTIVEMQ_URL: nio://activemq:61616
+
+networks:
+    ${moduleId}-network:
+
+volumes:
+    ${moduleId}-alf_psql:
+    ${moduleId}-contentstore:
+    ${moduleId}-repo1_logs:
+    ${moduleId}-repo2_logs:
+    ${moduleId}-repo3_logs:
+    ${moduleId}-share1_logs:
+    ${moduleId}-share2_logs:
