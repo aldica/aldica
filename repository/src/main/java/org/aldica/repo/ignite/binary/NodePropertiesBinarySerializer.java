@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.aldica.repo.ignite.cache.NodePropertiesCacheMap;
@@ -42,6 +43,8 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContextAware;
 
@@ -62,6 +65,8 @@ import org.springframework.context.ApplicationContextAware;
 public class NodePropertiesBinarySerializer extends AbstractContentSupportBinarySerializer<NodePropertiesCacheMap>
         implements ApplicationContextAware
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NodePropertiesBinarySerializer.class);
 
     private static class SimplePathElement extends Element
     {
@@ -106,12 +111,18 @@ public class NodePropertiesBinarySerializer extends AbstractContentSupportBinary
 
     private static final byte FLAG_GLOBAL_POSSIBLE_ID = 0x02;
 
-    private static final byte FLAG_ENTRY_QNAME_ID_UNSIGNED = 0x01;
+    private static final byte FLAG_GLOBAL_QNAME_EXTRA_BYTE = 0x04;
+
+    // use bits 5 + 6 - using bit 6 for unsigned since we can fold this in with FLAG_TYPE_...
+    // folding is the "normal" case - only if FLAG_GLOBAL_QNAME_EXTRA_BYTE is set do we use an extra flag byte per QName
+    private static final byte FLAG_ENTRY_QNAME_ID = 0x10;
+
+    private static final byte FLAG_ENTRY_QNAME_ID_UNSIGNED = 0x20;
 
     @SuppressWarnings("unused")
     private static final byte MASK_ALL_TYPE_FLAGS = -128 | 0x7e;
 
-    private static final byte MASK_CORE_TYPE_FLAGS = 0x3e;
+    private static final byte MASK_CORE_TYPE_FLAGS = 0x1f;
 
     private static final byte FLAG_MLTEXT_LOCALE_ID_UNSIGNED = 0x01;
 
@@ -119,47 +130,47 @@ public class NodePropertiesBinarySerializer extends AbstractContentSupportBinary
 
     private static final byte FLAG_MLTEXT_STRING_NULL = 0x04;
 
-    // bits 2-6 used for type information -> 32 potential Java types (implicit null)
+    // bits 1-5 used for type information -> 32 potential Java types (implicit null)
 
-    private static final byte FLAG_TYPE_LIST = 0x02;
+    private static final byte FLAG_TYPE_LIST = 0x01;
 
-    private static final byte FLAG_TYPE_STRING = 0x04;
+    private static final byte FLAG_TYPE_STRING = 0x02;
 
-    private static final byte FLAG_TYPE_INT = 0x06;
+    private static final byte FLAG_TYPE_INT = 0x03;
 
-    private static final byte FLAG_TYPE_LONG = 0x08;
+    private static final byte FLAG_TYPE_LONG = 0x04;
 
-    private static final byte FLAG_TYPE_FLOAT = 0x0a;
+    private static final byte FLAG_TYPE_FLOAT = 0x05;
 
-    private static final byte FLAG_TYPE_DOUBLE = 0x0c;
+    private static final byte FLAG_TYPE_DOUBLE = 0x06;
 
-    private static final byte FLAG_TYPE_DATE = 0x0e;
+    private static final byte FLAG_TYPE_DATE = 0x07;
 
-    private static final byte FLAG_TYPE_BOOLEAN = 0x10;
+    private static final byte FLAG_TYPE_BOOLEAN = 0x08;
 
-    private static final byte FLAG_TYPE_QNAME = 0x12;
+    private static final byte FLAG_TYPE_QNAME = 0x09;
 
-    private static final byte FLAG_TYPE_NODEREF = 0x14;
+    private static final byte FLAG_TYPE_NODEREF = 0x0a;
 
-    private static final byte FLAG_TYPE_CHILDASSOCREF = 0x16;
+    private static final byte FLAG_TYPE_CHILDASSOCREF = 0x0b;
 
-    private static final byte FLAG_TYPE_ASSOCREF = 0x18;
+    private static final byte FLAG_TYPE_ASSOCREF = 0x0c;
 
-    private static final byte FLAG_TYPE_PATH = 0x1a;
+    private static final byte FLAG_TYPE_PATH = 0x0d;
 
-    private static final byte FLAG_TYPE_LOCALE = 0x1c;
+    private static final byte FLAG_TYPE_LOCALE = 0x0e;
 
-    private static final byte FLAG_TYPE_VERSION_NUMBER = 0x1e;
+    private static final byte FLAG_TYPE_VERSION_NUMBER = 0x0f;
 
-    private static final byte FLAG_TYPE_PERIOD = 0x20;
+    private static final byte FLAG_TYPE_PERIOD = 0x10;
 
-    private static final byte FLAG_TYPE_MLTEXT = 0x22;
+    private static final byte FLAG_TYPE_MLTEXT = 0x11;
 
-    private static final byte FLAG_TYPE_CONTENT = 0x24;
+    private static final byte FLAG_TYPE_CONTENT = 0x12;
 
-    private static final byte FLAG_TYPE_OBJECT = 0x26;
+    private static final byte FLAG_TYPE_OBJECT = 0x13;
 
-    // we have room to handle quite a few additional Java value types
+    // we have room to handle a few additional Java value types
 
     // if value is referenced via a DAO-managed entity
     private static final byte FLAG_TYPE_ID = 0x40;
@@ -249,11 +260,25 @@ public class NodePropertiesBinarySerializer extends AbstractContentSupportBinary
     {
         final BinaryOutputStream out = rawWriter.out();
 
+        boolean extraQNameByte = false;
         byte globalFlags = 0;
+
         if (this.useIdsWhenReasonable)
         {
             globalFlags |= FLAG_GLOBAL_REASONABLE_ID;
+
+            Optional<QName> unresolveableQName = nodePropertiesCacheMap.keySet().stream().filter(e -> this.qnameLookup(e) == null)
+                    .findFirst();
+            if (unresolveableQName.isPresent())
+            {
+                LOGGER.warn(
+                        "Qualified name {} is not resolveable via QNameDAO in current context - this should not happen in any normal use case",
+                        unresolveableQName.get(), new Exception());
+                extraQNameByte = true;
+                globalFlags |= FLAG_GLOBAL_QNAME_EXTRA_BYTE;
+            }
         }
+
         if (this.useIdsWhenPossible)
         {
             globalFlags |= FLAG_GLOBAL_POSSIBLE_ID;
@@ -268,21 +293,31 @@ public class NodePropertiesBinarySerializer extends AbstractContentSupportBinary
         out.unsafeWriteByte(globalFlags);
         this.writeUnsigned(size, out);
 
+        final byte qnameNullByte = 0;
+        final byte qnameIdByte = extraQNameByte ? FLAG_ENTRY_QNAME_ID : 0;
+        final byte qnameUnsignedIdByte = FLAG_ENTRY_QNAME_ID_UNSIGNED;
+        final int flagsCount = extraQNameByte ? 2 : 1;
+
         for (final Entry<QName, Serializable> entry : nodePropertiesCacheMap.entrySet())
         {
-            byte entryFlags = 0;
-
             final int entryStartPos = out.position();
-            out.unsafeEnsure(1);
-            out.position(entryStartPos + 1);
+            out.unsafeEnsure(flagsCount);
+            out.position(entryStartPos + flagsCount);
 
-            // type/null flags not relevent (type flag is globally set and key is never null)
-            entryFlags |= this.writeValueOrId(entry.getKey(), this::qnameLookup, this::writeQName, (byte) 0, (byte) 0,
-                    FLAG_ENTRY_QNAME_ID_UNSIGNED, out);
-            entryFlags |= this.writeElementValue(entry.getValue(), rawWriter, out);
+            final byte qnameFlags = this.writeValueOrId(entry.getKey(), this::qnameLookup, this::writeQName, qnameNullByte, qnameIdByte,
+                    qnameUnsignedIdByte, out);
+            byte entryFlags = this.writeElementValue(entry.getValue(), rawWriter, out);
 
             final int entryEndPos = out.position();
             out.position(entryStartPos);
+            if (extraQNameByte)
+            {
+                out.unsafeWriteByte(qnameFlags);
+            }
+            else
+            {
+                entryFlags |= qnameFlags;
+            }
             out.unsafeWriteByte(entryFlags);
             out.position(entryEndPos);
         }
@@ -595,16 +630,26 @@ public class NodePropertiesBinarySerializer extends AbstractContentSupportBinary
         {
             throw new BinaryObjectException("Serializer is not configured to use IDs in place of QName keys or various value types");
         }
+        final boolean extraQNameByte = (globalFlags & FLAG_GLOBAL_QNAME_EXTRA_BYTE) != 0;
 
         final int size = this.readUnsignedInt(rawReader);
 
+        final byte qnameNullByte = 0;
+        final byte qnameIdByte = extraQNameByte ? FLAG_ENTRY_QNAME_ID : FLAG_TYPE_ID;
+        final byte qnameUnsignedIdByte = FLAG_ENTRY_QNAME_ID_UNSIGNED;
+
         for (int i = 0; i < size; i++)
         {
+            byte qnameFlags = extraQNameByte ? rawReader.readByte() : 0;
             final byte entryFlags = rawReader.readByte();
 
-            final QName qname = this.doReadValueOrId(rawReader, this::qnameLookup, this::readQName,
-                    (byte) (reasonableIdsPresent ? entryFlags | FLAG_TYPE_ID : entryFlags), (byte) 0, FLAG_TYPE_ID,
-                    FLAG_ENTRY_QNAME_ID_UNSIGNED);
+            if (!extraQNameByte)
+            {
+                // FLAG_TYPE_ID is "faked" to match qnameIdByte - we know it is set with reasonableIdsPresent
+                qnameFlags = (byte) (reasonableIdsPresent ? entryFlags | FLAG_TYPE_ID : entryFlags);
+            }
+            final QName qname = this.doReadValueOrId(rawReader, this::qnameLookup, this::readQName, qnameFlags, qnameNullByte, qnameIdByte,
+                    qnameUnsignedIdByte);
 
             final Serializable value = this.readElementValue(rawReader, entryFlags);
             nodePropertiesCacheMap.put(qname, value);

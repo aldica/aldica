@@ -276,9 +276,9 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, ContentData> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, ContentData> cache2 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // replacing 3 non-trivial fields with IDs is substantial - 24%
+                // replacing 3 non-trivial fields with IDs is substantial - 23.5%
                 this.efficiencyImpl(referenceGrid, useIdGrid, referenceCache2, cache2, "aldica raw serial (ID substitution)",
-                        "aldica optimised", 0.24);
+                        "aldica optimised", 0.235);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");

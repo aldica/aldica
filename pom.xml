@@ -130,7 +130,7 @@
         <alfresco.share.docker.debugPort2>8286</alfresco.share.docker.debugPort2>
         
         <aldica.companion.docker.image>openjdk</aldica.companion.docker.image>
-        <aldica.companion.docker.version>11-jdk-slim</aldica.companion.docker.version>
+        <aldica.companion.docker.version>11.0.11-jdk-slim</aldica.companion.docker.version>
         <aldica.companion.docker.debugPort>8190</aldica.companion.docker.debugPort>
         <aldica.companion.docker.debugPort2>8290</aldica.companion.docker.debugPort2>
 

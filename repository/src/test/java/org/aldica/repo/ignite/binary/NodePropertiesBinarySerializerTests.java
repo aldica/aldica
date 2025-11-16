@@ -67,9 +67,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
 {
 
     private static final QName[] PROP_QNAMES = { ContentModel.PROP_NAME, ContentModel.PROP_MODIFIED, ContentModel.PROP_CREATED,
-            ContentModel.PROP_CREATOR, ContentModel.PROP_MODIFIER, ContentModel.PROP_CONTENT, ContentModel.PROP_CATEGORIES,
-            ContentModel.PROP_CLIENT_CONTROLLED, ContentModel.PROP_VISIBILITY_MASK, ContentModel.PROP_INHERIT_FROM_ACL,
-            ActionModel.PROP_PARAMETER_NAME, ActionModel.PROP_PARAMETER_VALUE };
+            ContentModel.PROP_CREATOR, ContentModel.PROP_MODIFIER, ContentModel.PROP_CONTENT, ContentModel.PROP_TITLE,
+            ContentModel.PROP_CATEGORIES, ContentModel.PROP_CLIENT_CONTROLLED, ContentModel.PROP_VISIBILITY_MASK,
+            ContentModel.PROP_INHERIT_FROM_ACL, ActionModel.PROP_PARAMETER_NAME, ActionModel.PROP_PARAMETER_VALUE };
 
     private static final String[] MIMETYPES = { MimetypeMap.MIMETYPE_PDF, MimetypeMap.MIMETYPE_JSON, MimetypeMap.MIMETYPE_TEXT_PLAIN,
             MimetypeMap.MIMETYPE_OPENDOCUMENT_TEXT, MimetypeMap.MIMETYPE_OPENDOCUMENT_SPREADSHEET,
@@ -182,6 +182,7 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
         contentSerializer.setUseRawSerialForm(serialForm);
 
         final MLTextBinarySerializer mlTextSerializer = new MLTextBinarySerializer();
+        mlTextSerializer.setApplicationContext(applicationContext);
         mlTextSerializer.setUseIdsWhenReasonable(idsWhenReasonable);
         mlTextSerializer.setUseRawSerialForm(serialForm);
 

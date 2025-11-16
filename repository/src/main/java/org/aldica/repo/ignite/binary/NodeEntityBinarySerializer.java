@@ -383,7 +383,7 @@ public class NodeEntityBinarySerializer extends AbstractExtendedBinarySerializer
 
         nodeEntity.setTransaction(transaction);
 
-        if ((simpleFlags & FLAG_AUDITABLE_NULL) == 0)
+        if ((simpleFlags & FLAG_SIMPLE_AUDITABLE_NULL) == 0)
         {
             final AuditablePropertiesEntity auditableProperties = new AuditablePropertiesEntity();
             this.readString(AUDITABLE_MODIFIED, auditableProperties::setAuditModified, simpleFlags, FLAG_SIMPLE_MODIFIED_NULL, reader);

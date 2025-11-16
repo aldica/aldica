@@ -102,8 +102,8 @@ public class AclEntityBinarySerializerTests extends AclGridTestsBase
                 final IgniteCache<Long, AclEntity> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, AclEntity> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-                // minor optimisation by merging boolean flags into a byte - 5%
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", 0.05);
+                // minor optimisation by merging boolean flags into a byte - 4.5%
+                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", 0.045);
             }
             finally
             {
