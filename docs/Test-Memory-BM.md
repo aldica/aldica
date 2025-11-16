@@ -157,25 +157,25 @@ In order to test the various levels of [binary serialisation optimisations](./Co
 - System: Lenovo T14 Gen 3, Intel Core i7-1270P @ 2.20 GHz, 12 Core (16 logical processors), 48 GiB RAM, Windows 11, Docker engine on Ubuntu via WSL2 (10 Cores, 24 GiB RAM assigned), SAMSUNG MZVL21T0HCLR 1 TiB SSD
 - Concurrent threads: 12
 
-| Measure | Alfresco 25.2.0 | aldica (medium opt) | aldica (max opt) | aldica (max opt + no swap) | aldica (min opt) | aldica 1.0.1 @ ACS 6.2.0-ga* |
-| :--- | ---: | ---: | ---: | ---: | ---: |
-| Heap (Xmx) | 8 GiB | 2 GiB | 2 GiB | 2 GiB | 2 GiB | 4 GiB |
-| Heap (total)* | 3.44 GiB | 234.25 MiB | 235.25 MiB | 241.00 MiB | 224.00 MiB | 1.33 GiB |
-| `nodesSharedCache` | 849.75 MiB | 634.00 MiB | 637.75 MiB | 633.50 MiB | 795.25 MiB | 1.11 GiB |
-| `nodeAspectsCache` | 359.00 MiB | 218.25 MiB | 153.00 MiB | 153.25 MiB | 328.25 MiB | 201.75 MiB |
-| `nodePropertiesCache` | 1.03 GiB | 805.00 MiB | 307.00 MiB | 307.00 MiB | 1.29 GiB | 483.00 MiB |
-| `contentDataCache` | 176.00 MiB | 232.50 MiB | 217.25 MiB | 215.50 MiB | 261.00 MiB | 247.00 MiB |
-| `contentUrlCache` | 271 MiB | 402.75 MiB | 402.50 MiB | 402.50 MiB | 429.75 MiB | 450.50 MiB |
-| `acl`* | 222.00 | ... | 208.75 MiB | ... | ... | ... |
-| `defaultDataRegion`* | N/A | 50.75 MiB | 50.75 MiB | 58.25 MiB | 50.75 MiB | 46.00 MiB |
-| Memory (used)* | 3.44 GiB | ... | 2.17 GiB | ... | ... | ... |
-| Memory reduction (used) | N/A | ... | 37% | ... | ... | ... |
-| Memory (eff)* | 8.6 GiB | ... | 2.94 GiB (2.51 GiB) | ... | ... | ... |
-| Memory reduction (eff)* | N/A | ... | 65.8% (70.8%) | ... | ... | ... |
-| Avg. throughput - initial load | 2187/s | 2125/s | 1811/s | 2326/s | 1999/s | 1750/s |
-| Peak avg. throughput - initial load | 3001/s | 2139/s | 2172/s | 2660/s | 2033/s | 2604/s |
-| Avg. throughput - 2nd load | 3868/s | 4535/s | 3982*/s | 6517/s | 4487/s | 4437/s |
-| Peak avg. throughput - 2nd load | 6156/s | 6413/s | 5773*/s | 7531/s | 6243/s | 6286/s |
+| Measure                           | ACS 25.2.0    | aldica (medium)   | aldica (max)          | aldica (max + no swap)    | aldica (min)          | aldica 1.0.1 @ ACS 6.2.0-ga\* |
+| :---                              | ---:          | ---:              | ---:                  | ---:                      | ---:                  | ---:                          |
+| Heap (Xmx)                        | 8 GiB         | 2 GiB             | 2 GiB                 | 2 GiB                     | 2 GiB                 | 4 GiB                         |
+| Heap (total)\*                    | 3.45 GiB      | 233.50 MiB        | 231.25 MiB            | 241.25 MiB                | 228.50 MiB            | 1.37 GiB                      |
+| `nodesSharedCache`            | 849.75 MiB    | 639.25 MiB        | 639.25 MiB            | 639.25 MiB                | 796.50 MiB            | 1.14 GiB                      |
+| `nodeAspectsCache`            | 359.00 MiB    | 218.50 MiB        | 153.25 MiB            | 153.25 MiB                | 328.25 MiB            | 201.75 MiB                    |
+| `nodePropertiesCache`        | 1.03 GiB       | 805.50 MiB        | 308.00 MiB            | 308.00 MiB                | 1.29 GiB              | 483.50 MiB                    |
+| `contentDataCache`            | 176.00 MiB    | 233.25 MiB        | 217.50 MiB            | 217.50 MiB                | 265.25 MiB            | 248.00 MiB                    |
+| `contentUrlCache`             | 261 MiB       | 404.75 MiB        | 404.50 MiB            | 404.50 MiB                | 435.50 MiB            | 453.50 MiB                    |
+| `acl`\*                          | 211.75 MiB     | 210.75 MiB        | 209.00 MiB            | 209.00 MiB                | 240.25 MiB            | 270.75 MiB                    |
+| `defaultDataRegion`\*         | N/A           | 58.25 MiB         | 58.25 MiB             | 58.25 MiB                 | 60.50 MiB             | 44.25 MiB                     |
+| Memory (used)*                    | 3.45 GiB      | 2.74 GiB          | 2.17 GiB              | 2.18 GiB                  | 3.59 GiB              | 2.80 GiB                      |
+| Memory reduction (used)           | N/A           | 20.5 %            | 37.1 %                | 36.8 %                    | -4 %                  | 18.8 %                        |
+| Memory (eff)\*                    | 8.63 GiB      | 3.51 GiB (3.08 GiB) | 2.94 GiB (2.51 GiB) | 2.94 GiB (2.53 GiB)       | 4.37 GiB (3.93 GiB)   | 5.09 GiB                      |
+| Memory reduction (eff)\*          | N/A           | 59.3 % (64.3 %)   | 65.9 % (70.9 %)       | 65.9 % (70.6 %)           | 49.4 % (54.4 %)       | 41 %                          |
+| Avg. throughput - 1st load        | 2133/s        | 1915/s            | 1946/s                | 1961/s                    | 1899/s                | 1562/s                        |
+| Peak avg. throughput - 1st load   | 2504/s        | 2367/s            | 2053/s                | 1971/s                    | 1900/s                | 2181/s                        |
+| Avg. throughput - 2nd load        | 4334/s        | 4029/s            | 4061/s                | 4448/s                    | 3962/s                | 3011/s                        |
+| Peak avg. throughput - 2nd load   | 7508/s        | 6279/s            | 6116/s                | 6783/s                    | 6155/s                | 5085/s                        |
 
 Notes:
 - memory values generally rounded up to the nearest quarter MiB (fluctuations typically +/- 0.10-0.30 MiB in repeated identical runs)
@@ -187,14 +187,14 @@ Notes:
 - disk IO performance may have large impacts on test runs for swap-enabled aldica instances
 - test measurements on different days showed varying degress of differences, likely depending on the state of Docker host
     - all measurements were obtained in a single session without starting/stopping major services/applications on Docker host
-- Heap (total)*: Heap memory used as reported in a Java heap memory dump of live objects while in idle state
-- Memory (used)*: Total comparable memory - heap and off-heap memory
-- Memory (eff)*: Effective memory allocated, taking into account required heap memory size so that "Heap (total)" accounts for only "Old Generation" using standard Java G1 GC sizing defaults (max. ~40%, but at least 1 GiB total heap)
+- Heap (total)\*: Heap memory used as reported in a Java heap memory dump of live objects while in idle state
+- Memory (used)\*: Total comparable memory - heap and off-heap memory
+- Memory (eff)\*: Effective memory allocated, taking into account required heap memory size so that "Heap (total)" accounts for only "Old Generation" using standard Java G1 GC sizing defaults (max. ~40%, but at least 1 GiB total heap)
     - this does not take into account the heap used for the benchmark test, only the heap that would be necessary to support the idle state of memory usage with all test data loaded into caches
     - if the 1 GiB total heap baseline is enforced, a value in parentheses gives the value calculated from from the actually used heap based on relative usage of 40% without potentially triggering mixed GC
-- `acl`*: contains miscellaneous ACL-related data, mostly data of the `nodeOwnerSharedCache`, `readersSharedCache`, `aclSharedCache`, `aclEntitySharedCache`
-- `defaultDataRegion`*: contains miscellaneous off-heap data, mostly data of the `immutableEntitySharedCache`, other Alfresco caches that are barely used in this benchmark, and internal Ignite infrastructure/metadata data
-- aldica 1.0.1 @ ACS 6.2.0-ga*: for a reasonable comparison with older version(s) of aldica / ACS, using default/maximum optimisations
+- `acl`\*: contains miscellaneous ACL-related data, mostly data of the `nodeOwnerSharedCache`, `readersSharedCache`, `aclSharedCache`, `aclEntitySharedCache`
+- `defaultDataRegion`\*: contains miscellaneous off-heap data, mostly data of the `immutableEntitySharedCache`, other Alfresco caches that are barely used in this benchmark, and internal Ignite infrastructure/metadata data
+- aldica 1.0.1 @ ACS 6.2.0-ga\*: for a reasonable comparison with older version(s) of aldica / ACS, using default/maximum optimisations
     - the `nodesSharedCache` in this version is not an aldica off-heap cache
     - none of the ACL-related caches in this version were optimised with regards to serialisation / memory footprint
     - any previous benchmarks using aldica 1.0.1 on ACS 6.1.2 cannot be taken as reference, due to differences ranging from test machine hardware to revised and improved test + comparison procedure (specifically concerning the extent of warm-up before measured tests and inclusion of ACL-related structures)
@@ -203,19 +203,17 @@ Analysis remarks:
 - default ACS `contentDataCache` accounts for less heap memory than the equivalent aldica off-heap caches use because cached content data is technically shared between `contentDataCache` and `nodePropertiesCache` - since some of the aldica optimisations include content data ID substitution in `nodePropertiesCache` and we look at the overall memory use, this bit of fuzzy/shared memory ownership is perfectly fine for the benchmark
 - default ACS `nodeAspectsCache` and `nodePropertiesCache` sizes do not include full cost for `QName` instances of aspect and property names, which are shared with the `immutableEntitySharedCache` (contained in the total heap used), while aldica caches would include the full cost if it wasn't for the serialisation optimisations
 - aldica 1.1.0 added significant memory optimisation improvements compared to version 1.0.1, doubling the relative reduction of used memory
-- despite aldica needing to de-serialise cache values on read access, the 2nd load average throughput (read-only cache use) of the slowest aldica optimisation variants is still only 10-12% lower than normal ACS, and with maximum optimisations enabled is slightly higher or up to 30% higher when pure memory (swap-less) caches are used
-    - the difference in performance between the aldica optimisations modes very likely relate to the amount of memory used to represent cache values, since less memory needs to be stored and/or swapped in/out of memory - even though the optimisations add logical complexity, the overall cost of execution is still reduced enough to be a net positive
-    - enabling the maximum of optimisations in the aldica default configuration offers the best combination of memory reduction and performance
-    - using a file-backed swap-enabled default data region in aldica makes a compromise between performance and allowing caches larger than the total available memory
+- despite aldica needing to de-serialise cache values on read access, the 2nd load average throughput (read-only cache use) of the slowest aldica optimisation variants is still only 8-9 % lower than normal ACS, and with maximum optimisations enabled is slightly (2-3%) higher when pure memory (swap-less) caches are used
+    - the difference in performance between the aldica optimisations modes very likely related to the amount of memory used to represent cache values, since less memory needs to be stored and/or swapped in/out of memory - even though the optimisations add logical complexity, the overall cost of execution is still reduced enough to be a net positive
+    - enabling the maximum of optimisations in the aldica default configuration with swap disabled offers the best combination of memory reduction and performance
+    - using a file-backed swap-enabled data region in aldica makes a compromise between performance and allowing caches larger than the total available memory
     - the high peak average throughput of normal ACS shows that its heap-focussed caching could be much faster with even more heap allocated to ACS to reduce GC pressure, but this would further increase the effective memory necessary for the same amount of cached entries when the memory comparison is already at a huge disadvantage for normal ACS
 - operations with cache writes (initial load) are generally slower in aldica due to the serialisation overhead, but show a similar correlation with improved performance with more extensive optimisations due the smaller memory footprint of serialised cache values
-    - with the aldica default configuration, the initial load is only 7% slower in throughput than normal ACS, which sort-of balances out with a 6% higher throughput in the 2nd load for read-only cache access, which - through repeated cache reads - more than makes up for the initial overhead
-    - writes in swap-enabled aldica are not any slower than in a memory-only configuration - this is due to writes to disk/swap being handled asynchronously by the OS (via memory-mapped files), adding no immediate overhead during the load benchmark
 - the more aggressive serialisation optimisations are extremely effective for deeply-nested / complex structures
     - each inlined object saves around 20 bytes for the Ignite object header - `nodesPropertiesCache` with its map of properties with an arbitrary amount of key/value-pairs and diverse types of values benefits immensely from this already with the medium set of optimisations
     - in various cases, the `null`-ness of multiple inlined fields in a cached value or other serialisation metadata (e.g. unsigned nature of reference IDs/numeric values) is aggregated into bit maps, saving 1-2 bytes per nullable field and/or ID reference/numeric field
     - with minimal optimisations alone, `QName` instances (aspect or property names) are typically less than half the size as they would be with Ignite's default serialisation as well-known namespace URIs (static ACS namespaces) are substituted with a single byte), or `StoreRef` instances used as part of `NodeRef`s are typically written in a single byte instead of the separate `protocol` and `identifier`
-    - with maximum optimisations `QName` instances may often be written in only 1-2 bytes (inlined) + 1-2 flag bits for any `QName` whose corresponding `id` in the `alf_qname` table is between -8192 and 8191, and at most 4 bytes + 1-2 flag bits unless the `id` is lower than `-536870912` / higher than `536870911` (both unrealistic)
+    - with maximum optimisations `QName` instances may often be written in only 1-2 bytes (inlined) + 1-2 flag bits for any `QName` whose corresponding `id` in the `alf_qname` table is between -8192 and 8191, and at most 4 bytes + 1-2 flag bits unless the `id` is lower than `-536870912` / higher than `536870911` (both unrealistic in typical ACS installations)
 
 ### Collected Metrics (Previous Releases)
 
@@ -223,27 +221,27 @@ Analysis remarks:
 - System: Lenovo T460p, Intel Core i7-6700HQ @ 2.60 GHz, 4 Core, 32 GiB RAM, Windows 10, Docker for Desktop (2 CPU, 14 GiB RAM assigned), SAMSUNG MZ7LN512HMJP 512 GiB SSD
 - Concurrent threads: 6
 
-| Measure | Alfresco 6.1.2 | aldica (medium opt) | aldica (default / max opt) | aldica (min opt) |
-| :--- | ---: | ---: | ---: | ---: |
-| Heap (Xmx) | 6 GiB | 4 GiB | 4 GiB | 4 GiB |
-| Heap (total)* | 3 GiB | 1.3 GiB | 1.3 GiB | 1.3 GiB |
-| `nodesSharedCache` | 984.4 MiB | 1.1 GiB | 1.1 GiB | 1.1 GiB |
-| `nodeAspectsCache` | 359 MiB | 200.2 MiB | 199.9 MiB | 331 MiB |
-| `nodePropertiesCache` | 1 GiB | 621.1 MiB | 480.9 MiB | 1.1 GiB |
-| `contentDataCache` | 175.9 MiB | 247.5 MiB | 247.5 MiB | 297 MiB |
-| Memory (used)* | 3 GiB | 2.35 GiB | 2.2 GiB | 3 GiB |
-| Memory reduction (used) | N/A | 21% | 26% | 0% |
-| Memory (eff)* | 6 GiB | 5.05 GiB | 4.9 GiB | 5.71 GiB |
-| Memory reduction (eff)* | N/A | 16% | 18% | 5% |
-| Avg. throughput - initial load | 424/s | 427/s | 426/s | 442/s |
-| Peak avg. throughput - initial load | 441/s | 460/s | 443/s | 484/s |
-| Avg. throughput - 2nd load | 1274/s | 1654/s | 1913/s | 1605/s |
-| Peak avg. throughput - 2nd load | 1276/s | 1654/s | 1913/s | 1651/s |
+| Measure                           | ACS 6.1.2 | aldica (med)  | aldica (max)  | aldica (min)  |
+| :---                              | ---:      | ---:          | ---:          | ---:          |
+| Heap (Xmx)                        | 6 GiB     | 4 GiB         | 4 GiB         | 4 GiB         |
+| Heap (total)\*                    | 3 GiB     | 1.3 GiB       | 1.3 GiB       | 1.3 GiB       |
+| `nodesSharedCache`            | 984.4 MiB | 1.1 GiB       | 1.1 GiB       | 1.1 GiB       |
+| `nodeAspectsCache`            | 359 MiB   | 200.2 MiB     | 199.9 MiB     | 331 MiB       |
+| `nodePropertiesCache`         | 1 GiB     | 621.1 MiB     | 480.9 MiB     | 1.1 GiB       |
+| `contentDataCache`            | 175.9 MiB | 247.5 MiB     | 247.5 MiB     | 297 MiB       |
+| Memory (used)\*                   | 3 GiB     | 2.35 GiB      | 2.2 GiB       | 3 GiB         |
+| Memory reduction (used)           | N/A       | 21%           | 26%           | 0%            |
+| Memory (eff)\*                    | 6 GiB     | 5.05 GiB      | 4.9 GiB       | 5.71 GiB      |
+| Memory reduction (eff)\*          | N/A       | 16%           | 18%           | 5%            |
+| Avg. throughput - 1st load        | 424/s     | 427/s         | 426/s         | 442/s         |
+| Peak avg. throughput - 1st load   | 441/s     | 460/s         | 443/s         | 484/s         |
+| Avg. throughput - 2nd load        | 1274/s    | 1654/s        | 1913/s        | 1605/s        |
+| Peak avg. throughput - 2nd load   | 1276/s    | 1654/s        | 1913/s        | 1651/s        |
 
 Notes:
-- Heap (total)*: Heap memory used as reported in a Java heap memory dump of live objects while in idle state
-- Memory (used)*: Total comparable memory - heap and off-heap memory - excluding the aldica `contentUrl` data region, which holds data excluded from caching in Alfresco on-heap caches, as that cache is filled only once and never used again in the benchmark - cached data is only relevant for actual content access / download, which was out-of-scope
-- Memory (eff)*: Effective memory allocated, taking into account maximum allocated heap memory at which both systems have a similar amount of remaining available heap for actual operations (3 GiB vs. 2.7 GiB)
+- Heap (total)\*: Heap memory used as reported in a Java heap memory dump of live objects while in idle state
+- Memory (used)\*: Total comparable memory - heap and off-heap memory - excluding the aldica `contentUrl` data region, which holds data excluded from caching in Alfresco on-heap caches, as that cache is filled only once and never used again in the benchmark - cached data is only relevant for actual content access / download, which was out-of-scope
+- Memory (eff)\*: Effective memory allocated, taking into account maximum allocated heap memory at which both systems have a similar amount of remaining available heap for actual operations (3 GiB vs. 2.7 GiB)
 
 ### Memory Analysis
 In the heap dump of both instances, the biggest object by retained heap memory is the `nodesSharedCache`, taking 980 MiB to 1,1 GiB of heap memory. Due to Alfresco design flaws (mutable state in cache entries and usage patterns relying on server-local object semantics), this cache cannot be supported by an Ignite-backed cache. The noticeable difference in cache size can be explained by value sharing between the on-heap `nodesSharedCache` and `nodePropertiesCache` instances in default - due to our test model having a single property of type `d:noderef`, the `NodeRefPropertyMethodInterceptor` is triggered, which performs an existence check on the node identified by the property value, causing a cache entry to be created in `nodesSharedCache` with a key used as a value in `nodePropertiesCache`, so both caches essentially split ownership and thus cost. In the aldica systems, this cannot occur due to serialisation in the off-heap `nodePropertiesCache`, so the `nodesSharedCache` bears the full heap cost..
@@ -258,6 +256,7 @@ Additionally, the extensive map, segment, key and value holder instances used fo
 With regards to the `contentDataCache`, the aldica off-heap cache consistently uses more memory than the on-heap variant in Alfresco default. This may be a false impression though as the `ContentDataWithId` values stored in this cache are reused as sub-values in the `nodePropertiesCache` and thus the retained heap memory reported by the heap analysis tools are likely skewed. But it is indeed the case that `ContentDataWithId` is difficult to optimise as the majority of its cost is determined by the content URL string. The application of value substitution on the `Locale`, encoding and mimetype fragments of `ContentDataWithId` at least is able to reduce the footprint by 17% between the minimum and default / most aggressive serialisation optimisation options..
 
 ### Throughput Analysis
+
 Though originally not a goal of the memory benchmark, it provides an easy and effective means to determine the performance / throughput difference between Alfresco default caching and aldica, as well between the various optimisation levels that aldica provides with regards to key / value serialisation. The throughput values can be extracted from the `alfresco.log` by checking the output of the cache load batch process.
 
 In all benchmark tests, the initial load showed a generally consistent throughput no matter what caching technology or optimsiation level was used. This clearly indicates that the primary bootleneck in this case is the retrieval of data from the database, and any differences in cache PUT performance, e.g. due to serialisation in aldica caches, are mostly drowned out. Still, aldica caches appear to have a negligible advantage considering all their throughput values are consistently slightly higher. Since we do not perform a start-to-end tracing of each batches performance, it is impossible to determine if this may be the result of a slow-down towards the end of the load operation for default Alfresco caches, when the heap usage starts to get into ranges where more frequent / costly GC cycles may be expected.
