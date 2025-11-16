@@ -3,13 +3,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.repo.ignite.lock;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.aldica.common.ignite.lifecycle.IgniteInstanceLifecycleAware;
+import org.aldica.common.ignite.lifecycle.LazySwappingInvoker;
 import org.aldica.common.ignite.lifecycle.SpringIgniteLifecycleBean;
+import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.repo.lock.mem.LockState;
 import org.alfresco.repo.lock.mem.LockStore;
 import org.alfresco.repo.lock.mem.LockStoreFactory;
@@ -41,6 +47,24 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LockStoreFactoryImpl.class);
 
+    private static final Map<Method, MethodHandle> LOCK_STORE_HANDLES = new HashMap<>();
+    static
+    {
+        final MethodHandles.Lookup publicLookup = MethodHandles.publicLookup();
+        final Method[] methods = LockStore.class.getDeclaredMethods();
+        try
+        {
+            for (final Method method : methods)
+            {
+                LOCK_STORE_HANDLES.put(method, publicLookup.unreflect(method));
+            }
+        }
+        catch (final IllegalAccessException iae)
+        {
+            throw new AlfrescoRuntimeException("Cannot obtain method handle", iae);
+        }
+    }
+
     protected String instanceName;
 
     protected int partitionsCount = 32;
@@ -50,6 +74,8 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
     protected boolean enableRemoteSupport;
 
     protected boolean disableAllStatistics;
+
+    private final List<LazySwapLockStoreInvoker> invokers = new ArrayList<>();
 
     /**
      *
@@ -79,6 +105,8 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
         if (EqualsHelper.nullSafeEquals(this.instanceName, instanceName))
         {
             this.instanceStarted = true;
+
+            this.invokers.stream().forEach(LazySwapLockStoreInvoker::checkSwapInstance);
         }
     }
 
@@ -105,7 +133,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     /**
      * @param instanceName
-     *            the name of the Ignite instance to which to attach the lock cache
+     *     the name of the Ignite instance to which to attach the lock cache
      */
     public void setInstanceName(final String instanceName)
     {
@@ -114,7 +142,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     /**
      * @param partitionsCount
-     *            the partitionsCount to set
+     *     the partitionsCount to set
      */
     public void setPartitionsCount(final int partitionsCount)
     {
@@ -123,7 +151,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     /**
      * @param enableRemoteSupport
-     *            the enableRemoteSupport to set
+     *     the enableRemoteSupport to set
      */
     public void setEnableRemoteSupport(final boolean enableRemoteSupport)
     {
@@ -132,7 +160,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
 
     /**
      * @param disableAllStatistics
-     *            the disableAllStatistics to set
+     *     the disableAllStatistics to set
      */
     public void setDisableAllStatistics(final boolean disableAllStatistics)
     {
@@ -146,18 +174,24 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
     public LockStore createLockStore()
     {
         LockStore lockStore;
-        if (this.instanceStarted)
+        if (this.instanceStarted && this.enableRemoteSupport)
         {
             LOGGER.debug("Creating Ignite-backed lock store");
             lockStore = this.createIgniteLockStore();
         }
-        else
+        else if (this.enableRemoteSupport)
         {
             LOGGER.debug("Creating proxy to lazily swap lock store with Ignite-backed instance when grid has started");
             final LockStoreImpl temporaryLockStore = new LockStoreImpl();
-            lockStore = (LockStore) Proxy.newProxyInstance(LockStoreFactoryImpl.class.getClassLoader(),
-                    new Class<?>[] { LockStore.class, IgniteInstanceLifecycleAware.class },
-                    new LockStoreInvokerWithLazySwapSupport(temporaryLockStore));
+            final LazySwapLockStoreInvoker invoker = new LazySwapLockStoreInvoker(temporaryLockStore);
+            lockStore = (LockStore) Proxy.newProxyInstance(LockStoreFactoryImpl.class.getClassLoader(), new Class<?>[] { LockStore.class },
+                    invoker);
+            this.invokers.add(invoker);
+        }
+        else
+        {
+            LOGGER.debug("Creating default lock store");
+            lockStore = new LockStoreImpl();
         }
 
         return lockStore;
@@ -167,7 +201,7 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
     {
         final CacheConfiguration<NodeRef, LockState> cacheConfig = new CacheConfiguration<>();
         cacheConfig.setName("lockStore");
-        cacheConfig.setCacheMode(this.enableRemoteSupport ? CacheMode.REPLICATED : CacheMode.LOCAL);
+        cacheConfig.setCacheMode(CacheMode.REPLICATED);
         cacheConfig.setStatisticsEnabled(!this.disableAllStatistics);
 
         // evict to off-heap after 975+25 entries
@@ -176,11 +210,8 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
         cacheConfig.setOnheapCacheEnabled(true);
         cacheConfig.setEvictionPolicyFactory(evictionPolicyFactory);
 
-        if (cacheConfig.getCacheMode() == CacheMode.REPLICATED)
-        {
-            cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
-            cacheConfig.setRebalanceMode(CacheRebalanceMode.ASYNC);
-        }
+        cacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        cacheConfig.setRebalanceMode(CacheRebalanceMode.ASYNC);
 
         @SuppressWarnings("resource")
         final Ignite instance = this.instanceName != null ? Ignition.ignite(this.instanceName) : Ignition.ignite();
@@ -198,72 +229,43 @@ public class LockStoreFactoryImpl implements LockStoreFactory, InitializingBean,
      *
      * @author Axel Faust
      */
-    public class LockStoreInvokerWithLazySwapSupport implements InvocationHandler
+    public class LazySwapLockStoreInvoker extends LazySwappingInvoker<LockStore>
     {
 
         private boolean swapped = false;
 
-        private LockStore lockStore;
-
-        protected LockStoreInvokerWithLazySwapSupport(final LockStore lockStore)
+        protected LazySwapLockStoreInvoker(final LockStore lockStore)
         {
-            this.lockStore = lockStore;
+            super(lockStore);
         }
 
-        public LockStore getBackingObject()
+        protected void checkSwapInstance()
         {
-            return this.lockStore;
+
+            if (!this.swapped)
+            {
+                final LockStore newLockStore = LockStoreFactoryImpl.this.createIgniteLockStore();
+
+                // transfer
+                this.backingObject.getNodes().forEach(node -> {
+                    final LockState lockState = this.backingObject.get(node);
+                    newLockStore.set(node, lockState);
+                });
+
+                this.backingObject = newLockStore;
+                this.swapped = true;
+
+                this.resetBoundMethodHandles();
+
+                LOGGER.debug("Lazily swapped temporary lock store with Ignite-backed instance");
+            }
         }
 
-        /**
-         *
-         * {@inheritDoc}
-         */
         @Override
-        public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
+        protected MethodHandle bindIfSupported(final Method method)
         {
-            Object result = null;
-
-            final String methodName = method.getName();
-            if (IgniteInstanceLifecycleAware.class.isAssignableFrom(method.getDeclaringClass())
-                    && (methodName.startsWith("beforeInstance") || methodName.startsWith("afterInstance")))
-            {
-                if ("afterInstanceStartup".equals(methodName) && args.length == 1
-                        && EqualsHelper.nullSafeEquals(LockStoreFactoryImpl.this.instanceName, args[0]))
-                {
-                    LockStoreFactoryImpl.this.instanceStarted = true;
-
-                    if (!this.swapped)
-                    {
-                        final LockStore newLockStore = LockStoreFactoryImpl.this.createLockStore();
-
-                        // transfer
-                        this.lockStore.getNodes().forEach(node -> {
-                            final LockState lockState = this.lockStore.get(node);
-                            newLockStore.set(node, lockState);
-                        });
-
-                        this.lockStore = newLockStore;
-                        this.swapped = true;
-
-                        LOGGER.debug("Lazily swapped temporary lock store with Ignite-backed instance");
-                    }
-                }
-            }
-
-            if (method.getDeclaringClass().isInstance(this.lockStore))
-            {
-                try
-                {
-                    result = method.invoke(this.lockStore, args);
-                }
-                catch (final InvocationTargetException e)
-                {
-                    throw e.getTargetException();
-                }
-            }
-
-            return result;
+            final MethodHandle mh = LOCK_STORE_HANDLES.get(method);
+            return mh != null ? mh.bindTo(this.backingObject) : super.bindIfSupported(method);
         }
     }
 }

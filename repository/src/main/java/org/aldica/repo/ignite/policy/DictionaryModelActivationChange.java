@@ -4,6 +4,7 @@
 package org.aldica.repo.ignite.policy;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +36,8 @@ import org.alfresco.util.transaction.TransactionSupportUtil;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -94,7 +97,7 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
 
     /**
      * @param dictionaryDAO
-     *            the dictionaryDAO to set
+     *     the dictionaryDAO to set
      */
     public void setDictionaryDAO(final DictionaryDAO dictionaryDAO)
     {
@@ -103,7 +106,7 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
 
     /**
      * @param policyComponent
-     *            the policyComponent to set
+     *     the policyComponent to set
      */
     public void setPolicyComponent(final PolicyComponent policyComponent)
     {
@@ -112,7 +115,7 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
 
     /**
      * @param transactionService
-     *            the transactionService to set
+     *     the transactionService to set
      */
     public void setTransactionService(final TransactionService transactionService)
     {
@@ -121,7 +124,7 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
 
     /**
      * @param tenantService
-     *            the tenantService to set
+     *     the tenantService to set
      */
     public void setTenantService(final TenantService tenantService)
     {
@@ -130,7 +133,7 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
 
     /**
      * @param instanceName
-     *            the instanceName to set
+     *     the instanceName to set
      */
     public void setInstanceName(final String instanceName)
     {
@@ -154,8 +157,24 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
     {
         if (EqualsHelper.nullSafeEquals(this.instanceName, instanceName))
         {
-            Ignition.ignite(instanceName).message().localListen(DictionaryModelActivationChange.class.getName(), (UUID, tenant) -> {
-                this.onRemoteDictionaryChange(String.valueOf(tenant));
+            Ignition.ignite(instanceName).message().localListen(DictionaryModelActivationChange.class.getName(), (UUID, tenants) -> {
+                if (tenants instanceof Collection<?>)
+                {
+                    LOGGER.debug("Received model activation message for tenants {}", tenants);
+
+                    // we don't detach from Ignite event thread here
+                    // we want operational atomicity for model (de-)activations in a cluster
+                    for (final Object tenant : (Collection<?>) tenants)
+                    {
+                        this.onRemoteDictionaryChange(String.valueOf(tenant));
+                    }
+                }
+                // just in case the event (supposed to be sent as a collection of tenants) is de-deduplexed
+                else if (tenants instanceof String)
+                {
+                    LOGGER.debug("Received model activation message for tenant {}", tenants);
+                    this.onRemoteDictionaryChange(String.valueOf(tenants));
+                }
                 return true;
             });
             LOGGER.debug("Registered listener for remote dictionary model activation");
@@ -246,7 +265,20 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
                 LOGGER.debug("Sending message about dictionary model (de)activations in tenants {} to grid servers {}", affectedTenants,
                         remotes.nodes());
 
-                affectedTenants.forEach(tenant -> ignite.message(remotes).send(DictionaryModelActivationChange.class.getName(), tenant));
+                for (final ClusterNode node : remotes.nodes())
+                {
+                    // send individually so we can catch errors and ensure best-effort sending
+                    try
+                    {
+                        // we want to send the collection as one message, not the tenant names as separate messages
+                        ignite.message(remotes.forNode(node)).send(DictionaryModelActivationChange.class.getName(),
+                                (Object) affectedTenants);
+                    }
+                    catch (final ClusterTopologyException ex)
+                    {
+                        LOGGER.warn("Failed sending model activation message for tenants {} - {}", affectedTenants, ex.getMessage());
+                    }
+                }
             }
             else
             {
@@ -263,7 +295,7 @@ public class DictionaryModelActivationChange extends TransactionListenerAdapter
      * Reacts to a remote tenant dictionary invalidation message by reinitialising the dictionary of the local server instance.
      *
      * @param tenant
-     *            the tenant to process
+     *     the tenant to process
      */
     protected void onRemoteDictionaryChange(final String tenant)
     {

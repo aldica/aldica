@@ -5,6 +5,7 @@ package org.aldica.repo.ignite.cache;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.concurrent.Executor;
 
 import org.alfresco.repo.cache.SimpleCache;
 import org.alfresco.repo.cache.TransactionalCache.ValueHolder;
@@ -13,6 +14,8 @@ import org.alfresco.util.EqualsHelper;
 import org.alfresco.util.ParameterCheck;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,19 +56,21 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
      * entries.
      *
      * @param cacheName
-     *            the name of the backing cache
+     *     the name of the backing cache
      * @param backingCache
-     *            the low-level local cache instance
+     *     the low-level local cache instance
      * @param grid
-     *            the Ignite grid instance to use for communication
+     *     the Ignite grid instance to use for communication
      * @param alwaysInvalidateOnPut
-     *            {@code true} if this facade should always send invalidation messages to other nodes on the same data grid when values are
-     *            put into the backing cache, {@code false} otherwise
+     *     {@code true} if this facade should always send invalidation messages to other nodes on the same data grid when values are
+     *     put into the backing cache, {@code false} otherwise
      * @param allowSentinelsInBackingCache
-     *            {@code true} if sentinels for dummy values (defined by {@link EntityLookupCache}) are allowed to be stored in the cache
+     *     {@code true} if sentinels for dummy values (defined by {@link EntityLookupCache}) are allowed to be stored in the cache
+     * @param executor
+     *     the executor service for off-loading invalidation handling from Ignite threads
      */
     public InvalidatingCacheFacade(final String cacheName, final SimpleCache<K, V> backingCache, final Ignite grid,
-            final boolean alwaysInvalidateOnPut, final boolean allowSentinelsInBackingCache)
+            final boolean alwaysInvalidateOnPut, final boolean allowSentinelsInBackingCache, final Executor executor)
     {
         ParameterCheck.mandatoryString("cacheName", cacheName);
         ParameterCheck.mandatory("backingCache", backingCache);
@@ -83,9 +88,13 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
 
         grid.message().localListen(this.invalidationTopic, (uuid, key) -> {
             this.instanceLogger.debug("Received invalidation message for {}", key);
-            @SuppressWarnings("unchecked")
-            final K typedKey = (K) key;
-            this.backingCache.remove(typedKey);
+
+            // detach from Ignite messaging thread (fast-response)
+            executor.execute(() -> {
+                @SuppressWarnings("unchecked")
+                final K typedKey = (K) key;
+                this.backingCache.remove(typedKey);
+            });
 
             // keep listening
             return true;
@@ -95,10 +104,13 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
             this.instanceLogger.debug("Received bulk invalidation message for {}", col);
             if (col instanceof Collection<?>)
             {
-                @SuppressWarnings("unchecked")
-                final Collection<K> keyCollection = (Collection<K>) col;
-                keyCollection.forEach(key -> {
-                    this.backingCache.remove(key);
+                // detach from Ignite messaging thread (fast-response)
+                executor.execute(() -> {
+                    @SuppressWarnings("unchecked")
+                    final Collection<K> keyCollection = (Collection<K>) col;
+                    keyCollection.forEach(key -> {
+                        this.backingCache.remove(key);
+                    });
                 });
             }
             // keep listening
@@ -313,7 +325,18 @@ public class InvalidatingCacheFacade<K extends Serializable, V> implements Simpl
         if (!remotes.nodes().isEmpty())
         {
             this.instanceLogger.debug("Sending remote message on topic {} for {}", topic, msgLogLabel);
-            this.grid.message(remotes).send(topic, msg);
+            for (final ClusterNode node : remotes.nodes())
+            {
+                // send individually so we can catch errors and ensure best-effort sending
+                try
+                {
+                    this.grid.message(remotes.forNode(node)).send(topic, msg);
+                }
+                catch (final ClusterTopologyException ex)
+                {
+                    this.instanceLogger.warn("Failed sending invalidation message {} - {}", msg, ex.getMessage());
+                }
+            }
         }
         else
         {

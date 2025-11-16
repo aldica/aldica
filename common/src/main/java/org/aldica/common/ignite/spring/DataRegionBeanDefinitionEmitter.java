@@ -79,7 +79,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param enabled
-     *            the enabled to set
+     *     the enabled to set
      */
     public void setEnabled(final boolean enabled)
     {
@@ -88,7 +88,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param enabledPropertyKey
-     *            the enabledPropertyKey to set
+     *     the enabledPropertyKey to set
      */
     public void setEnabledPropertyKey(final String enabledPropertyKey)
     {
@@ -97,7 +97,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param propertyPrefix
-     *            the propertyPrefix to set
+     *     the propertyPrefix to set
      */
     public void setPropertyPrefix(final String propertyPrefix)
     {
@@ -106,7 +106,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param storageBeanDefinitionName
-     *            the storageBeanDefinitionName to set
+     *     the storageBeanDefinitionName to set
      */
     public void setStorageBeanDefinitionName(final String storageBeanDefinitionName)
     {
@@ -115,7 +115,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param dataRegionBeanDefinitionNamePrefix
-     *            the dataRegionBeanDefinitionNamePrefix to set
+     *     the dataRegionBeanDefinitionNamePrefix to set
      */
     public void setDataRegionBeanDefinitionNamePrefix(final String dataRegionBeanDefinitionNamePrefix)
     {
@@ -124,7 +124,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param instanceNameProperty
-     *            the instanceNameProperty to set
+     *     the instanceNameProperty to set
      */
     public void setInstanceNameProperty(final String instanceNameProperty)
     {
@@ -133,7 +133,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param propertiesSource
-     *            the propertiesSource to set
+     *     the propertiesSource to set
      */
     public void setPropertiesSource(final Properties propertiesSource)
     {
@@ -142,7 +142,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param placeholderPrefix
-     *            the placeholderPrefix to set
+     *     the placeholderPrefix to set
      */
     public void setPlaceholderPrefix(final String placeholderPrefix)
     {
@@ -151,7 +151,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param placeholderSuffix
-     *            the placeholderSuffix to set
+     *     the placeholderSuffix to set
      */
     public void setPlaceholderSuffix(final String placeholderSuffix)
     {
@@ -160,7 +160,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param valueSeparator
-     *            the valueSeparator to set
+     *     the valueSeparator to set
      */
     public void setValueSeparator(final String valueSeparator)
     {
@@ -264,7 +264,14 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
                     LOGGER.debug("Setting data region property {} to {} on {} for instance {}", dataRegionPropertyName, configValue,
                             dataRegionName, instanceName);
 
-                    dataRegionBeanDefinition.getPropertyValues().add(dataRegionPropertyName, configValue);
+                    if ("null".equals(configValue))
+                    {
+                        dataRegionBeanDefinition.getPropertyValues().removePropertyValue(propertyName);
+                    }
+                    else
+                    {
+                        dataRegionBeanDefinition.getPropertyValues().add(dataRegionPropertyName, configValue);
+                    }
                 }
             }
         });

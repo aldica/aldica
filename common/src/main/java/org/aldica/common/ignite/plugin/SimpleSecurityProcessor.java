@@ -3,6 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.common.ignite.plugin;
 
+import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,7 +63,7 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
     {
         if (configuration == null)
         {
-            throw new IllegalStateException("No configuration for SimplePassphraseSecurityPlugin has been defined");
+            throw new IllegalStateException("No configuration for SimpleSecurityPlugin has been defined");
         }
         this.ctx = ctx;
         this.configuration = configuration;
@@ -337,6 +339,20 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
      * {@inheritDoc}
      */
     @Override
+    public SecurityContext securityContext(final UUID subjId)
+    {
+        if (this.ctx.localNode().isClient())
+        {
+            return new NoopSecurityContext(new SimpleSecuritySubject(subjId, null, REMOTE_CLIENT, null));
+        }
+
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void authorize(final String name, final SecurityPermission perm, final SecurityContext securityCtx) throws SecurityException
     {
         // NO-OP - we don't provide any kind of ACL checking
@@ -373,7 +389,7 @@ public class SimpleSecurityProcessor implements GridSecurityProcessor
             {
                 LOGGER.debug("Accepting {} ({}) as provided credentials match", ctx.subjectId(), ctx.address());
                 final SecuritySubject securitySubject = new SimpleSecuritySubject(ctx.subjectId(), ctx.subjectType(),
-                        providedCredentials.getLogin(), ctx.address(), new NoopSecurityPermissionSet());
+                        providedCredentials.getLogin(), ctx.address());
                 this.authenticatedSubjects.put(ctx.subjectId(), securitySubject);
                 securityContext = new NoopSecurityContext(securitySubject);
             }

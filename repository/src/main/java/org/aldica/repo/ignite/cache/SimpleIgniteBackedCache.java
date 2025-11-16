@@ -6,18 +6,23 @@ package org.aldica.repo.ignite.cache;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.aldica.common.ignite.compute.CacheKeySetLookup;
 import org.alfresco.repo.cache.SimpleCache;
 import org.alfresco.repo.cache.TransactionalCache.ValueHolder;
 import org.alfresco.repo.cache.lookup.EntityLookupCache;
-import org.alfresco.util.EqualsHelper;
 import org.alfresco.util.ParameterCheck;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,70 +40,10 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
      *
      * @author Axel Faust
      */
-    public static enum Mode
+    public enum Mode
     {
-
-        LOCAL(true, false, false),
-        LOCAL_INVALIDATING_ON_CHANGE(true, true, false),
-        LOCAL_INVALIDATING(true, true, true),
-        PARTITIONED(false, false, false),
-        REPLICATED(true, false, false);
-
-        private final boolean consideredFullCache;
-
-        private final boolean handleInvalidations;
-
-        private final boolean alwaysInvalidateOnPut;
-
-        private Mode(final boolean consideredFullCache, final boolean handleInvalidations, final boolean alwaysInvalidateOnPut)
-        {
-            this.consideredFullCache = consideredFullCache;
-            this.handleInvalidations = handleInvalidations;
-            this.alwaysInvalidateOnPut = alwaysInvalidateOnPut;
-        }
-
-        /**
-         * @return the consideredFullCache
-         */
-        public boolean isConsideredFullCache()
-        {
-            return this.consideredFullCache;
-        }
-
-        /**
-         * @return the handleInvalidations
-         */
-        public boolean isHandleInvalidations()
-        {
-            return this.handleInvalidations;
-        }
-
-        /**
-         * @return the alwaysInvalidateOnPut
-         */
-        public boolean isAlwaysInvalidateOnPut()
-        {
-            return this.alwaysInvalidateOnPut;
-        }
-
-        /**
-         * Retrieves the appropriate variant of local cache mode to use for the specified invalidation parameters.
-         *
-         * @param invalidate
-         *            {@code true} if invalidations should be handled by the mode
-         * @param alwaysInvalidateOnPut
-         *            {@code true} if invalidations handled by the mode should be performed on every put operation
-         * @return the appropriate cache mode
-         */
-        public static Mode getLocalCacheMode(final boolean invalidate, final boolean alwaysInvalidateOnPut)
-        {
-            Mode result = Mode.LOCAL;
-            if (invalidate)
-            {
-                result = alwaysInvalidateOnPut ? Mode.LOCAL_INVALIDATING : Mode.LOCAL_INVALIDATING_ON_CHANGE;
-            }
-            return result;
-        }
+        PARTITIONED,
+        REPLICATED;
     }
 
     // value copied from EntityLookupCache (not accessible there)
@@ -130,13 +75,13 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
      * underlying cache.
      *
      * @param grid
-     *            the Ignite grid instance to use for communication
+     *     the Ignite grid instance to use for communication
      * @param cacheMode
-     *            the mode of operation for this cache instance
+     *     the mode of operation for this cache instance
      * @param backingCache
-     *            the low-level Ignite cache instance
+     *     the low-level Ignite cache instance
      * @param allowSentinelsInBackingCache
-     *            {@code true} if sentinels for dummy values (defined by {@link EntityLookupCache}) are allowed to be stored in the cache
+     *     {@code true} if sentinels for dummy values (defined by {@link EntityLookupCache}) are allowed to be stored in the cache
      */
     public SimpleIgniteBackedCache(final Ignite grid, final Mode cacheMode, final IgniteCache<K, V> backingCache,
             final boolean allowSentinelsInBackingCache)
@@ -150,37 +95,11 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         this.backingCache = backingCache;
         this.cacheName = backingCache.getName();
         this.allowSentinelsInBackingCache = allowSentinelsInBackingCache;
+
         this.invalidationTopic = this.cacheName + "-invalidate";
         this.bulkInvalidationTopic = this.cacheName + "-bulkInvalidate";
 
         this.instanceLogger = LoggerFactory.getLogger(this.getClass().getName() + "." + this.cacheName);
-
-        if (cacheMode.isHandleInvalidations())
-        {
-            grid.message().localListen(this.invalidationTopic, (uuid, key) -> {
-                this.instanceLogger.debug("Received invalidation message for {}", key);
-                @SuppressWarnings("unchecked")
-                final K typedKey = (K) key;
-                this.backingCache.remove(typedKey);
-
-                // keep listening
-                return true;
-            });
-
-            grid.message().localListen(this.bulkInvalidationTopic, (uuid, col) -> {
-                this.instanceLogger.debug("Received bulk invalidation message for {}", col);
-                if (col instanceof Collection<?>)
-                {
-                    @SuppressWarnings("unchecked")
-                    final Collection<K> keyCollection = (Collection<K>) col;
-                    keyCollection.forEach(key -> {
-                        this.backingCache.remove(key);
-                    });
-                }
-                // keep listening
-                return true;
-            });
-        }
     }
 
     /**
@@ -209,10 +128,10 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         this.instanceLogger.debug("Retrieving all (local) keys");
 
         final Collection<K> keys = new LinkedHashSet<>();
-        if (this.cacheMode.isConsideredFullCache())
+        if (this.cacheMode == Mode.REPLICATED)
         {
-            // local lookup is sufficient for local / replicated cache
-            // use withKeepBinary to avoid unnecessary deseralisation of values
+            // local lookup is sufficient for replicated cache
+            // use withKeepBinary to avoid unnecessary deserialisation of values
             final IgniteCache<K, ?> cache = this.backingCache.withKeepBinary();
             cache.localEntries(CachePeekMode.ALL).forEach(entry -> {
                 K key = entry.getKey();
@@ -226,24 +145,27 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         else
         {
             // partitioned cache collects all keys from all instances
+            // using exclusively BinaryObject since companion grid members runs without key/value classes
             final ClusterGroup cacheNodes = this.grid.cluster().forCacheNodes(this.cacheName);
 
-            final Collection<Collection<K>> allCacheKeys = this.grid.compute(cacheNodes).broadcast(() -> {
-                final Collection<K> localKeys = new LinkedHashSet<>();
-                // use withKeepBinary to avoid unnecessary deseralisation of values
-                final IgniteCache<K, V> cache = Ignition.localIgnite().<K, V> getOrCreateCache(this.cacheName).withKeepBinary();
-                cache.localEntries(CachePeekMode.ALL).forEach(entry -> {
-                    K key = entry.getKey();
-                    if (key instanceof BinaryObject)
-                    {
-                        key = ((BinaryObject) key).deserialize();
-                    }
-                    localKeys.add(key);
-                });
-                return localKeys;
-            });
+            final Collection<Collection<Object>> allCacheKeys = this.grid.compute(cacheNodes)
+                    .broadcast(new CacheKeySetLookup(this.cacheName));
 
-            allCacheKeys.forEach(singleCacheKeys -> keys.addAll(singleCacheKeys));
+            final ClassLoader cldr = this.getClass().getClassLoader();
+            @SuppressWarnings("unchecked")
+            final Function<Object, K> mapper = cacheKey -> {
+                final K key;
+                if (cacheKey instanceof BinaryObject)
+                {
+                    key = ((BinaryObject) cacheKey).deserialize(cldr);
+                }
+                else
+                {
+                    key = (K) cacheKey;
+                }
+                return key;
+            };
+            allCacheKeys.stream().flatMap(Collection::stream).map(mapper).collect(Collectors.toCollection(() -> keys));
         }
 
         if (this.instanceLogger.isTraceEnabled())
@@ -297,31 +219,21 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
             effectiveValue = ((ValueHolder<?>) effectiveValue).getValue();
         }
 
-        boolean invalidate = this.cacheMode.isAlwaysInvalidateOnPut();
         if (value == null)
         {
             this.instanceLogger.debug("Call to put with null-value for key {} instead of proper remove", key);
-
-            invalidate = this.backingCache.remove(key) || invalidate;
+            this.backingCache.remove(key);
         }
         else if (!this.allowSentinelsInBackingCache && (VALUE_NOT_FOUND.equals(effectiveValue) || VALUE_NULL.equals(effectiveValue)))
         {
             this.instanceLogger.debug(
                     "Call to put with sentinel-value for key {} will be treated as a remove as sentinel values are not allowed in backing cache",
                     key);
-
-            invalidate = this.backingCache.remove(key) || invalidate;
+            this.backingCache.remove(key);
         }
         else
         {
-            final V oldValue = this.getAndPutImpl(key, value);
-            invalidate = invalidate
-                    || (this.cacheMode.isHandleInvalidations() && oldValue != null && !EqualsHelper.nullSafeEquals(oldValue, value));
-        }
-
-        if (this.cacheMode.isHandleInvalidations() && invalidate)
-        {
-            this.sendInvalidationMessage(this.invalidationTopic, key);
+            this.backingCache.put(key, value);
         }
     }
 
@@ -381,16 +293,16 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
      * Performs the actual retrieval of a single value from the backing cache.
      *
      * @param key
-     *            the key to use in the lookup
+     *     the key to use in the lookup
      * @return the resolved value
      */
     @SuppressWarnings("unchecked")
     protected V getImpl(final K key)
     {
-        // using withKeepBinary avoids and deserialisation happening in Ignite async threads, which might potentially block them with
-        // cascading lookups due to serialisation optimisations
-        final IgniteCache<K, Object> cache = this.backingCache.withKeepBinary();
-        final Object cacheValue = cache.get(key);
+        // using withKeepBinary avoids any deserialisation happening in Ignite async threads
+        // which might potentially block them with cascading lookups due to serialisation optimisations
+        // (GridCacheAdapter.get internally uses getAsync, moving deserialisation to sys-stripe threads)
+        final Object cacheValue = this.backingCache.withKeepBinary().get(key);
 
         final V value;
         if (cacheValue instanceof BinaryObject)
@@ -404,50 +316,23 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
         return value;
     }
 
-    /**
-     * Performs the actual retrieval and update of a single entry in the backing cache.
-     *
-     * @param key
-     *            the key to use in the update
-     * @param newValue
-     *            the new value to store for the key
-     * @return the resolved previous value, may be {@code null} if no entry existed
-     */
-    @SuppressWarnings("unchecked")
-    protected V getAndPutImpl(final K key, final V newValue)
+    protected <T> T waitUntilComplete(final IgniteFuture<T> fut, final long timeout, final String operation)
     {
-        // using withKeepBinary avoids and deserialisation happening in Ignite async threads, which might potentially block them with
-        // cascading lookups due to serialisation optimisations
-        final IgniteCache<K, Object> cache = this.backingCache.withKeepBinary();
-        final Object cacheValue = cache.getAndPut(key, newValue);
+        // using futures + timeouts for cache operations is necessary to avoid system workers
+        // (e.g. discovery worker) from locking up if they happen to trigger a cache operation
+        try
+        {
+            return fut.get(timeout, TimeUnit.MILLISECONDS);
+        }
+        catch (final IgniteFutureTimeoutException e)
+        {
+            this.instanceLogger.warn("Timed out waiting for cache {}-operation to complete", operation);
+        }
+        catch (final IgniteException e)
+        {
+            this.instanceLogger.error("Error waiting for cache {}-operation to complete", operation, e);
+        }
 
-        final V oldValue;
-        if (cacheValue instanceof BinaryObject)
-        {
-            oldValue = ((BinaryObject) cacheValue).deserialize();
-        }
-        else
-        {
-            oldValue = (V) cacheValue;
-        }
-        return oldValue;
-    }
-
-    protected void sendInvalidationMessage(final String topic, final Object msg)
-    {
-        final Object msgLogLabel = this.instanceLogger.isDebugEnabled()
-                ? (msg instanceof Collection<?> ? (((Collection<?>) msg).size() + " keys") : msg)
-                : null;
-
-        final ClusterGroup remotes = this.grid.cluster().forServers().forRemotes();
-        if (!remotes.nodes().isEmpty())
-        {
-            this.instanceLogger.debug("Sending remote message on topic {} for {}", topic, msgLogLabel);
-            this.grid.message(remotes).send(topic, msg);
-        }
-        else
-        {
-            this.instanceLogger.debug("Not sending remote message on topic {} for {} as there are no remote nodes", topic, msgLogLabel);
-        }
+        return null;
     }
 }

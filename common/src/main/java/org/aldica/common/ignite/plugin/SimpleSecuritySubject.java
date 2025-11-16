@@ -6,7 +6,6 @@ package org.aldica.common.ignite.plugin;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
 
@@ -26,16 +25,12 @@ public class SimpleSecuritySubject implements SecuritySubject
 
     protected final InetSocketAddress adddres;
 
-    protected final SecurityPermissionSet permissions;
-
-    public SimpleSecuritySubject(final UUID id, final SecuritySubjectType type, final Object login, final InetSocketAddress adddres,
-            final SecurityPermissionSet permissions)
+    public SimpleSecuritySubject(final UUID id, final SecuritySubjectType type, final Object login, final InetSocketAddress adddres)
     {
         this.id = id;
         this.type = type;
         this.login = login;
         this.adddres = adddres;
-        this.permissions = permissions;
     }
 
     /**
@@ -72,15 +67,6 @@ public class SimpleSecuritySubject implements SecuritySubject
     public InetSocketAddress address()
     {
         return this.adddres;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public SecurityPermissionSet permissions()
-    {
-        return this.permissions;
     }
 
 }

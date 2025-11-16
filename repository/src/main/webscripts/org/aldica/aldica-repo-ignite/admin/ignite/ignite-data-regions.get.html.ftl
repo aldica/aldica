@@ -28,7 +28,8 @@
                 <thead>
                     <tr>
                         <th title="${msg("ignite.regions.attr.grid.title")?xml}">${msg("ignite.regions.attr.grid.label")?html}</th>
-                        <th title="${msg("ignite.regions.attr.node.title")?xml}">${msg("ignite.regions.attr.node.label")?html}</th>
+                        <th title="${msg("ignite.regions.attr.node.id.title")?xml}">${msg("ignite.regions.attr.node.id.label")?html}</th>
+                        <th title="${msg("ignite.regions.attr.node.host.title")?xml}">${msg("ignite.regions.attr.node.host.label")?html}</th>
                         <th title="${msg("ignite.regions.attr.name.title")?xml}">${msg("ignite.regions.attr.name.label")?html}</th>
                         <th title="${msg("ignite.regions.attr.pageSize.title")?xml}">${msg("ignite.regions.attr.pageSize.label")?html}</th>
                         <th title="${msg("ignite.regions.attr.allocatedPages.title")?xml}">${msg("ignite.regions.attr.allocatedPages.label")?html}</th>
@@ -47,23 +48,21 @@
                                 <tr>
                                     <td>${gridRegionMetricModel.grid?html}</td>
                                     <td>${(gridNodeRegionMetric.node.consistentId()!gridNodeRegionMetric.node.id())?html}</td>
+                                    <td>${(gridNodeRegionMetric.node.hostNames())?join(", ")?html}</td>
                                     <td>${regionMetrics.name?html}</td>
-                                    <#if regionMetrics.pageSize != 0>
-                                        <td title="${regionMetrics.pageSize?c}">${formatSize(regionMetrics.pageSize)?html}</td>
-                                    <#elseif regionMetrics.totalAllocatedPages != 0>
+                                    <#if regionMetrics.totalAllocatedPages != 0>
                                         <td title="${((regionMetrics.totalAllocatedSize / regionMetrics.totalAllocatedPages / 1024)?floor * 1024)?c}">${formatSize((regionMetrics.totalAllocatedSize / regionMetrics.totalAllocatedPages / 1024)?floor * 1024)?html}</td>
                                     <#else>
                                         <td></td>
                                     </#if>
                                     <td>${regionMetrics.totalAllocatedPages?c}</td>
                                     <td title="${regionMetrics.totalAllocatedSize?c}">${formatSize(regionMetrics.totalAllocatedSize)?html}</td>
-                                    <td><#if regionMetrics.pagesFillFactor != 0>${regionMetrics.allocationRate?string('0.##')}</#if></td>
-                                    <td><#if regionMetrics.pagesFillFactor != 0>${regionMetrics.evictionRate?string('0.##')}</#if></td>
-                                    <td><#if regionMetrics.pagesFillFactor != 0>${regionMetrics.pagesFillFactor?string('0.##')}</#if></td>
+                                    <#-- internal metrics are on a 60s rate -->
+                                    <td>${(regionMetrics.allocationRate / 60.0)?string('0.##')}</td>
+                                    <td>${(regionMetrics.evictionRate / 60.0)?string('0.##')}</td>
+                                    <td>${(regionMetrics.pagesFillFactor * 100)?string('0.##')}</td>
                                     <td>${regionMetrics.totalUsedPages?c}</td>
-                                    <#if regionMetrics.pageSize != 0>
-                                        <td title="${(regionMetrics.totalUsedPages * regionMetrics.pageSize)?c}">${formatSize(regionMetrics.totalUsedPages * regionMetrics.pageSize)?html}</td>
-                                    <#elseif regionMetrics.totalAllocatedPages != 0>
+                                    <#if regionMetrics.totalAllocatedPages != 0>
                                         <td title="${(regionMetrics.totalUsedPages / regionMetrics.totalAllocatedPages * regionMetrics.totalAllocatedSize)?c}">${formatSize(regionMetrics.totalUsedPages / regionMetrics.totalAllocatedPages * regionMetrics.totalAllocatedSize)?html}</td>
                                     <#else>
                                         <td></td>

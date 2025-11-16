@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 import org.aldica.common.ignite.lifecycle.IgniteInstanceLifecycleAware;
@@ -92,6 +93,8 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
 
     protected TcpDiscoveryIpFinder ipFinder;
 
+    protected Executor executor;
+
     protected String instanceName;
 
     protected String discoveryAddressesKey;
@@ -111,6 +114,7 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
         PropertyCheck.mandatory(this, "attributeService", this.attributeService);
         PropertyCheck.mandatory(this, "configuration", this.configuration);
         PropertyCheck.mandatory(this, "ipFinder", this.ipFinder);
+        PropertyCheck.mandatory(this, "executor", this.executor);
         PropertyCheck.mandatory(this, "instanceName", this.instanceName);
 
         final Map<String, ?> userAttributesPrev = this.configuration.getUserAttributes();
@@ -123,7 +127,7 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
 
     /**
      * @param transactionService
-     *            the transactionService to set
+     *     the transactionService to set
      */
     public void setTransactionService(final TransactionService transactionService)
     {
@@ -132,7 +136,7 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
 
     /**
      * @param jobLockService
-     *            the jobLockService to set
+     *     the jobLockService to set
      */
     public void setJobLockService(final JobLockService jobLockService)
     {
@@ -141,7 +145,7 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
 
     /**
      * @param attributeService
-     *            the attributeService to set
+     *     the attributeService to set
      */
     public void setAttributeService(final AttributeService attributeService)
     {
@@ -150,7 +154,7 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
 
     /**
      * @param configuration
-     *            the configuration to set
+     *     the configuration to set
      */
     public void setConfiguration(final IgniteConfiguration configuration)
     {
@@ -159,7 +163,7 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
 
     /**
      * @param ipFinder
-     *            the ipFinder to set
+     *     the ipFinder to set
      */
     public void setIpFinder(final TcpDiscoveryIpFinder ipFinder)
     {
@@ -167,8 +171,17 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
     }
 
     /**
+     * @param executor
+     *     the executor to set
+     */
+    public void setExecutor(final Executor executor)
+    {
+        this.executor = executor;
+    }
+
+    /**
      * @param instanceName
-     *            the instanceName to set
+     *     the instanceName to set
      */
     public void setInstanceName(final String instanceName)
     {
@@ -238,7 +251,7 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
      * Processes an Ignite discovery event.
      *
      * @param e
-     *            the event to process
+     *     the event to process
      * @return {@code true} if the listener should continue to be invoked on subsequent events, {@code false} otherwise
      *
      * @see IgnitePredicate
@@ -261,7 +274,13 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
                     {
                         LOGGER.debug("Requesting update of member registrations for join of non-self registration supporting node {}",
                                 nodeId);
-                        this.updateMemberRegistration();
+                        // we run on an Ignite system worker thread and must not get blocked by waiting on (internally async) cache
+                        // operations, especially during an ongoing discovery/join operation (on which we listen here)
+                        // updateMemberRegistration indirectly involves cache operations
+                        // detach from Ignite event thread
+                        this.executor.execute(() -> {
+                            this.updateMemberRegistration();
+                        });
                     }
                     else
                     {
@@ -432,7 +451,7 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
      * attempts.
      *
      * @param address
-     *            the address to convert
+     *     the address to convert
      * @return the textual representation of the address
      */
     protected static String addressToString(final InetSocketAddress address)
@@ -447,7 +466,7 @@ public class MemberAddressRegistrarImpl implements InitializingBean, IgniteInsta
      * Converts a simplified textual representation of a socket address to an actual socket address instance.
      *
      * @param addressStr
-     *            the textual address representation to convert
+     *     the textual address representation to convert
      * @return the proper socket address instance
      */
     protected static InetSocketAddress stringToAddress(final String addressStr)
