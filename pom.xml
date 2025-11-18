@@ -185,18 +185,6 @@
 
             <dependency>
                 <groupId>org.apache.ignite</groupId>
-                <artifactId>ignite-web</artifactId>
-                <version>${apache.ignite.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.tomcat</groupId>
-                        <artifactId>tomcat-servlet-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-slf4j</artifactId>
                 <version>${apache.ignite.version}</version>
                 <exclusions>

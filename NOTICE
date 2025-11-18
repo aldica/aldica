@@ -1,15 +1,14 @@
 Alternative/Alfresco Distributed Cache (aldica)
-Copyright 2020 Acosix GmbH
+Copyright 2020 - 2025 Acosix GmbH
 Copyright 2020 MAGENTA ApS
 
 
 This software includes code from Apache Ignite
-Copyright 2020 The Apache Software Foundation
+Copyright 2025 The Apache Software Foundation
 https://ignite.apache.org/
 Licensed under Apache License, Version 2.0
-https://search.maven.org/artifact/org.apache.ignite/ignite-core/2.8.1/jar
-https://search.maven.org/artifact/org.apache.ignite/ignite-web/2.8.1/jar
-https://search.maven.org/artifact/org.apache.ignite/ignite-slf4j/2.8.1/jar
+https://central.sonatype.com/artifact/org.apache.ignite/ignite-core/2.17.0
+https://central.sonatype.com/artifact/org.apache.ignite/ignite-slf4j/2.17.0
 
 
 This software includes code from IntelliJ IDEA Community Edition
