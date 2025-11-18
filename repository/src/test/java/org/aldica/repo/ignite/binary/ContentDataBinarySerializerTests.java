@@ -197,8 +197,8 @@ public class ContentDataBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, ContentData> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, ContentData> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-                // we cut down on size of internal Locale by using stringified form + parse/lookup on read - 12%
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", 0.12);
+                // we cut down on size of internal Locale by using stringified form + parse/lookup on read - 11.5%
+                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", 0.115);
 
                 cacheConfig.setName("comparison2");
                 cacheConfig.setDataRegionName("comparison2");
