@@ -54,7 +54,7 @@ RUN chown -R ${alfresco.repo.docker.chown.mask} \
              ${alfresco.repo.docker.tomcat.path}/webapps/alfresco \
              ${alfresco.repo.docker.tomcat.path}/shared/classes/*
 
-RUN chown -R ${alfresco.repo.docker.chown.mask} \
-             ${alfresco.repo.docker.tomcat.path}/glowroot
+#RUN chown -R ${alfresco.repo.docker.chown.mask} \
+#             ${alfresco.repo.docker.tomcat.path}/glowroot
              
 ${alfresco.repo.docker.build.postRun}

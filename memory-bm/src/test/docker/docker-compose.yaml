@@ -48,7 +48,6 @@ services:
         environment:
             JAVA_OPTS: >-
               -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
-              -javaagent:/usr/local/tomcat/glowroot/glowroot.jar
               -Xms2g -Xmx2g -XX:+UseG1GC -XX:+ParallelRefProcEnabled
               -XX:+UseStringDeduplication -XX:+ScavengeBeforeFullGC
               -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
@@ -113,6 +112,7 @@ services:
 #-D${baseModuleId}.core.storage.region.contentData.swapPath=null
 #-D${baseModuleId}.core.storage.region.contentUrl.swapPath=null
 #-D${baseModuleId}.core.storage.region.acl.swapPath=null
+#-javaagent:/usr/local/tomcat/glowroot/glowroot.jar
         healthcheck:
             test: curl -f localhost:8080/alfresco/
             interval: 30s
@@ -155,7 +155,6 @@ services:
         environment:
             JAVA_OPTS: >-
               -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
-              -javaagent:/usr/local/tomcat/glowroot/glowroot.jar
               -Xms8g -Xmx8g -XX:+UseG1GC -XX:+ParallelRefProcEnabled
               -XX:+UseStringDeduplication -XX:+ScavengeBeforeFullGC
               -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
@@ -173,6 +172,7 @@ services:
               -Dsolr.sharedSecret=secret1
               -Drepo.event2.enabled=false
               -D${baseModuleId}.core.enabled=false
+#-javaagent:/usr/local/tomcat/glowroot/glowroot.jar
         healthcheck:
             test: curl -f localhost:8080/alfresco/
             interval: 30s
