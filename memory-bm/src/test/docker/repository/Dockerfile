@@ -7,9 +7,8 @@ ${alfresco.repo.docker.build.preRun}
 #  yum install -y langpacks-en java-17-openjdk-devel && \
 #  yum clean all && rm -rf /var/cache/yum
 
-#COPY glowroot.jar glowroot.properties /usr/local/tomcat/glowroot/
+#COPY glowroot.jar glowroot.properties lib /usr/local/tomcat/glowroot/
 #COPY admin.json /usr/local/tomcat/glowroot/conf/
-#COPY lib/* /usr/local/tomcat/glowroot/lib/
   
 COPY support-tools-repo-*.amp ${alfresco.repo.docker.amp.path}/
 COPY de.acosix.alfresco.utility.repo-*.amp ${alfresco.repo.docker.amp.path}/

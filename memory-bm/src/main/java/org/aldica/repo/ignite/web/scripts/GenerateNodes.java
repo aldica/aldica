@@ -18,10 +18,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -69,6 +71,8 @@ import org.apache.commons.logging.LogFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.dao.ConcurrencyFailureException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.extensions.webscripts.AbstractWebScript;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptRequest;
@@ -200,7 +204,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
      * @param personService
      *     the personService to set
      */
-    public void setPersonService(PersonService personService)
+    public void setPersonService(final PersonService personService)
     {
         this.personService = personService;
     }
@@ -236,7 +240,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
      * @param guaranteedAccessUserName
      *     the guaranteedAccessUserName to set
      */
-    public void setGuaranteedAccessUserName(String guaranteedAccessUserName)
+    public void setGuaranteedAccessUserName(final String guaranteedAccessUserName)
     {
         this.guaranteedAccessUserName = guaranteedAccessUserName;
     }
@@ -289,7 +293,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
     {
         final List<NodeRef> targetFolders = new ArrayList<>(folderCount);
         final List<NodeRef> parentFolders;
-        boolean subDivide = folderCount > maxChildrenPerFolder;
+        final boolean subDivide = folderCount > maxChildrenPerFolder;
         if (subDivide)
         {
             final int requiredParentFolderCount = (int) Math.ceil((1.0d * folderCount) / maxChildrenPerFolder);
@@ -313,25 +317,42 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         this.generateNodes(parentFolders, folderCount, threads, i -> i + nameSuffix, () -> typeAndProperties, folders -> {
             if (subDivide)
             {
-                AuthenticationUtil.runAsSystem(() -> {
-                    for (NodeRef folder : folders)
+                this.transactionService.getRetryingTransactionHelper().doInTransaction(() -> AuthenticationUtil.runAsSystem(() -> {
+                    for (final NodeRef folder : folders)
                     {
-                        boolean inherit = RN_JESUS.nextBoolean();
+                        final boolean inherit = RN_JESUS.nextBoolean();
                         this.permissionService.setInheritParentPermissions(folder, inherit);
 
-                        int assignments = 1 + RN_JESUS.nextInt(4);
+                        final int assignments = 1 + RN_JESUS.nextInt(4);
+                        final Set<Pair<String, String>> authorityPermissionPairs = new HashSet<>();
                         for (int i = 0; i < assignments; i++)
                         {
-                            this.permissionService.setPermission(folder, AUTHORITY_NAMES[RN_JESUS.nextInt(AUTHORITY_NAMES.length)],
-                                    PERMISSION_NAMES[RN_JESUS.nextInt(PERMISSION_NAMES.length)], RN_JESUS.nextBoolean());
+                            final String authority = AUTHORITY_NAMES[RN_JESUS.nextInt(AUTHORITY_NAMES.length)];
+                            final String permission = PERMISSION_NAMES[RN_JESUS.nextInt(PERMISSION_NAMES.length)];
+                            final Pair<String, String> pair = new Pair<>(authority, permission);
+                            if (!authorityPermissionPairs.contains(pair))
+                            {
+                                authorityPermissionPairs.add(pair);
+                                try
+                                {
+                                    this.permissionService.setPermission(folder, authority, permission, RN_JESUS.nextBoolean());
+                                }
+                                catch (final DuplicateKeyException dke)
+                                {
+                                    // potential conflict via alf_access_control_entry.permission_id constraint
+                                    // use a concurrency failure to trigger retry
+                                    throw new ConcurrencyFailureException("Concurrent alf_access_control_entry insert problem", dke);
+                                }
+                            }
                         }
+
                         if (!inherit)
                         {
                             this.permissionService.setPermission(folder, this.guaranteedAccessUserName, PermissionService.CONSUMER, true);
                         }
                     }
                     return null;
-                });
+                }), false, true);
             }
             synchronized (targetFolders)
             {
