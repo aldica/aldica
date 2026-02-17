@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.aldica.repo.ignite.cache.NodeAspectsCacheSet;
+import org.alfresco.model.ContentModel;
 import org.alfresco.repo.domain.qname.QNameDAO;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
@@ -33,6 +34,8 @@ import org.springframework.context.ApplicationContextAware;
  */
 public class NodeAspectsBinarySerializer extends AbstractExtendedBinarySerializer<NodeAspectsCacheSet> implements ApplicationContextAware
 {
+
+    private static final Set<QName> IMPLICIT_ASPECTS = Set.of(ContentModel.ASPECT_REFERENCEABLE, ContentModel.ASPECT_LOCALIZED);
 
     private static final String VALUES = "values";
 
@@ -84,11 +87,19 @@ public class NodeAspectsBinarySerializer extends AbstractExtendedBinarySerialize
     {
         final BinaryOutputStream out = rawWriter.out();
 
+        // these aspects "should" be implicit and not part of cached data
+        // but in some use cases were observed to be present
+        // (turns out Alfresco has a bug in AbstractNodeDAOImpl#removeNodeAspects that ends up with implicit aspects in cache data because
+        // getNodeAspects adds them for the "before" state and this is not undone before "after" state is used in setNodeAspectsCached)
+        // they cannot be resolved to QName IDs as they are never persisted
+        nodeAspectsCacheSet.removeAll(IMPLICIT_ASPECTS);
         final int size = nodeAspectsCacheSet.size();
 
         int baseBytes = 2;
-        // assume Long IDs compressed to short / avg. 29 character per QName
-        int estBytesPerAspect = 30;
+        // assume Long IDs compressed to short / avg. 14 character per QName
+        // (QName serialisation should most often write single byte for common namespace URIs and ~14 characters local name, using default
+        // model aspects as an estimation baseline)
+        int estBytesPerAspect = 15;
 
         if (this.useIdsWhenReasonable)
         {
@@ -126,6 +137,13 @@ public class NodeAspectsBinarySerializer extends AbstractExtendedBinarySerialize
     @Override
     protected void writeRegularSerialForm(final NodeAspectsCacheSet nodeAspectsCacheSet, final BinaryWriter writer)
     {
+        // these aspects "should" be implicit and not part of cached data
+        // but in some use cases were observed to be present
+        // (turns out Alfresco has a bug in AbstractNodeDAOImpl#removeNodeAspects that ends up with implicit aspects in cache data because
+        // getNodeAspects adds them for the "before" state and this is not undone before "after" state is used in setNodeAspectsCached)
+        // they cannot be resolved to QName IDs as they are never persisted
+        nodeAspectsCacheSet.removeAll(IMPLICIT_ASPECTS);
+
         if (this.useIdsWhenReasonable)
         {
             final Set<Long> ids = nodeAspectsCacheSet.stream().map(aspectQName -> {

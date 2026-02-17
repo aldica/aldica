@@ -53,16 +53,16 @@ public class NodeAspectsBinarySerializerTests extends GridTestsBase
             ContentModel.ASPECT_DUBLINCORE, ContentModel.ASPECT_EMAILED, ContentModel.ASPECT_FAILED_THUMBNAIL_SOURCE,
             ContentModel.ASPECT_FIVESTAR_RATING_SCHEME_ROLLUPS, ContentModel.ASPECT_GEN_CLASSIFIABLE, ContentModel.ASPECT_GEOGRAPHIC,
             ContentModel.ASPECT_GEOGRAPHIC, ContentModel.ASPECT_HIDDEN, ContentModel.ASPECT_INCOMPLETE, ContentModel.ASPECT_INDEX_CONTROL,
-            ContentModel.ASPECT_LIKES_RATING_SCHEME_ROLLUPS, ContentModel.ASPECT_LOCALIZED, ContentModel.ASPECT_LOCKABLE,
-            ContentModel.ASPECT_MULTILINGUAL_DOCUMENT, ContentModel.ASPECT_MULTILINGUAL_EMPTY_TRANSLATION, ContentModel.ASPECT_NO_CONTENT,
-            ContentModel.ASPECT_OWNABLE, ContentModel.ASPECT_PENDING_FIX_ACL, ContentModel.ASPECT_PERSON_DISABLED,
-            ContentModel.ASPECT_PREFERENCES, ContentModel.ASPECT_RATEABLE, ContentModel.ASPECT_REFERENCEABLE,
-            ContentModel.ASPECT_REFERENCES_NODE, ContentModel.ASPECT_REFERENCING, ContentModel.ASPECT_ROOT, ContentModel.ASPECT_SOFT_DELETE,
-            ContentModel.ASPECT_STORE_SELECTOR, ContentModel.ASPECT_SYNDICATION, ContentModel.ASPECT_TAGGABLE, ContentModel.ASPECT_TAGSCOPE,
-            ContentModel.ASPECT_TEMPLATABLE, ContentModel.ASPECT_TEMPORARY, ContentModel.ASPECT_THUMBNAIL_MODIFICATION,
-            ContentModel.ASPECT_THUMBNAILED, ContentModel.ASPECT_TITLED, ContentModel.ASPECT_UNDELETABLE, ContentModel.ASPECT_UNMOVABLE,
-            ContentModel.ASPECT_VERSIONABLE, ContentModel.ASPECT_WEBDAV_NO_CONTENT, ContentModel.ASPECT_WEBDAV_OBJECT,
-            ContentModel.ASPECT_WEBSCRIPTABLE, ContentModel.ASPECT_WORKING_COPY, CUSTOM_ASPECT };
+            ContentModel.ASPECT_LIKES_RATING_SCHEME_ROLLUPS, ContentModel.ASPECT_LOCKABLE, ContentModel.ASPECT_MULTILINGUAL_DOCUMENT,
+            ContentModel.ASPECT_MULTILINGUAL_EMPTY_TRANSLATION, ContentModel.ASPECT_NO_CONTENT, ContentModel.ASPECT_OWNABLE,
+            ContentModel.ASPECT_PENDING_FIX_ACL, ContentModel.ASPECT_PERSON_DISABLED, ContentModel.ASPECT_PREFERENCES,
+            ContentModel.ASPECT_RATEABLE, ContentModel.ASPECT_REFERENCES_NODE, ContentModel.ASPECT_REFERENCING, ContentModel.ASPECT_ROOT,
+            ContentModel.ASPECT_SOFT_DELETE, ContentModel.ASPECT_STORE_SELECTOR, ContentModel.ASPECT_SYNDICATION,
+            ContentModel.ASPECT_TAGGABLE, ContentModel.ASPECT_TAGSCOPE, ContentModel.ASPECT_TEMPLATABLE, ContentModel.ASPECT_TEMPORARY,
+            ContentModel.ASPECT_THUMBNAIL_MODIFICATION, ContentModel.ASPECT_THUMBNAILED, ContentModel.ASPECT_TITLED,
+            ContentModel.ASPECT_UNDELETABLE, ContentModel.ASPECT_UNMOVABLE, ContentModel.ASPECT_VERSIONABLE,
+            ContentModel.ASPECT_WEBDAV_NO_CONTENT, ContentModel.ASPECT_WEBDAV_OBJECT, ContentModel.ASPECT_WEBSCRIPTABLE,
+            ContentModel.ASPECT_WORKING_COPY, CUSTOM_ASPECT };
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NodeAspectsBinarySerializerTests.class);
 
@@ -184,25 +184,25 @@ public class NodeAspectsBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodeAspectsCacheSet> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
                 // quite less efficient, despite extra QNameBinarySerializer - not meant for use
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", -0.23);
+                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica optimised", "Ignite default", -0.17);
 
                 cacheConfig.setName("comparison2");
                 cacheConfig.setDataRegionName("comparison2");
                 final IgniteCache<Long, NodeAspectsCacheSet> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, NodeAspectsCacheSet> cache2 = useQNameIdGrid.getOrCreateCache(cacheConfig);
 
-                // replacing full QName with ID saves a lot and overcomes base disadvantage - 69%
+                // replacing full QName with ID saves a lot and overcomes base disadvantage - 69.5%
                 this.efficiencyImpl(referenceGrid, useQNameIdGrid, referenceCache2, cache2, "aldica optimised (QName ID substitution)",
-                        "Ignite default", 0.69);
+                        "Ignite default", 0.695);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
                 final IgniteCache<Long, NodeAspectsCacheSet> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, NodeAspectsCacheSet> cache3 = useQNameIdGrid.getOrCreateCache(cacheConfig);
 
-                // savings are more pronounced compared to our own base - 75%
+                // savings are more pronounced compared to our own base - 74%
                 this.efficiencyImpl(defaultGrid, useQNameIdGrid, referenceCache3, cache3, "aldica optimised (QName ID substitution)",
-                        "aldica optimised", 0.75);
+                        "aldica optimised", 0.74);
             }
             finally
             {
@@ -264,17 +264,17 @@ public class NodeAspectsBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodeAspectsCacheSet> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, NodeAspectsCacheSet> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-                // baseline for regular form is quite bad, despite extra QNameBinarySerializer - 65.5%
-                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.655);
+                // baseline for regular form is quite bad, despite extra QNameBinarySerializer - 64.5%
+                this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, "aldica raw serial", "aldica optimised", 0.645);
 
                 cacheConfig.setName("comparison2");
                 cacheConfig.setDataRegionName("comparison2");
                 final IgniteCache<Long, NodeAspectsCacheSet> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, NodeAspectsCacheSet> cache2 = useQNameIdGrid.getOrCreateCache(cacheConfig);
 
-                // QNames are expensive due to namespace + local name - 89%
+                // QNames are expensive due to namespace + local name - 88.5%
                 this.efficiencyImpl(referenceGrid, useQNameIdGrid, referenceCache2, cache2, "aldica raw serial (ID substitution)",
-                        "aldica optimised", 0.89);
+                        "aldica optimised", 0.885);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
