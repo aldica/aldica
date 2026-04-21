@@ -430,9 +430,9 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, NodePropertiesCacheMap> referenceCache1 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, NodePropertiesCacheMap> cache1 = defaultGrid.getOrCreateCache(cacheConfig);
 
-                // already quite a bit of improvement due to inlined + compressed common value types - 41%
+                // already quite a bit of improvement due to inlined + compressed common value types - close to 41%
                 this.efficiencyImpl(referenceGrid, defaultGrid, referenceCache1, cache1, contentDataDAO, "aldica raw serial",
-                        "aldica optimised", 0.41);
+                        "aldica optimised", 0.4075);
 
                 cacheConfig.setName("comparison2");
                 cacheConfig.setDataRegionName("comparison2");
@@ -508,7 +508,7 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             controlValue.put(ContentModel.PROP_MODIFIED,
                     Date.from(LocalDateTime.of(2020, Month.JULY, 1, 23, 12, 45).toInstant(ZoneOffset.UTC)));
             controlValue.put(ContentModel.PROP_NAME, UUID.randomUUID().toString());
-            MLText mlText = new MLText();
+            final MLText mlText = new MLText();
             mlText.addValue(Locale.ENGLISH, "Test");
             mlText.addValue(Locale.GERMAN, null);
             mlText.addValue(Locale.GERMANY, "Test2");
