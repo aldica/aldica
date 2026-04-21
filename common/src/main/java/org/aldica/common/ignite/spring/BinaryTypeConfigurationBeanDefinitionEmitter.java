@@ -19,7 +19,6 @@ import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
@@ -54,12 +53,6 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
 
     protected Properties propertiesSource;
 
-    protected String placeholderPrefix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX;
-
-    protected String placeholderSuffix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_SUFFIX;
-
-    protected String valueSeparator = PlaceholderConfigurerSupport.DEFAULT_VALUE_SEPARATOR;
-
     protected PropertyPlaceholderHelper placeholderHelper;
 
     /**
@@ -74,16 +67,12 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
         PropertyCheck.mandatory(this, "binaryTypeDefinitionBeanDefinitionNamePrefix", this.binaryTypeConfigurationBeanDefinitionNamePrefix);
         PropertyCheck.mandatory(this, "instanceNameProperty", this.instanceNameProperty);
         PropertyCheck.mandatory(this, "propertiesSource", this.propertiesSource);
-        PropertyCheck.mandatory(this, "placeholderPrefix", this.placeholderPrefix);
-        PropertyCheck.mandatory(this, "placeholderSuffix", this.placeholderSuffix);
-        PropertyCheck.mandatory(this, "valueSeparator", this.valueSeparator);
-
-        this.placeholderHelper = new PropertyPlaceholderHelper(this.placeholderPrefix, this.placeholderSuffix, this.valueSeparator, true);
+        PropertyCheck.mandatory(this, "placeholderHelper", this.placeholderHelper);
     }
 
     /**
      * @param enabled
-     *            the enabled to set
+     *     the enabled to set
      */
     public void setEnabled(final boolean enabled)
     {
@@ -92,7 +81,7 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
 
     /**
      * @param enabledPropertyKey
-     *            the enabledPropertyKey to set
+     *     the enabledPropertyKey to set
      */
     public void setEnabledPropertyKey(final String enabledPropertyKey)
     {
@@ -101,7 +90,7 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
 
     /**
      * @param propertyPrefix
-     *            the propertyPrefix to set
+     *     the propertyPrefix to set
      */
     public void setPropertyPrefix(final String propertyPrefix)
     {
@@ -110,7 +99,7 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
 
     /**
      * @param binaryConfigurationBeanDefinitionName
-     *            the binaryConfigurationBeanDefinitionName to set
+     *     the binaryConfigurationBeanDefinitionName to set
      */
     public void setBinaryConfigurationBeanDefinitionName(final String binaryConfigurationBeanDefinitionName)
     {
@@ -119,7 +108,7 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
 
     /**
      * @param binaryTypeConfigurationBeanDefinitionNamePrefix
-     *            the binaryTypeConfigurationBeanDefinitionNamePrefix to set
+     *     the binaryTypeConfigurationBeanDefinitionNamePrefix to set
      */
     public void setBinaryTypeConfigurationBeanDefinitionNamePrefix(final String binaryTypeConfigurationBeanDefinitionNamePrefix)
     {
@@ -128,7 +117,7 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
 
     /**
      * @param instanceNameProperty
-     *            the instanceNameProperty to set
+     *     the instanceNameProperty to set
      */
     public void setInstanceNameProperty(final String instanceNameProperty)
     {
@@ -137,7 +126,7 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
 
     /**
      * @param propertiesSource
-     *            the propertiesSource to set
+     *     the propertiesSource to set
      */
     public void setPropertiesSource(final Properties propertiesSource)
     {
@@ -145,30 +134,12 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
     }
 
     /**
-     * @param placeholderPrefix
-     *            the placeholderPrefix to set
+     * @param placeholderHelper
+     *     the placeholderHelper to set
      */
-    public void setPlaceholderPrefix(final String placeholderPrefix)
+    public void setPlaceholderHelper(final PropertyPlaceholderHelper placeholderHelper)
     {
-        this.placeholderPrefix = placeholderPrefix;
-    }
-
-    /**
-     * @param placeholderSuffix
-     *            the placeholderSuffix to set
-     */
-    public void setPlaceholderSuffix(final String placeholderSuffix)
-    {
-        this.placeholderSuffix = placeholderSuffix;
-    }
-
-    /**
-     * @param valueSeparator
-     *            the valueSeparator to set
-     */
-    public void setValueSeparator(final String valueSeparator)
-    {
-        this.valueSeparator = valueSeparator;
+        this.placeholderHelper = placeholderHelper;
     }
 
     /**
@@ -277,8 +248,7 @@ public class BinaryTypeConfigurationBeanDefinitionEmitter implements BeanDefinit
 
                         final String beanName = this.placeholderHelper.replacePlaceholders(this.propertiesSource.getProperty(propertyName),
                                 this.propertiesSource);
-                        LOGGER.debug(
-                                "Setting binary type configuration property {} to reference bean {} for type {} on instance {}",
+                        LOGGER.debug("Setting binary type configuration property {} to reference bean {} for type {} on instance {}",
                                 typeConfigurationPropertyName, beanName, typeName, instanceName);
 
                         binaryTypeConfigurationBeanDefinition.getPropertyValues().add(typeConfigurationPropertyName,

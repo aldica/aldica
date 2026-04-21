@@ -17,7 +17,6 @@ import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
@@ -50,12 +49,6 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     protected Properties propertiesSource;
 
-    protected String placeholderPrefix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX;
-
-    protected String placeholderSuffix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_SUFFIX;
-
-    protected String valueSeparator = PlaceholderConfigurerSupport.DEFAULT_VALUE_SEPARATOR;
-
     protected PropertyPlaceholderHelper placeholderHelper;
 
     /**
@@ -70,11 +63,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
         PropertyCheck.mandatory(this, "dataRegionBeanDefinitionNamePrefix", this.dataRegionBeanDefinitionNamePrefix);
         PropertyCheck.mandatory(this, "instanceNameProperty", this.instanceNameProperty);
         PropertyCheck.mandatory(this, "propertiesSource", this.propertiesSource);
-        PropertyCheck.mandatory(this, "placeholderPrefix", this.placeholderPrefix);
-        PropertyCheck.mandatory(this, "placeholderSuffix", this.placeholderSuffix);
-        PropertyCheck.mandatory(this, "valueSeparator", this.valueSeparator);
-
-        this.placeholderHelper = new PropertyPlaceholderHelper(this.placeholderPrefix, this.placeholderSuffix, this.valueSeparator, true);
+        PropertyCheck.mandatory(this, "placeholderHelper", this.placeholderHelper);
     }
 
     /**
@@ -141,30 +130,12 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
     }
 
     /**
-     * @param placeholderPrefix
-     *     the placeholderPrefix to set
+     * @param placeholderHelper
+     *     the placeholderHelper to set
      */
-    public void setPlaceholderPrefix(final String placeholderPrefix)
+    public void setPlaceholderHelper(final PropertyPlaceholderHelper placeholderHelper)
     {
-        this.placeholderPrefix = placeholderPrefix;
-    }
-
-    /**
-     * @param placeholderSuffix
-     *     the placeholderSuffix to set
-     */
-    public void setPlaceholderSuffix(final String placeholderSuffix)
-    {
-        this.placeholderSuffix = placeholderSuffix;
-    }
-
-    /**
-     * @param valueSeparator
-     *     the valueSeparator to set
-     */
-    public void setValueSeparator(final String valueSeparator)
-    {
-        this.valueSeparator = valueSeparator;
+        this.placeholderHelper = placeholderHelper;
     }
 
     /**

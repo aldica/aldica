@@ -168,14 +168,7 @@ public class SimpleIgniteBackedCache<K extends Serializable, V> implements Simpl
             allCacheKeys.stream().flatMap(Collection::stream).map(mapper).collect(Collectors.toCollection(() -> keys));
         }
 
-        if (this.instanceLogger.isTraceEnabled())
-        {
-            this.instanceLogger.trace("Retrieved (local) keys {}", keys);
-        }
-        else
-        {
-            this.instanceLogger.debug("Retrieved {} (local) keys", keys.size());
-        }
+        this.instanceLogger.debug("Retrieved {} (local) keys", keys.size());
 
         return keys;
     }

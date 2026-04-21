@@ -9,16 +9,6 @@
 
     <bean id="Configuration.${moduleId}.core.binary" abstract="true" class="org.apache.ignite.configuration.BinaryConfiguration" />
 
-    <bean id="Configuration.${moduleId}.core.binary.serializer.configurableRelevantFields" abstract="true"
-        class="${aldica.ignite-common.basePackage}.binary.SelectivelyReflectiveBinarySerializer">
-        <property name="relevantFieldsProvider">
-            <bean class="${aldica.ignite-common.basePackage}.binary.ConfigurableSerializationRelevantFieldsProvider">
-                <property name="basePropertyKey" value="${moduleId}.core.binary.relevantFields" />
-                <property name="propertiesSource" ref="global-properties" />
-            </bean>
-        </property>
-    </bean>
-
     <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheRegionKey" abstract="true"
         class="${project.basePackage}.binary.TransactionalCacheRegionKeyBinarySerializer">
         <property name="useRawSerialForm" value="\${${moduleId}.core.binary.optimisation.txnCacheKey.useRawSerial}" />
@@ -142,5 +132,6 @@
         <property name="binaryTypeConfigurationBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.binary.type." />
         <property name="instanceNameProperty" value="${moduleId}.core.name" />
         <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper" ref="acosix-utility-core.nonStrictPlaceholderHelper" />
     </bean>
 </beans>

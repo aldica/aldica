@@ -42,7 +42,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.PropertyPlaceholderHelper;
@@ -88,12 +87,6 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     protected Executor executor;
 
-    protected String placeholderPrefix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX;
-
-    protected String placeholderSuffix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_SUFFIX;
-
-    protected String valueSeparator = PlaceholderConfigurerSupport.DEFAULT_VALUE_SEPARATOR;
-
     protected PropertyPlaceholderHelper placeholderHelper;
 
     protected String instanceName;
@@ -120,8 +113,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         PropertyCheck.mandatory(this, "properties", this.properties);
         PropertyCheck.mandatory(this, "executor", this.executor);
         PropertyCheck.mandatory(this, "instanceName", this.instanceName);
-
-        this.placeholderHelper = new PropertyPlaceholderHelper(this.placeholderPrefix, this.placeholderSuffix, this.valueSeparator, true);
+        PropertyCheck.mandatory(this, "placeholderHelper", this.placeholderHelper);
     }
 
     /**
@@ -154,30 +146,12 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     }
 
     /**
-     * @param placeholderPrefix
-     *     the placeholderPrefix to set
+     * @param placeholderHelper
+     *     the placeholderHelper to set
      */
-    public void setPlaceholderPrefix(final String placeholderPrefix)
+    public void setPlaceholderHelper(final PropertyPlaceholderHelper placeholderHelper)
     {
-        this.placeholderPrefix = placeholderPrefix;
-    }
-
-    /**
-     * @param placeholderSuffix
-     *     the placeholderSuffix to set
-     */
-    public void setPlaceholderSuffix(final String placeholderSuffix)
-    {
-        this.placeholderSuffix = placeholderSuffix;
-    }
-
-    /**
-     * @param valueSeparator
-     *     the valueSeparator to set
-     */
-    public void setValueSeparator(final String valueSeparator)
-    {
-        this.valueSeparator = valueSeparator;
+        this.placeholderHelper = placeholderHelper;
     }
 
     /**
@@ -292,8 +266,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         switch (cacheType)
         {
             case CACHE_TYPE_LOCAL_DEFAULT_SIMPLE:
-                LOGGER.info("Cache {} is configured with the legacy aldica type {} - this alias for 'local' may be removed in the future", cacheName,
-                        cacheType);
+                LOGGER.info("Cache {} is configured with the legacy aldica type {} - this alias for 'local' may be removed in the future",
+                        cacheName, cacheType);
                 // fallthrough intended
             case CACHE_TYPE_LOCAL:
                 requiresRemoteSupport = false;
@@ -350,8 +324,9 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
             switch (cacheType)
             {
                 case CACHE_TYPE_LOCAL_DEFAULT_SIMPLE:
-                    LOGGER.info("Cache {} is configured with the legacy aldica type {} - this alias for 'local' may be removed in the future", cacheName,
-                            cacheType);
+                    LOGGER.info(
+                            "Cache {} is configured with the legacy aldica type {} - this alias for 'local' may be removed in the future",
+                            cacheName, cacheType);
                     // fallthrough intended
                 case CACHE_TYPE_LOCAL:
                     cache = this.createLocalDefaultSimpleCache(cacheName);

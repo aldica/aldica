@@ -9,16 +9,6 @@
 
     <bean id="Configuration.${moduleId}.core.binary" class="org.apache.ignite.configuration.BinaryConfiguration" />
 
-    <bean id="Configuration.${moduleId}.core.binary.serializer.configurableRelevantFields"
-        class="${aldica.ignite-common.basePackage}.binary.SelectivelyReflectiveBinarySerializer">
-        <property name="relevantFieldsProvider">
-            <bean class="${aldica.ignite-common.basePackage}.binary.ConfigurableSerializationRelevantFieldsProvider">
-                <property name="basePropertyKey" value="${moduleId}.core.binary.relevantFields" />
-                <property name="propertiesSource" ref="global-properties" />
-            </bean>
-        </property>
-    </bean>
-
     <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheRegionKey"
         class="org.aldica.repo.ignite.binary.TransactionalCacheRegionKeyBinarySerializer" />
 
@@ -92,6 +82,14 @@
         <property name="binaryTypeConfigurationBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.binary.type." />
         <property name="instanceNameProperty" value="${moduleId}.core.name" />
         <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper">
+            <bean class="org.springframework.util.PropertyPlaceholderHelper">
+                <constructor-arg index="0" value="{" />
+                <constructor-arg index="1" value="}" />
+                <constructor-arg index="2" value=":" />
+                <constructor-arg index="4" value="false" />
+            </bean>
+        </property>
     </bean>
 
 </beans>

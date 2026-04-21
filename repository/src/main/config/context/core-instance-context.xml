@@ -15,6 +15,7 @@
             </list>
         </property>
         <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper" ref="acosix-utility-core.nonStrictPlaceholderHelper" />
         <property name="targetBeanNamePattern" value="^[A-Z][a-zA-Z]+\.${moduleId}\..+$" />
     </bean>
 
@@ -123,6 +124,7 @@
         <property name="dataRegionBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.storage.region." />
         <property name="instanceNameProperty" value="${moduleId}.core.name" />
         <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper" ref="acosix-utility-core.nonStrictPlaceholderHelper" />
     </bean>
 
     <bean id="Configuration.${moduleId}.core.storage.defaultDataRegion" abstract="true"

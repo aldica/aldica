@@ -18,6 +18,7 @@
             </list>
         </property>
         <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper" ref="acosix-utility-core.nonStrictPlaceholderHelper" />
     </bean>
 
     <bean id="${moduleId}-predefinedBeansEnabler"
@@ -28,6 +29,7 @@
             </list>
         </property>
         <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper" ref="acosix-utility-core.nonStrictPlaceholderHelper" />
         <property name="targetBeanNamePattern" value="^[A-Z][a-zA-Z]+\.${moduleId}\..+$" />
     </bean>
 
