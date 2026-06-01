@@ -2,13 +2,14 @@ FROM ${alfresco.repo.docker.image}:${alfresco.repo.docker.version}
 
 ${alfresco.repo.docker.build.preRun}
 
-#RUN \
-#  yum update --security -y && \
-#  yum install -y langpacks-en java-17-openjdk-devel && \
-#  yum clean all && rm -rf /var/cache/yum
+RUN \
+  yum update --security -y && \
+  yum install -y langpacks-en java-${alfresco.repo.docker.java.version}-openjdk-devel && \
+  yum clean all && rm -rf /var/cache/yum
 
-#COPY glowroot.jar glowroot.properties lib /usr/local/tomcat/glowroot/
-#COPY admin.json /usr/local/tomcat/glowroot/conf/
+#COPY glowroot.jar glowroot.properties /usr/local/tomcat/glowroot/
+#COPY lib/*.jar /usr/local/tomcat/glowroot/lib/
+COPY admin.json config.json /usr/local/tomcat/glowroot/conf/
   
 COPY support-tools-repo-*.amp ${alfresco.repo.docker.amp.path}/
 COPY de.acosix.alfresco.utility.repo-*.amp ${alfresco.repo.docker.amp.path}/
@@ -53,7 +54,7 @@ RUN chown -R ${alfresco.repo.docker.chown.mask} \
              ${alfresco.repo.docker.tomcat.path}/webapps/alfresco \
              ${alfresco.repo.docker.tomcat.path}/shared/classes/*
 
-#RUN chown -R ${alfresco.repo.docker.chown.mask} \
-#             ${alfresco.repo.docker.tomcat.path}/glowroot
+RUN chown -R ${alfresco.repo.docker.chown.mask} \
+             ${alfresco.repo.docker.tomcat.path}/glowroot
              
 ${alfresco.repo.docker.build.postRun}

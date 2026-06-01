@@ -20,10 +20,9 @@
         <moduleId>aldica-mem-bm</moduleId>
         <baseModuleId>aldica</baseModuleId>
         <aldica.version>${project.version}</aldica.version>
-        <!--<aldica.version>1.0.1</<aldica.version>-->
-        <!--<alfresco.repo.docker.version>6.2.0-ga</alfresco.repo.docker.version>-->
 
         <docker.tests.repository.dependency.artifactIds>de.acosix.alfresco.utility.repo,aldica-repo-ignite,support-tools-repo</docker.tests.repository.dependency.artifactIds>
+        <alfresco.repo.docker.java.version>17</alfresco.repo.docker.java.version>
     </properties>
 
     <dependencyManagement>
@@ -124,4 +123,26 @@
             <type>amp</type>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>acs-26</id>
+            <properties>
+                <alfresco.repo.docker.version>26.1.0</alfresco.repo.docker.version>
+                <alfresco.repo.docker.java.version>21</alfresco.repo.docker.java.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>acs-25</id>
+            <properties>
+                <alfresco.repo.docker.version>25.3.0</alfresco.repo.docker.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>acs-23</id>
+            <properties>
+                <alfresco.repo.docker.version>23.3.0</alfresco.repo.docker.version>
+            </properties>
+        </profile>
+    </profiles>
 </project>
