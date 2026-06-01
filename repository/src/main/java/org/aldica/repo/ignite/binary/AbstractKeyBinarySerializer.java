@@ -22,7 +22,6 @@ public abstract class AbstractKeyBinarySerializer<T> extends AbstractExtendedBin
 
     private static final short MASK_KEY_TYPE = 0x3fc0;
 
-    @SuppressWarnings("unused")
     private static final short FLAG_KEY_TYPE_LONG = 0x0040;
 
     private static final short FLAG_KEY_TYPE_STRING = 0x0080;
@@ -31,7 +30,6 @@ public abstract class AbstractKeyBinarySerializer<T> extends AbstractExtendedBin
 
     private static final short FLAG_KEY_TYPE_NODEREF = 0x0100;
 
-    // TODO granular serializer for NodeVersionKey
     private static final short FLAG_KEY_TYPE_NODE_VERSION = 0x0140;
 
     private static final short FLAG_KEY_TYPE_OBJECT = 0x0180;

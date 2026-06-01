@@ -69,7 +69,8 @@ function buildPropertyGetter(ctxt)
     var globalProperties, placeholderHelper, propertyGetter;
 
     globalProperties = ctxt.getBean('global-properties', Packages.java.util.Properties);
-    placeholderHelper = new Packages.org.springframework.util.PropertyPlaceholderHelper('${', '}', ':', true);
+    placeholderHelper = ctxt.getBean('acosix-utility-core.nonStrictPlaceholderHelper',
+        Packages.org.springframework.util.PropertyPlaceholderHelper);
 
     propertyGetter = function(propertyName)
     {

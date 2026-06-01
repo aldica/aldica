@@ -333,4 +333,26 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>acs-26</id>
+            <properties>
+                <alfresco.repo.docker.version>26.1.0</alfresco.repo.docker.version>
+                <alfresco.repo.docker.java.version>21</alfresco.repo.docker.java.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>acs-25</id>
+            <properties>
+                <alfresco.repo.docker.version>25.3.0</alfresco.repo.docker.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>acs-23</id>
+            <properties>
+                <alfresco.repo.docker.version>23.3.0</alfresco.repo.docker.version>
+            </properties>
+        </profile>
+    </profiles>
 </project>

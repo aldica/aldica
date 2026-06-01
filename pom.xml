@@ -86,7 +86,7 @@
         <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
 
         <acosix.utility.version>1.5.1-SNAPSHOT</acosix.utility.version>
-        <ootbee.support-tools.version>1.2.3.0</ootbee.support-tools.version>
+        <ootbee.support-tools.version>1.2.3.1-SNAPSHOT</ootbee.support-tools.version>
 
         <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
         <!-- making aldica compatible with JDK 17 (e.g. ACS 23.x) requires Ignite 2.14.0 at least -->
