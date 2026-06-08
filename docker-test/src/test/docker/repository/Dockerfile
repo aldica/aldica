@@ -2,6 +2,11 @@ FROM ${alfresco.repo.docker.image}:${alfresco.repo.docker.version}
 
 ${alfresco.repo.docker.build.preRun}
 
+#COPY glowroot.jar glowroot.properties /usr/local/tomcat/glowroot/
+#COPY lib/*.jar /usr/local/tomcat/glowroot/lib/
+COPY admin.json config.json /usr/local/tomcat/glowroot/conf/
+RUN mkdir /usr/local/tomcat/glowroot/data
+
 COPY support-tools-repo-*.amp ${alfresco.repo.docker.amp.path}/
 COPY de.acosix.alfresco.utility.repo-*.amp ${alfresco.repo.docker.amp.path}/
 COPY aldica-repo-ignite-*.amp ${alfresco.repo.docker.amp.path}/
@@ -40,5 +45,8 @@ RUN awk 'done != 1 && /<filter-mapping/ { \
 RUN chown -R ${alfresco.repo.docker.chown.mask} \
              ${alfresco.repo.docker.tomcat.path}/webapps/alfresco \
              ${alfresco.repo.docker.tomcat.path}/shared/classes/*
+
+RUN chown -R ${alfresco.repo.docker.chown.mask} \
+             ${alfresco.repo.docker.tomcat.path}/glowroot
 
 ${alfresco.repo.docker.build.postRun}

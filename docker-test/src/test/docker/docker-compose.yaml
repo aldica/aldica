@@ -39,6 +39,7 @@ services:
           - ${moduleId}-contentstore:${alfresco.repo.docker.data.path}
           - ${moduleId}-repo1_logs:${alfresco.repo.docker.tomcat.path}/logs
         ports:
+          - 4000:4000
           - ${alfresco.repo.docker.port}:8080
           - ${alfresco.repo.docker.debugPort}:8888
           # identical inner/outer port to support connecting from
@@ -46,6 +47,10 @@ services:
           - ${alfresco.repo.docker.commPort}:${alfresco.repo.docker.commPort}
           - ${alfresco.repo.docker.discoPort}:${alfresco.repo.docker.discoPort}
           - ${alfresco.repo.docker.timePort}:${alfresco.repo.docker.timePort}
+        # disables security manager
+        command:
+          - catalina.sh
+          - run
         environment:
             JAVA_OPTS: >-
               -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
@@ -94,14 +99,16 @@ services:
               -Dsolr.secureComms=secret
               -Dsolr.sharedSecret=secret1
               -Drepo.event2.enabled=false
+              -Dsystem.enableTimestampPropagation=false
               -D${moduleId}.caches.remoteSupport.enabled=true
               -D${moduleId}.core.local.id=repository-1
               -D${moduleId}.core.local.host=repository-1
               -D${moduleId}.core.local.comm.port=${alfresco.repo.docker.commPort}
               -D${moduleId}.core.local.disco.port=${alfresco.repo.docker.discoPort}
               -D${moduleId}.core.local.time.port=${alfresco.repo.docker.timePort}
-              -D${moduleId}.core.storage.defaultStorageRegion.initialSize=4294967296
-              -D${moduleId}.core.storage.defaultStorageRegion.maxSize=8589934592
+              -D${moduleId}.core.storage.defaultStorageRegion.initialSize=268435456
+              -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
+              -javaagent:/usr/local/tomcat/glowroot/glowroot.jar
         healthcheck:
             test: curl -f localhost:8080/alfresco/
             interval: 30s
@@ -133,6 +140,7 @@ services:
           - ${moduleId}-contentstore:${alfresco.repo.docker.data.path}
           - ${moduleId}-repo2_logs:${alfresco.repo.docker.tomcat.path}/logs
         ports:
+          - 4010:4010
           - ${alfresco.repo.docker.port2}:8080
           - ${alfresco.repo.docker.debugPort2}:8888
           # identical inner/outer port to support connecting from
@@ -140,6 +148,10 @@ services:
           - ${alfresco.repo.docker.commPort2}:${alfresco.repo.docker.commPort2}
           - ${alfresco.repo.docker.discoPort2}:${alfresco.repo.docker.discoPort2}
           - ${alfresco.repo.docker.timePort2}:${alfresco.repo.docker.timePort2}
+        # disables security manager
+        command:
+          - catalina.sh
+          - run
         environment:
             JAVA_OPTS: >-
               -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8888
@@ -194,8 +206,10 @@ services:
               -D${moduleId}.core.local.comm.port=${alfresco.repo.docker.commPort2}
               -D${moduleId}.core.local.disco.port=${alfresco.repo.docker.discoPort2}
               -D${moduleId}.core.local.time.port=${alfresco.repo.docker.timePort2}
-              -D${moduleId}.core.storage.defaultStorageRegion.initialSize=4294967296
-              -D${moduleId}.core.storage.defaultStorageRegion.maxSize=8589934592
+              -D${moduleId}.core.storage.defaultStorageRegion.initialSize=268435456
+              -D${moduleId}.core.storage.defaultStorageRegion.maxSize=1073741824
+              -Dglowroot.agent.port=4010
+              -javaagent:/usr/local/tomcat/glowroot/glowroot.jar
         healthcheck:
             test: curl -f localhost:8080/alfresco/
             interval: 30s

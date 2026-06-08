@@ -10,6 +10,7 @@ RUN \
 #COPY glowroot.jar glowroot.properties /usr/local/tomcat/glowroot/
 #COPY lib/*.jar /usr/local/tomcat/glowroot/lib/
 COPY admin.json config.json /usr/local/tomcat/glowroot/conf/
+RUN mkdir /usr/local/tomcat/glowroot/data
   
 COPY support-tools-repo-*.amp ${alfresco.repo.docker.amp.path}/
 COPY de.acosix.alfresco.utility.repo-*.amp ${alfresco.repo.docker.amp.path}/
