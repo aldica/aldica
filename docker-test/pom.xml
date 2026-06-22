@@ -17,6 +17,10 @@
     <description>Docker Compose-based integration tests for Ignite-based distributed caching and data grid capabilities</description>
 
     <properties>
+        <project.basePackage>org.aldica.repo.ignite</project.basePackage>
+        <moduleId>aldica-docker-test</moduleId>
+        <baseModuleId>aldica</baseModuleId>
+
         <!-- compatible with Alfresco rest client dependency -->
         <jackson.version>2.9.8</jackson.version>
         <resteasy.version>3.6.3.Final</resteasy.version>
@@ -135,10 +139,50 @@
                 <scope>test</scope>
             </dependency>
 
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>${micrometer.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${micrometer.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
     
     <dependencies>
+
+        <dependency>
+            <groupId>org.alfresco</groupId>
+            <artifactId>alfresco-remote-api</artifactId>
+            <exclusions>
+                <!-- xmlfactory and cxf mess with resteasy / JAX-RS in integration tests -->
+                <!-- opencmis exclusion excludes various transitive cxf inclusions -->
+                <!-- none of these are needed for this specific addon -->
+                <exclusion>
+                    <groupId>org.alfresco</groupId>
+                    <artifactId>alfresco-xmlfactory</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.chemistry.opencmis</groupId>
+                    <artifactId>chemistry-opencmis-client-impl</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.chemistry.opencmis</groupId>
+                    <artifactId>chemistry-opencmis-server-bindings</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.cxf</groupId>
+                    <artifactId>cxf-rt-rs-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <dependency>
             <groupId>de.acosix.alfresco.utility</groupId>
@@ -212,6 +256,16 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
     </dependencies>

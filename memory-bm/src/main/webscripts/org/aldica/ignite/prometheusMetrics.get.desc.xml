@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<webscript>
+    <shortname>Prometheus Metrics</shortname>
+    <description>Retrieve Prometheus metrics.</description>
+    <url>/aldica/mem-bm/prometheus</url>
+    <authentication>none</authentication>
+</webscript>

@@ -24,7 +24,7 @@ COPY dev-log4j.properties dev-log4j2.properties ${alfresco.share.docker.tomcat.p
 
 # Enable use of Web Session replication by modifying web.xml
 RUN awk 'done != 1 && /<filter-mapping/ { \
-    print "<filter><filter-name>${project.longNameNoWs}WebSessionCacheFilter</filter-name><filter-class>org.springframework.extensions.webscripts.servlet.BeanProxyFilter</filter-class><init-param><param-name>beanName</param-name><param-value>${moduleId}-webSessionCacheFilter</param-value></init-param></filter>"; \
+    print "<filter><filter-name>${project.longNameNoWs}WebSessionCacheFilter</filter-name><filter-class>org.springframework.extensions.webscripts.servlet.BeanProxyFilter</filter-class><init-param><param-name>beanName</param-name><param-value>aldica-webSessionCacheFilter</param-value></init-param></filter>"; \
     print "<filter-mapping><filter-name>${project.longNameNoWs}WebSessionCacheFilter</filter-name><url-pattern>/*</url-pattern></filter-mapping>"; \
     done = 1 \
     } 1' ${alfresco.share.docker.tomcat.path}/webapps/share/WEB-INF/web.xml > ${alfresco.share.docker.tomcat.path}/webapps/share/WEB-INF/web.xml.awked \

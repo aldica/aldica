@@ -33,7 +33,6 @@
         <dependencySet>
             <outputDirectory>lib</outputDirectory>
             <includes>
-                <include>com.thedeanda:lorem:*</include>
                 <include>io.prometheus:*</include>
                 <include>io.micrometer:*</include>
                 <include>org.hdrhistogram:*</include>

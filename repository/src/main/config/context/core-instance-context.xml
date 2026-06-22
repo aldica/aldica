@@ -9,14 +9,43 @@
 
     <bean id="${moduleId}-predefinedBeansEnabler"
         class="de.acosix.alfresco.utility.common.spring.BeanDeAbstractifyingBeanDefinitionRegistryPostProcessor">
-        <property name="enabledPropertyKeys">
-            <list>
-                <value>${moduleId}.core.enabled</value>
-            </list>
-        </property>
+        <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
         <property name="propertiesSource" ref="global-properties" />
         <property name="placeholderHelper" ref="acosix-utility-core.nonStrictPlaceholderHelper" />
         <property name="targetBeanNamePattern" value="^[A-Z][a-zA-Z]+\.${moduleId}\..+$" />
+        <property name="exclusionBeanNamePattern" value="^MetricExporterSPI\.${moduleId}\..+$" />
+    </bean>
+
+    <bean id="${moduleId}-metricsBeansEnabler"
+        class="de.acosix.alfresco.utility.common.spring.BeanDeAbstractifyingBeanDefinitionRegistryPostProcessor">
+        <property name="condition">
+            <bean class="de.acosix.alfresco.utility.common.spring.condition.ClassDefinedCondition">
+                <property name="className" value="io.micrometer.core.instrument.MeterRegistry" />
+            </bean>
+        </property>
+        <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
+        <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper" ref="acosix-utility-core.nonStrictPlaceholderHelper" />
+        <property name="targetBeanNamePattern" value="^MetricExporterSPI\.${moduleId}\..+$" />
+    </bean>
+
+    <bean id="${moduleId}-metricsBeansWirer"
+        class="de.acosix.alfresco.utility.common.spring.PropertyAlteringBeanDefinitionRegistryPostProcessor">
+        <property name="condition">
+            <bean class="de.acosix.alfresco.utility.common.spring.condition.ClassDefinedCondition">
+                <property name="className" value="io.micrometer.core.instrument.MeterRegistry" />
+            </bean>
+        </property>
+        <property name="enabledPropertyKey" value="${moduleId}.core.enabled" />
+        <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper" ref="acosix-utility-core.nonStrictPlaceholderHelper" />
+        <property name="targetBeanName" value="Configuration.${moduleId}.core" />
+        <property name="propertyName" value="metricExporterSpi" />
+        <property name="beanReferenceNameList">
+            <list>
+                <value>MetricExporterSPI.${moduleId}.core</value>
+            </list>
+        </property>
     </bean>
 
     <bean id="Configuration.${moduleId}.jobs" abstract="true" class="org.springframework.scheduling.quartz.SchedulerAccessorBean">
@@ -210,6 +239,16 @@
     <bean id="DiscoverySPI.${moduleId}.core.credentials" abstract="true" class="org.apache.ignite.plugin.security.SecurityCredentials">
         <property name="login" value="\${${moduleId}.core.login}" />
         <property name="password" value="\${${moduleId}.core.password}" />
+    </bean>
+
+    <bean id="MetricExporterSPI.${moduleId}.core" abstract="true"
+        class="org.aldica.repo.ignite.metrics.MicrometerMetricExporterSpi">
+        <property name="meterRegistry" ref="MetricExporterSPI.${moduleId}.core.registry" />
+    </bean>
+
+    <bean id="MetricExporterSPI.${moduleId}.core.registry" abstract="true"
+        class="org.aldica.repo.ignite.metrics.MeterRegistryFactoryBean">
+        <property name="meterRegistryBeanNames" value="\${${moduleId}.core.meter.registry.beans}" />
     </bean>
 
     <bean id="AddressResolver.${moduleId}.core" abstract="true"

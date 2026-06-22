@@ -31,7 +31,7 @@ RUN java -jar ${alfresco.repo.docker.mmt.path}/alfresco-mmt*.jar install \
 
 RUN java -jar ${alfresco.repo.docker.mmt.path}/alfresco-mmt*.jar install \
               ${alfresco.repo.docker.amp.path}/aldica-repo-ignite-mem-bm-*.amp \
-              ${alfresco.repo.docker.tomcat.path}/webapps/alfresco -nobackup
+              ${alfresco.repo.docker.tomcat.path}/webapps/alfresco -nobackup -force
 
 COPY alfresco.xml ${alfresco.repo.docker.tomcat.path}/conf/Catalina/localhost/
 COPY alfresco-global.addition.properties ${alfresco.repo.docker.tomcat.path}/shared/classes/alfresco/
