@@ -9,7 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.UUID;
 
 import org.aldica.common.ignite.context.ExternalContext;
-import org.alfresco.util.PropertyCheck;
+import org.aldica.common.ignite.util.PropertyCheck;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;

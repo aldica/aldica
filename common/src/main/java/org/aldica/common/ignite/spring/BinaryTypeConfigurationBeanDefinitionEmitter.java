@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Predicate;
 
-import org.alfresco.util.PropertyCheck;
+import org.aldica.common.ignite.util.PropertyCheck;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

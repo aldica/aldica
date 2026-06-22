@@ -20,7 +20,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.alfresco.error.AlfrescoRuntimeException;
-import org.alfresco.util.PropertyCheck;
+import org.aldica.common.ignite.util.PropertyCheck;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;

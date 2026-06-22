@@ -6,7 +6,7 @@ package org.aldica.common.ignite.spring;
 import java.util.List;
 import java.util.Properties;
 
-import org.alfresco.util.PropertyCheck;
+import org.aldica.common.ignite.util.PropertyCheck;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.slf4j.Logger;

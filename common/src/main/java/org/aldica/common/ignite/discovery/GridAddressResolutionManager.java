@@ -18,7 +18,7 @@ import java.util.function.BiConsumer;
 
 import org.aldica.common.ignite.lifecycle.IgniteInstanceLifecycleAware;
 import org.alfresco.util.EqualsHelper;
-import org.alfresco.util.PropertyCheck;
+import org.aldica.common.ignite.util.PropertyCheck;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
