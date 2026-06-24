@@ -45,6 +45,8 @@ public class MicrometerMetricExporterSpi extends IgniteSpiAdapter
 
     private static final String TAG_VALUE_BOUND = "value_bound";
 
+    private static final String TAG_IGNITE_METRIC_REGISTRY = "ignite_metric_registry";
+
     private static final String TAG_IGNITE_INSTANCE = "ignite_instance";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MicrometerMetricExporterSpi.class);
@@ -104,7 +106,7 @@ public class MicrometerMetricExporterSpi extends IgniteSpiAdapter
 
         final List<Meter> metricsToRemove = this.meterRegistry.getMeters().stream()
                 .filter(m -> this.metricNames.contains(m.getId().getName())
-                        && m.getId().getTag(TAG_IGNITE_INSTANCE).equals(this.igniteInstanceName))
+                        && this.igniteInstanceName.equals(m.getId().getTag(TAG_IGNITE_INSTANCE)))
                 .collect(Collectors.toList());
         metricsToRemove.forEach(this.meterRegistry::remove);
         this.metricNames.clear();
@@ -146,9 +148,8 @@ public class MicrometerMetricExporterSpi extends IgniteSpiAdapter
 
             for (final Metric metric : metricRegistry)
             {
-                String metricName = registryName + '.' + metric.name().toLowerCase(Locale.ENGLISH);
-                // replace duplicates if registry name is prefix to metric name
-                metricName = metricName.replaceAll("((?:(?:[a-z]+)[\\._])+?)\\1", "$1");
+                String metricName = metric.name().toLowerCase(Locale.ENGLISH);
+                metricName = metricName.replaceAll("^[\\._]+", "");
 
                 if (this.metricNames.contains(metricName))
                 {
@@ -159,22 +160,25 @@ public class MicrometerMetricExporterSpi extends IgniteSpiAdapter
                 boolean registered = false;
                 if (metric instanceof IntMetric)
                 {
-                    this.meterRegistry.gauge(metricName, Tags.of(TAG_IGNITE_INSTANCE, this.igniteInstanceName), (IntMetric) metric,
-                            intMetric -> Double.valueOf(intMetric.value()));
+                    this.meterRegistry.gauge(metricName,
+                            Tags.of(TAG_IGNITE_INSTANCE, this.igniteInstanceName, TAG_IGNITE_METRIC_REGISTRY, registryName),
+                            (IntMetric) metric, intMetric -> Double.valueOf(intMetric.value()));
                     registered = true;
                     LOGGER.trace("Registered int metric {} as gauge", metricName);
                 }
                 else if (metric instanceof LongMetric)
                 {
-                    this.meterRegistry.gauge(metricName, Tags.of(TAG_IGNITE_INSTANCE, this.igniteInstanceName), (LongMetric) metric,
-                            longMetric -> Double.valueOf(longMetric.value()));
+                    this.meterRegistry.gauge(metricName,
+                            Tags.of(TAG_IGNITE_INSTANCE, this.igniteInstanceName, TAG_IGNITE_METRIC_REGISTRY, registryName),
+                            (LongMetric) metric, longMetric -> Double.valueOf(longMetric.value()));
                     registered = true;
                     LOGGER.trace("Registered long metric {} as gauge", metricName);
                 }
                 else if (metric instanceof DoubleMetric)
                 {
-                    this.meterRegistry.gauge(metricName, Tags.of(TAG_IGNITE_INSTANCE, this.igniteInstanceName), (DoubleMetric) metric,
-                            DoubleMetric::value);
+                    this.meterRegistry.gauge(metricName,
+                            Tags.of(TAG_IGNITE_INSTANCE, this.igniteInstanceName, TAG_IGNITE_METRIC_REGISTRY, registryName),
+                            (DoubleMetric) metric, DoubleMetric::value);
                     registered = true;
                     LOGGER.trace("Registered double metric {} as gauge", metricName);
                 }
@@ -191,8 +195,9 @@ public class MicrometerMetricExporterSpi extends IgniteSpiAdapter
                         final long bound = bounds[i];
                         final int idx = i;
                         this.meterRegistry.gauge(metricName,
-                                Tags.of(TAG_IGNITE_INSTANCE, this.igniteInstanceName, TAG_VALUE_BOUND, String.valueOf(bound)), hMetric,
-                                histoMetric -> Double.valueOf(histoMetric.value()[idx]));
+                                Tags.of(TAG_IGNITE_INSTANCE, this.igniteInstanceName, TAG_IGNITE_METRIC_REGISTRY, registryName,
+                                        TAG_VALUE_BOUND, String.valueOf(bound)),
+                                hMetric, histoMetric -> Double.valueOf(histoMetric.value()[idx]));
                         LOGGER.trace("Registered long metric {} as gauge", metricName);
                     }
                     registered = true;
@@ -217,10 +222,9 @@ public class MicrometerMetricExporterSpi extends IgniteSpiAdapter
             final String registryName = metricRegistry.name().toLowerCase(Locale.ENGLISH);
             LOGGER.debug("Unregistering metrics for {} and Ignite instance {}", registryName, this.igniteInstanceName);
 
-            final String baseName = registryName + '.';
-
-            final Set<Meter> metricsToRemove = this.meterRegistry.getMeters().stream().filter(
-                    m -> m.getId().getName().startsWith(baseName) && m.getId().getTag(TAG_IGNITE_INSTANCE).equals(this.igniteInstanceName))
+            final Set<Meter> metricsToRemove = this.meterRegistry.getMeters().stream()
+                    .filter(m -> registryName.equals(m.getId().getTag(TAG_IGNITE_METRIC_REGISTRY))
+                            && this.igniteInstanceName.equals(m.getId().getTag(TAG_IGNITE_INSTANCE)))
                     .collect(Collectors.toSet());
             metricsToRemove.forEach(m -> {
                 this.metricNames.remove(m.getId().getName());
