@@ -97,8 +97,21 @@ These properties affect the various custom serialisation optimisations provided 
 | aldica.core.binary.optimisation.contentUrlEntity.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `ContentUrlEntity` instances |
 | aldica.core.binary.optimisation.aclEntity.enabled | `true` | enablement flag for optimisations applied to `AclEntity` instances |
 | aldica.core.binary.optimisation.aclEntity.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `AclEntity` instances |
+| aldica.core.binary.optimisation.authorityEntity.enabled | `true` | enablement flag for optimisations applied to `AuthorityEntity` instances |
+| aldica.core.binary.optimisation.authorityEntity.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `AuthorityEntity` instances |
 | aldica.core.binary.optimisation.permissionEntity.enabled | `true` | enablement flag for optimisations applied to `PermissionEntity` instances |
 | aldica.core.binary.optimisation.permissionEntity.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `PermissionEntity` instances |
+| aldica.core.binary.optimisation.simpleAccessControlList.enabled | `true` | enablement flag for optimisations applied to `SimpleAccessControlList` instances |
+| aldica.core.binary.optimisation.simpleAccessControlList.useIdsWhenReasonable | `${aldica.core.binary.optimisation.useIdsWhenReasonable}` | enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` on `SimpleAccessControlList` instances |
+| aldica.core.binary.optimisation.simpleAccessControlList.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `SimpleAccessControlList` instances |
+| aldica.core.binary.optimisation.simpleAccessControlListProperties.enabled | `true` | enablement flag for optimisations applied to `SimpleAccessControlListProperties` instances |
+| aldica.core.binary.optimisation.simpleAccessControlListProperties.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `SimpleAccessControlListProperties` instances |
+| aldica.core.binary.optimisation.simpleAccessControlEntry.enabled | `true` | enablement flag for optimisations applied to `SimpleAccessControlEntry` instances |
+| aldica.core.binary.optimisation.simpleAccessControlEntry.useIdsWhenReasonable | `${aldica.core.binary.optimisation.useIdsWhenReasonable}` | enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` on `SimpleAccessControlEntry` instances |
+| aldica.core.binary.optimisation.simpleAccessControlEntry.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `SimpleAccessControlEntry` instances |
+| aldica.core.binary.optimisation.simplePermissionReference.enabled | `true` | enablement flag for optimisations applied to `SimplePermissionReference` instances |
+| aldica.core.binary.optimisation.simplePermissionReference.useIdsWhenReasonable | `${aldica.core.binary.optimisation.useIdsWhenReasonable}` | enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` on `SimplePermissionReference` instances |
+| aldica.core.binary.optimisation.simplePermissionReference.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `SimplePermissionReference` instances |
 | aldica.core.binary.optimisation.nodeAspects.enabled | `${aldica.core.binary.optimisation.enabled}` | enablement flag for optimisations applied to `NodeAspectsCacheSet` instances - this flag also toggles the use of a `TransactionalCache` sub-class which transparently converts a regular node aspects set into a `NodeAspectsCacheSet`, so that its serialisation can be targeted for optimisation |
 | aldica.core.binary.optimisation.nodeAspects.useRawSerial | `${aldica.core.binary.optimisation.useRawSerial}` | enablement flag for using raw serial form for `NodeAspectsCacheSet` instances |
 | aldica.core.binary.optimisation.nodeAspects.useIdsWhenReasonable | `${aldica.core.binary.optimisation.useIdsWhenReasonable}` | enablement flag for using dynamic value substitution for any entities backed by the Alfresco `immutableEntityCache` on `NodeAspectsCacheSet` instances |
@@ -130,6 +143,14 @@ These properties should generally not need to be set / modified. They refer to v
 | aldica.core.executor.threadPriority | `8` | Thread-priority for running asynchronous logic when handling grid membership change (e.g. node joins) or cache messages from other grid members (e.g. cache invalidations) |
 | aldica.core.executor.corePoolSize | `4` | Number of threads to keep in the pool for running asynchronous logic when handling grid membership change or cache messages from other grid members (e.g. cache invalidations) |
 | aldica.core.executor.maximumPoolSize | `20` | Maximum number of threads to create in the pool for running asynchronous logic when handling grid membership change or cache messages from other grid members (e.g. cache invalidations) |
+
+### Miscellaneous Properties
+
+These properties deal with secondary functionality provided by or added to the Ignite data grid.
+
+| Property | Default Value | Description |
+| --- | ---: | --- |
+| aldica.core.meter.registry.beans |  | The comma-separated list of Micrometer `MeterRegistry` bean instance IDs to which metrics should be exported. Regardless of the value set here, this module will always attempt to export metrics to a `MeterRegistry` that Alfresco may provide by default. |
 
 ## Ignite-backed Caches
 

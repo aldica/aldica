@@ -85,7 +85,7 @@
         <aldica.ignite-common.basePackage>org.aldica.common.ignite</aldica.ignite-common.basePackage>
         <aldica.ignite-repo.artifactId>aldica-repo-ignite</aldica.ignite-repo.artifactId>
 
-        <acosix.utility.version>1.5.1-SNAPSHOT</acosix.utility.version>
+        <acosix.utility.version>1.5.1</acosix.utility.version>
         <ootbee.support-tools.version>1.2.3.1-SNAPSHOT</ootbee.support-tools.version>
         <micrometer.version>1.17.0</micrometer.version>
 
