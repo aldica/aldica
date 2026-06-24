@@ -94,10 +94,10 @@
         <property name="defaultDataRegionConfiguration" ref="Configuration.${moduleId}.core.storage.defaultDataRegion" />
 
         <property name="pageSize" value="\${${moduleId}.core.storage.pageSize}" />
-        <property name="systemDataRegionConfiguration" ref="Configuration.${moduleId}.core.systen.storage" />
+        <property name="systemDataRegionConfiguration" ref="Configuration.${moduleId}.core.system.storage" />
     </bean>
 
-    <bean id="Configuration.${moduleId}.core.systen.storage" abstract="true" class="org.apache.ignite.configuration.SystemDataRegionConfiguration">
+    <bean id="Configuration.${moduleId}.core.system.storage" class="org.apache.ignite.configuration.SystemDataRegionConfiguration">
         <property name="initialSize" value="\${${moduleId}.core.storage.systemInitialSize}" />
         <property name="maxSize" value="\${${moduleId}.core.storage.systemMaxSize}" />
     </bean>
@@ -112,6 +112,14 @@
         <property name="dataRegionBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.storage.region." />
         <property name="instanceNameProperty" value="${moduleId}.core.name" />
         <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper">
+            <bean class="org.springframework.util.PropertyPlaceholderHelper">
+                <constructor-arg name="placeholderPrefix" value="{" />
+                <constructor-arg name="placeholderSuffix" value="}" />
+                <constructor-arg name="valueSeparator" value=":" />
+                <constructor-arg name="ignoreUnresolvablePlaceholders" value="false" />
+            </bean>
+        </property>
     </bean>
 
     <bean id="Configuration.${moduleId}.core.storage.defaultDataRegion" class="org.apache.ignite.configuration.DataRegionConfiguration">

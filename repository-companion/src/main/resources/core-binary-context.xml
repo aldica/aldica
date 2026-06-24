@@ -84,10 +84,10 @@
         <property name="propertiesSource" ref="global-properties" />
         <property name="placeholderHelper">
             <bean class="org.springframework.util.PropertyPlaceholderHelper">
-                <constructor-arg index="0" value="{" />
-                <constructor-arg index="1" value="}" />
-                <constructor-arg index="2" value=":" />
-                <constructor-arg index="4" value="false" />
+                <constructor-arg name="placeholderPrefix" value="{" />
+                <constructor-arg name="placeholderSuffix" value="}" />
+                <constructor-arg name="valueSeparator" value=":" />
+                <constructor-arg name="ignoreUnresolvablePlaceholders" value="false" />
             </bean>
         </property>
     </bean>
