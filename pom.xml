@@ -91,7 +91,7 @@
 
         <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
         <!-- making aldica compatible with JDK 17 (e.g. ACS 23.x) requires Ignite 2.14.0 at least -->
-        <!-- Ignite 2.17.0 requires JDK 11, so precludes any ACS version prior to 6.1 -->
+        <!-- Ignite 2.17.0+ requires JDK 11, so precludes any ACS version prior to 6.1 -->
         <!-- so we set our minimum to ACS 7.0.0, since ACS 6.x is quite old at this point -->
         <apache.ignite.version>2.17.0</apache.ignite.version>
         <easymock.version>4.2</easymock.version>
@@ -263,14 +263,27 @@
                             -Xmx512M
                             -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication
                             -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
-                            --add-opens=java.base/java.lang=ALL-UNNAMED
                             --add-opens=java.base/java.io=ALL-UNNAMED
+                            --add-opens=java.base/java.lang=ALL-UNNAMED
+                            --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                            --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+                            --add-opens=java.base/java.math=ALL-UNNAMED
+                            --add-opens=java.base/java.net=ALL-UNNAMED
                             --add-opens=java.base/java.nio=ALL-UNNAMED
+                            --add-opens=java.base/java.text=ALL-UNNAMED
+                            --add-opens=java.base/java.time=ALL-UNNAMED
                             --add-opens=java.base/java.util=ALL-UNNAMED
+                            --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                            --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+                            --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+                            --add-opens=java.base/javax.crypto=ALL-UNNAMED
+                            --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
                             --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
                             --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
                             --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                            --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
                             --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                            --add-opens=java.management/sun.management=ALL-UNNAMED
                             --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
                             --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
                             --illegal-access=permit
@@ -292,14 +305,27 @@
                             -Xmx512M
                             -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication
                             -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
-                            --add-opens=java.base/java.lang=ALL-UNNAMED
                             --add-opens=java.base/java.io=ALL-UNNAMED
+                            --add-opens=java.base/java.lang=ALL-UNNAMED
+                            --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                            --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+                            --add-opens=java.base/java.math=ALL-UNNAMED
+                            --add-opens=java.base/java.net=ALL-UNNAMED
                             --add-opens=java.base/java.nio=ALL-UNNAMED
+                            --add-opens=java.base/java.text=ALL-UNNAMED
+                            --add-opens=java.base/java.time=ALL-UNNAMED
                             --add-opens=java.base/java.util=ALL-UNNAMED
+                            --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                            --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+                            --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+                            --add-opens=java.base/javax.crypto=ALL-UNNAMED
+                            --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
                             --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
                             --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
                             --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                            --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
                             --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                            --add-opens=java.management/sun.management=ALL-UNNAMED
                             --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
                             --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
                             --illegal-access=permit
