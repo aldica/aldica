@@ -4,6 +4,7 @@
 package org.aldica.repo.ignite.binary;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,8 +20,8 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -187,7 +188,7 @@ public abstract class AbstractBinarySerializer<T> implements BinarySerializer
      * @param rawWriter
      *     the raw binary writer
      */
-    abstract protected void writeRawSerialForm(T obj, BinaryWriterExImpl rawWriter);
+    abstract protected void writeRawSerialForm(T obj, BinaryWriterEx rawWriter);
 
     /**
      * Writes the state of the object in a regular serial form (with underlying Ignite schema)
@@ -470,9 +471,9 @@ public abstract class AbstractBinarySerializer<T> implements BinarySerializer
         final int length = this.readUnsignedInt(rawReader);
         final byte[] bytes;
 
-        if (rawReader instanceof BinaryReaderExImpl)
+        if (rawReader instanceof BinaryReaderEx)
         {
-            final BinaryInputStream in = ((BinaryReaderExImpl) rawReader).in();
+            final BinaryInputStream in = ((BinaryReaderEx) rawReader).in();
             bytes = in.readByteArray(length);
         }
         else
@@ -798,10 +799,10 @@ public abstract class AbstractBinarySerializer<T> implements BinarySerializer
         if (this.useRawSerialForm)
         {
             final BinaryRawWriter rawWriter = writer.rawWriter();
-            // must check impl class - BinaryMetadataCollector.rawWriter() yields a dummy proxy with interface
-            if (rawWriter instanceof BinaryWriterExImpl)
+            // BinaryMetadataCollector.rawWriter() yields a dummy proxy with interface
+            if (rawWriter instanceof BinaryWriterEx && !Proxy.isProxyClass(rawWriter.getClass()))
             {
-                this.writeRawSerialForm(t, (BinaryWriterExImpl) rawWriter);
+                this.writeRawSerialForm(t, (BinaryWriterEx) rawWriter);
             }
             // else: no need to write - BinaryMetadataCollector only used to collect schema info
             // we have no schema in rawSerialForm

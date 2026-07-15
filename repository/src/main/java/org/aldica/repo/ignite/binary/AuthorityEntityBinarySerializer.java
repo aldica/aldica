@@ -7,7 +7,7 @@ import org.alfresco.repo.domain.permissions.AuthorityEntity;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /**
@@ -42,7 +42,7 @@ public class AuthorityEntityBinarySerializer extends AbstractBinarySerializer<Au
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final AuthorityEntity authorityEntity, final BinaryWriterExImpl rawWriter)
+    protected void writeRawSerialForm(final AuthorityEntity authorityEntity, final BinaryWriterEx rawWriter)
     {
         final BinaryOutputStream out = rawWriter.out();
 

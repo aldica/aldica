@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.websession.WebSessionAttributeProcessor;
 import org.apache.ignite.internal.websession.WebSessionEntity;
@@ -122,7 +123,7 @@ public abstract class BaseSessionFilter implements InitializingBean
 
             final Ignite ignite = Ignition.ignite(this.igniteInstanceName);
             this.sessionEntityCache = ignite.cache(this.igniteCacheName);
-            this.marshaller = ignite.configuration().getMarshaller();
+            this.marshaller = ((IgniteEx)ignite).context().marshaller();
         }
     }
 

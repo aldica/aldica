@@ -8,7 +8,7 @@ import org.alfresco.repo.security.permissions.SimpleAccessControlListProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /**
@@ -57,7 +57,7 @@ public class SimpleAccessControlListPropertiesBinarySerializer extends AbstractA
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final SimpleAccessControlListProperties properties, final BinaryWriterExImpl rawWriter)
+    protected void writeRawSerialForm(final SimpleAccessControlListProperties properties, final BinaryWriterEx rawWriter)
     {
         final BinaryOutputStream out = rawWriter.out();
         this.writeAclProperties(properties, out);

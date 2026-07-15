@@ -8,7 +8,7 @@ import org.alfresco.service.cmr.repository.StoreRef;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
@@ -43,7 +43,7 @@ public class StoreRefBinarySerializer extends AbstractExtendedBinarySerializer<S
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final StoreRef storeRef, final BinaryWriterExImpl rawWriter)
+    protected void writeRawSerialForm(final StoreRef storeRef, final BinaryWriterEx rawWriter)
     {
         this.writeStoreRef(storeRef, rawWriter.out());
     }

@@ -12,7 +12,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.springframework.context.ApplicationContextAware;
 
@@ -59,7 +59,7 @@ public class ContentDataBinarySerializer extends AbstractContentSupportBinarySer
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final ContentData contentData, final BinaryWriterExImpl rawWriter)
+    protected void writeRawSerialForm(final ContentData contentData, final BinaryWriterEx rawWriter)
     {
         final BinaryOutputStream out = rawWriter.out();
         this.writeContentData(contentData, out);

@@ -17,7 +17,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.GridUnsafe;
 
@@ -95,7 +95,7 @@ public class TransactionalCacheValueHolderBinarySerializer extends AbstractExten
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final ValueHolder valueHolder, final BinaryWriterExImpl rawWriter) throws BinaryObjectException
+    protected void writeRawSerialForm(final ValueHolder valueHolder, final BinaryWriterEx rawWriter) throws BinaryObjectException
     {
         final BinaryOutputStream out = rawWriter.out();
 

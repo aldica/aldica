@@ -9,7 +9,7 @@ import org.alfresco.util.Pair;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /**
@@ -39,7 +39,7 @@ public class SimplePermissionReferenceBinarySerializer extends AbstractAclBinary
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final SimplePermissionReference permission, final BinaryWriterExImpl rawWriter)
+    protected void writeRawSerialForm(final SimplePermissionReference permission, final BinaryWriterEx rawWriter)
     {
         final BinaryOutputStream out = rawWriter.out();
         this.writePermissionReference(permission, out);

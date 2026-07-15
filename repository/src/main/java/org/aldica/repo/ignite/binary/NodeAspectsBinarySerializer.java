@@ -18,7 +18,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -83,7 +83,7 @@ public class NodeAspectsBinarySerializer extends AbstractExtendedBinarySerialize
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final NodeAspectsCacheSet nodeAspectsCacheSet, final BinaryWriterExImpl rawWriter)
+    protected void writeRawSerialForm(final NodeAspectsCacheSet nodeAspectsCacheSet, final BinaryWriterEx rawWriter)
     {
         final BinaryOutputStream out = rawWriter.out();
 

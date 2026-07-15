@@ -12,7 +12,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.GridUnsafe;
 
@@ -52,7 +52,7 @@ public class CacheRegionKeyBinarySerializer extends AbstractKeyBinarySerializer<
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final CacheRegionKey cacheRegionKey, final BinaryWriterExImpl rawWriter) throws BinaryObjectException
+    protected void writeRawSerialForm(final CacheRegionKey cacheRegionKey, final BinaryWriterEx rawWriter) throws BinaryObjectException
     {
         final String cacheRegion = (String) GridUnsafe.getObjectField(cacheRegionKey, CACHE_REGION_FIELD_OFFSET);
         final Serializable cacheKey = (Serializable) GridUnsafe.getObjectField(cacheRegionKey, CACHE_KEY_FIELD_OFFSET);

@@ -93,7 +93,7 @@
         <!-- making aldica compatible with JDK 17 (e.g. ACS 23.x) requires Ignite 2.14.0 at least -->
         <!-- Ignite 2.17.0+ requires JDK 11, so precludes any ACS version prior to 6.1 -->
         <!-- so we set our minimum to ACS 7.0.0, since ACS 6.x is quite old at this point -->
-        <apache.ignite.version>2.17.0</apache.ignite.version>
+        <apache.ignite.version>2.18.0</apache.ignite.version>
         <easymock.version>4.2</easymock.version>
 
         <postgres.docker.version>16</postgres.docker.version>

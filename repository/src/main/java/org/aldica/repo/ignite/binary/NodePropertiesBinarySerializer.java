@@ -41,7 +41,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -256,7 +256,7 @@ public class NodePropertiesBinarySerializer extends AbstractContentSupportBinary
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final NodePropertiesCacheMap nodePropertiesCacheMap, final BinaryWriterExImpl rawWriter)
+    protected void writeRawSerialForm(final NodePropertiesCacheMap nodePropertiesCacheMap, final BinaryWriterEx rawWriter)
     {
         final BinaryOutputStream out = rawWriter.out();
 

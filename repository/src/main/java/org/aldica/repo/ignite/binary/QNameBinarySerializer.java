@@ -8,7 +8,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
@@ -41,7 +41,7 @@ public class QNameBinarySerializer extends AbstractExtendedBinarySerializer<QNam
      * {@inheritDoc}
      */
     @Override
-    protected void writeRawSerialForm(final QName qname, final BinaryWriterExImpl rawWriter)
+    protected void writeRawSerialForm(final QName qname, final BinaryWriterEx rawWriter)
     {
         this.writeQName(qname, rawWriter.out());
     }
