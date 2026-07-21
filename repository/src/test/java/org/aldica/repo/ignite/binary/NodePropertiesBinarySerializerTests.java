@@ -34,6 +34,7 @@ import org.alfresco.repo.domain.mimetype.ibatis.MimetypeDAOImpl;
 import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.repo.domain.qname.QNameDAO;
 import org.alfresco.repo.domain.qname.ibatis.QNameDAOImpl;
+import org.alfresco.repo.workflow.WorkflowModel;
 import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.MLText;
 import org.alfresco.service.cmr.repository.NodeRef;
@@ -70,6 +71,8 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             ContentModel.PROP_CREATOR, ContentModel.PROP_MODIFIER, ContentModel.PROP_CONTENT, ContentModel.PROP_TITLE,
             ContentModel.PROP_CATEGORIES, ContentModel.PROP_CLIENT_CONTROLLED, ContentModel.PROP_VISIBILITY_MASK,
             ContentModel.PROP_INHERIT_FROM_ACL, ActionModel.PROP_PARAMETER_NAME, ActionModel.PROP_PARAMETER_VALUE };
+
+    private static final QName UNKNOWN_PROP_QNAME = WorkflowModel.PROP_WORKFLOW_DEFINITION_ID;
 
     private static final String[] MIMETYPES = { MimetypeMap.MIMETYPE_PDF, MimetypeMap.MIMETYPE_JSON, MimetypeMap.MIMETYPE_TEXT_PLAIN,
             MimetypeMap.MIMETYPE_OPENDOCUMENT_TEXT, MimetypeMap.MIMETYPE_OPENDOCUMENT_SPREADSHEET,
@@ -519,6 +522,7 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             controlValue.put(ActionModel.PROP_PARAMETER_NAME, ContentModel.PROP_CONTENT);
             controlValue.put(ActionModel.PROP_PARAMETER_VALUE, 27.123);
             controlValue.put(ContentModel.PROP_INHERIT_FROM_ACL, 32l);
+            controlValue.put(UNKNOWN_PROP_QNAME, "Test");
 
             categories = new ArrayList<>();
             categories.add(new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, UUID.randomUUID().toString()));
