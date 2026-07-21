@@ -1,0 +1,122 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package org.aldica.ignite.integration;
+
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+
+import java.util.Locale;
+import java.util.function.Consumer;
+
+import javax.ws.rs.core.UriBuilder;
+
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jboss.resteasy.client.jaxrs.internal.LocalResteasyProviderFactory;
+import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
+import org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider;
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import de.acosix.alfresco.rest.client.api.NodesV1;
+import de.acosix.alfresco.rest.client.jackson.RestAPIBeanDeserializerModifier;
+import de.acosix.alfresco.rest.client.jaxrs.BasicAuthenticationClientRequestFilter;
+import de.acosix.alfresco.rest.client.model.nodes.NodeResponseEntity;
+import de.acosix.alfresco.rest.client.resteasy.MultiValuedParamConverterProvider;
+
+/**
+ * Tests in this class check and verify that access to some default content / test nodes work without problems. This effectively tests all
+ * first-tier node-related caches, i.e. identity, aspects, and properties, since only the second access will guarantee values to be read
+ * from cache.
+ *
+ * @author Axel Faust
+ */
+public class DefaultNodeAccesses
+{
+
+    private static final String baseUrlServer1 = String.format(Locale.ENGLISH, "http://localhost:%s/alfresco",
+            System.getProperty("alfresco.host1.port"));
+
+    private static final String baseUrlServer2 = String.format(Locale.ENGLISH, "http://localhost:%s/alfresco",
+            System.getProperty("alfresco.host2.port"));
+
+    private static ResteasyClient client;
+
+    private final BasicAuthenticationClientRequestFilter server1AuthFilter = new BasicAuthenticationClientRequestFilter();
+
+    private final BasicAuthenticationClientRequestFilter server2AuthFilter = new BasicAuthenticationClientRequestFilter();
+
+    private NodesV1 server1NodesAPI;
+
+    private NodesV1 server2NodesAPI;
+
+    @BeforeClass
+    public static void setup()
+    {
+        final SimpleModule module = new SimpleModule();
+        module.setDeserializerModifier(new RestAPIBeanDeserializerModifier());
+
+        final ResteasyJackson2Provider resteasyJacksonProvider = new ResteasyJackson2Provider();
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(Include.NON_EMPTY);
+        mapper.registerModule(module);
+        resteasyJacksonProvider.setMapper(mapper);
+
+        final LocalResteasyProviderFactory resteasyProviderFactory = new LocalResteasyProviderFactory(new ResteasyProviderFactory());
+        resteasyProviderFactory.register(resteasyJacksonProvider);
+        // will cause a warning regarding Jackson provider which is already registered
+        RegisterBuiltin.register(resteasyProviderFactory);
+        resteasyProviderFactory.register(new MultiValuedParamConverterProvider());
+
+        client = new ResteasyClientBuilder().providerFactory(resteasyProviderFactory).build();
+    }
+
+    @Before
+    public void setupTest()
+    {
+        final ResteasyWebTarget targetServer1 = client.target(UriBuilder.fromPath(baseUrlServer1).build());
+        targetServer1.register(this.server1AuthFilter);
+        this.server1NodesAPI = targetServer1.proxy(NodesV1.class);
+
+        this.server1AuthFilter.setUserName("admin");
+        this.server1AuthFilter.setAuthentication("admin");
+
+        final ResteasyWebTarget targetServer2 = client.target(UriBuilder.fromPath(baseUrlServer2).build());
+        targetServer2.register(this.server2AuthFilter);
+        this.server2NodesAPI = targetServer2.proxy(NodesV1.class);
+
+        this.server2AuthFilter.setUserName("admin");
+        this.server2AuthFilter.setAuthentication("admin");
+    }
+
+    @Test
+    public void defaultSampeWebSiteGeLogoAccess()
+    {
+        // previously caused errors due to d:float property cm:likesRatingSchemeTotal
+        // no error alone is already sufficient, but still validate expected values
+        final Consumer<NodeResponseEntity> validator = geLogoNode -> {
+            Assert.assertEquals("GE Logo.png", geLogoNode.getName());
+            Assert.assertEquals(1.0, geLogoNode.getProperty("cm:likesRatingSchemeTotal"));
+            Assert.assertEquals(1, geLogoNode.getProperty("cm:likesRatingSchemeCount"));
+            Assert.assertEquals("GE Logo.png", geLogoNode.getProperty("cm:title"));
+            Assert.assertEquals(400, geLogoNode.getProperty("exif:pixelXDimension"));
+            Assert.assertEquals(192, geLogoNode.getProperty("exif:pixelYDimension"));
+        };
+        this.getAndValidate(this.server1NodesAPI, "-root-", "Sites/swsdp/documentLibrary/Agency Files/Logo Files/GE Logo.png", validator);
+        this.getAndValidate(this.server2NodesAPI, "-root-", "Sites/swsdp/documentLibrary/Agency Files/Logo Files/GE Logo.png", validator);
+    }
+
+    private void getAndValidate(final NodesV1 api, final String nodeId, final String relativePath,
+            final Consumer<NodeResponseEntity> validator)
+    {
+        NodeResponseEntity node = api.getNode(nodeId, relativePath);
+        node = api.getNode(nodeId, relativePath);
+        validator.accept(node);
+    }
+}

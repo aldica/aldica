@@ -341,7 +341,7 @@ public class NodePropertiesBinarySerializer extends AbstractContentSupportBinary
         else if (value instanceof Float)
         {
             retFlags = FLAG_TYPE_FLOAT;
-            out.writeDouble(((Float) value).floatValue());
+            out.writeFloat(((Float) value).floatValue());
         }
         else if (value instanceof Double)
         {

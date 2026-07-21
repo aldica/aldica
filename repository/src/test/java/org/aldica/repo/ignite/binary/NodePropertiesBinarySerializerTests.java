@@ -35,6 +35,8 @@ import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.repo.domain.qname.QNameDAO;
 import org.alfresco.repo.domain.qname.ibatis.QNameDAOImpl;
 import org.alfresco.repo.workflow.WorkflowModel;
+import org.alfresco.rest.api.impl.node.ratings.LikesRatingScheme;
+import org.alfresco.service.cmr.rating.RatingScheme;
 import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.MLText;
 import org.alfresco.service.cmr.repository.NodeRef;
@@ -70,7 +72,8 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
     private static final QName[] PROP_QNAMES = { ContentModel.PROP_NAME, ContentModel.PROP_MODIFIED, ContentModel.PROP_CREATED,
             ContentModel.PROP_CREATOR, ContentModel.PROP_MODIFIER, ContentModel.PROP_CONTENT, ContentModel.PROP_TITLE,
             ContentModel.PROP_CATEGORIES, ContentModel.PROP_CLIENT_CONTROLLED, ContentModel.PROP_VISIBILITY_MASK,
-            ContentModel.PROP_INHERIT_FROM_ACL, ActionModel.PROP_PARAMETER_NAME, ActionModel.PROP_PARAMETER_VALUE };
+            ContentModel.PROP_INHERIT_FROM_ACL, ActionModel.PROP_PARAMETER_NAME, ActionModel.PROP_PARAMETER_VALUE,
+            ContentModel.PROP_RATING_SCORE };
 
     private static final QName UNKNOWN_PROP_QNAME = WorkflowModel.PROP_WORKFLOW_DEFINITION_ID;
 
@@ -521,6 +524,7 @@ public class NodePropertiesBinarySerializerTests extends GridTestsBase
             controlValue.put(ContentModel.PROP_VISIBILITY_MASK, -143);
             controlValue.put(ActionModel.PROP_PARAMETER_NAME, ContentModel.PROP_CONTENT);
             controlValue.put(ActionModel.PROP_PARAMETER_VALUE, 27.123);
+            controlValue.put(ContentModel.PROP_RATING_SCORE, 0.0f);
             controlValue.put(ContentModel.PROP_INHERIT_FROM_ACL, 32l);
             controlValue.put(UNKNOWN_PROP_QNAME, "Test");
 
