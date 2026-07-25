@@ -31,6 +31,7 @@ RUN java -jar ${alfresco.repo.docker.mmt.path}/alfresco-mmt*.jar install \
 COPY alfresco.xml ${alfresco.repo.docker.tomcat.path}/conf/Catalina/localhost/
 COPY alfresco-global.addition.properties ${alfresco.repo.docker.tomcat.path}/shared/classes/alfresco/
 COPY dev-log4j.properties dev-log4j2.properties ${alfresco.repo.docker.tomcat.path}/shared/classes/alfresco/extension/
+COPY staticModel.xml model-context.xml ${alfresco.repo.docker.tomcat.path}/shared/classes/alfresco/extension/
 
 # merge additions to alfresco-global.properties
 RUN echo "" >> ${alfresco.repo.docker.tomcat.path}/shared/classes/alfresco-global.properties \

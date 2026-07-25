@@ -7,7 +7,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import javax.ws.rs.core.UriBuilder;
@@ -27,6 +30,7 @@ import org.junit.Test;
 import de.acosix.alfresco.rest.client.api.NodesV1;
 import de.acosix.alfresco.rest.client.jackson.RestAPIBeanDeserializerModifier;
 import de.acosix.alfresco.rest.client.jaxrs.BasicAuthenticationClientRequestFilter;
+import de.acosix.alfresco.rest.client.model.nodes.NodeCreationRequestEntity;
 import de.acosix.alfresco.rest.client.model.nodes.NodeResponseEntity;
 import de.acosix.alfresco.rest.client.resteasy.MultiValuedParamConverterProvider;
 
@@ -93,6 +97,30 @@ public class DefaultNodeAccesses
 
         this.server2AuthFilter.setUserName("admin");
         this.server2AuthFilter.setAuthentication("admin");
+    }
+
+    @Test
+    public void firstTimeModelUse()
+    {
+        final NodeResponseEntity server1SharedFolder = this.server1NodesAPI.getNode("-shared-");
+
+        final NodeCreationRequestEntity createNode = new NodeCreationRequestEntity();
+        createNode.setNodeType("stat:content");
+        createNode.setName(UUID.randomUUID().toString());
+        createNode.setProperties(Map.of("stat:meta", "dummy"));
+        createNode.setAspectNames(List.of("stat:marker"));
+
+        NodeResponseEntity createdNode1 = this.server1NodesAPI.createNode(server1SharedFolder.getId(), createNode);
+        Assert.assertEquals(createNode.getName(), createdNode1.getName());
+        Assert.assertEquals("dummy", createdNode1.getProperty("stat:meta"));
+        Assert.assertNotNull(createdNode1.getAspectNames());
+        Assert.assertTrue(createdNode1.getAspectNames().contains("stat:marker"));
+
+        createdNode1 = this.server2NodesAPI.getNode(createdNode1.getId());
+        Assert.assertEquals(createNode.getName(), createdNode1.getName());
+        Assert.assertEquals("dummy", createdNode1.getProperty("stat:meta"));
+        Assert.assertNotNull(createdNode1.getAspectNames());
+        Assert.assertTrue(createdNode1.getAspectNames().contains("stat:marker"));
     }
 
     @Test

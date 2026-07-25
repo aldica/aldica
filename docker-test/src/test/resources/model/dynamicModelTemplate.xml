@@ -9,15 +9,15 @@
     <namespaces>
         <namespace uri="%namespaceUri%" prefix="%prefix%" />
     </namespaces>
-    
+
     <constraints>
         <!-- %constraints% -->
     </constraints>
-    
+
     <types>
         <!-- %types% -->
     </types>
-    
+
     <aspects>
         <!-- %aspects% -->
     </aspects>

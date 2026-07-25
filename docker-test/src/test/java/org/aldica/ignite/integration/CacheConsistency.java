@@ -33,6 +33,7 @@ import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -68,6 +69,10 @@ public class CacheConsistency
 
     private static ResteasyClient client;
 
+    private NodesV1 server1NodesAPI;
+
+    private NodesV1 server2NodesAPI;
+
     @BeforeClass
     public static void setup()
     {
@@ -87,6 +92,13 @@ public class CacheConsistency
         resteasyProviderFactory.register(new MultiValuedParamConverterProvider());
 
         client = new ResteasyClientBuilder().providerFactory(resteasyProviderFactory).build();
+    }
+
+    @Before
+    public void setupTest()
+    {
+        this.server1NodesAPI = this.createServerNodesAPI(client, baseUrlServer1);
+        this.server2NodesAPI = this.createServerNodesAPI(client, baseUrlServer2);
     }
 
     private AuthenticationV1 createServerAuthenticationAPI(final ResteasyClient client, final String baseUrl)
@@ -135,9 +147,6 @@ public class CacheConsistency
     @Test
     public void createAndAccessNode()
     {
-        final NodesV1 server1NodesAPI = this.createServerNodesAPI(client, baseUrlServer1);
-        final NodesV1 server2NodesAPI = this.createServerNodesAPI(client, baseUrlServer2);
-
         final NodeCreationRequestEntity nodeToCreate = new NodeCreationRequestEntity();
         nodeToCreate.setNodeType("cm:folder");
         final String name = "folder-" + UUID.randomUUID().toString();
@@ -149,10 +158,10 @@ public class CacheConsistency
 
         nodeToCreate.setAspectNames(Collections.singletonList("cm:effectivity"));
 
-        final NodeResponseEntity server1CreatedNode = server1NodesAPI.createNode("-shared-", nodeToCreate);
+        final NodeResponseEntity server1CreatedNode = this.server1NodesAPI.createNode("-shared-", nodeToCreate);
 
-        final NodeResponseEntity server1Node = server1NodesAPI.getNode(server1CreatedNode.getId());
-        final NodeResponseEntity server2Node = server2NodesAPI.getNode(server1CreatedNode.getId());
+        final NodeResponseEntity server1Node = this.server1NodesAPI.getNode(server1CreatedNode.getId());
+        final NodeResponseEntity server2Node = this.server2NodesAPI.getNode(server1CreatedNode.getId());
 
         Assert.assertEquals("Aspects of created node should be consistent on both servers", server1Node.getAspectNames(),
                 server2Node.getAspectNames());
@@ -163,12 +172,9 @@ public class CacheConsistency
     @Test
     public void updateCachedNode() throws Exception
     {
-        final NodesV1 server1NodesAPI = this.createServerNodesAPI(client, baseUrlServer1);
-        final NodesV1 server2NodesAPI = this.createServerNodesAPI(client, baseUrlServer2);
-
         // in order to avoid having to create a new node (overlap with createAndAccessNode test) we simply update the Shared folder
-        NodeResponseEntity server1SharedFolder = server1NodesAPI.getNode("-shared-");
-        NodeResponseEntity server2SharedFolder = server2NodesAPI.getNode("-shared-");
+        NodeResponseEntity server1SharedFolder = this.server1NodesAPI.getNode("-shared-");
+        NodeResponseEntity server2SharedFolder = this.server2NodesAPI.getNode("-shared-");
 
         Assert.assertEquals("ID of Shared folder should be identical (before update) in cluster", server1SharedFolder.getId(),
                 server2SharedFolder.getId());
@@ -198,10 +204,10 @@ public class CacheConsistency
         updates.setProperties(properties);
 
         // do the update - we don't care about the response but will validate the responses to the subsequent retrieval calls
-        server1NodesAPI.updateNode(server1SharedFolder.getId(), updates);
+        this.server1NodesAPI.updateNode(server1SharedFolder.getId(), updates);
 
-        server1SharedFolder = server1NodesAPI.getNode("-shared-");
-        server2SharedFolder = server2NodesAPI.getNode("-shared-");
+        server1SharedFolder = this.server1NodesAPI.getNode("-shared-");
+        server2SharedFolder = this.server2NodesAPI.getNode("-shared-");
 
         Assert.assertEquals("ID of Shared folder should be identical (after update) in cluster", server1SharedFolder.getId(),
                 server2SharedFolder.getId());
@@ -223,22 +229,22 @@ public class CacheConsistency
     {
         final String namespaceUri = UUID.randomUUID().toString();
         final String prefix = namespaceUri.replaceAll("[0-9\\-]", "");
-        final String typeLocalName = UUID.randomUUID().toString();
+        final String typeLocalName = "folder";
+        final String propLocalName = "property";
         final String typeQName = '{' + namespaceUri + '}' + typeLocalName;
+        final String propShortName = prefix + ':' + propLocalName;
 
-        final NodesV1 server1NodesAPI = this.createServerNodesAPI(client, baseUrlServer1);
-        final NodesV1 server2NodesAPI = this.createServerNodesAPI(client, baseUrlServer2);
-
-        final NodeResponseEntity server1SharedFolder = server1NodesAPI.getNode("-shared-");
-        final NodeResponseEntity server2SharedFolder = server2NodesAPI.getNode("-shared-");
+        final NodeResponseEntity server1SharedFolder = this.server1NodesAPI.getNode("-shared-");
+        final NodeResponseEntity server2SharedFolder = this.server2NodesAPI.getNode("-shared-");
 
         final NodeCreationRequestEntity createNode = new NodeCreationRequestEntity();
         createNode.setNodeType(typeQName);
         createNode.setName(UUID.randomUUID().toString());
+        createNode.setProperties(Map.of(propShortName, UUID.randomUUID().toString()));
 
         try
         {
-            server1NodesAPI.createNode(server1SharedFolder.getId(), createNode);
+            this.server1NodesAPI.createNode(server1SharedFolder.getId(), createNode);
             Assert.fail("Node creation with dynamic type should not have succeeded on server 1 before dynamic model activation");
         }
         catch (final BadRequestException expected)
@@ -248,7 +254,7 @@ public class CacheConsistency
 
         try
         {
-            server2NodesAPI.createNode(server2SharedFolder.getId(), createNode);
+            this.server2NodesAPI.createNode(server2SharedFolder.getId(), createNode);
             Assert.fail("Node creation with dynamic type should not have succeeded on server 2 before dynamic model activation");
         }
         catch (final BadRequestException expected)
@@ -261,22 +267,36 @@ public class CacheConsistency
         final StringBuilder dynamicTypeBuilder = new StringBuilder(4096);
         dynamicTypeBuilder.append("<type name=\"").append(prefix).append(':').append(typeLocalName).append("\">");
         dynamicTypeBuilder.append("<parent>cm:folder</parent>");
+        dynamicTypeBuilder.append("<properties>");
+        dynamicTypeBuilder.append("<property name=\"").append(prefix).append(':').append(propLocalName).append("\">");
+        dynamicTypeBuilder.append("<type>d:text</type>");
+        dynamicTypeBuilder.append("</property>");
+        dynamicTypeBuilder.append("</properties>");
         dynamicTypeBuilder.append("</type>");
 
         final String dynamicType = dynamicTypeBuilder.toString();
         dynamicModel = dynamicModel.replace("<!-- %types% -->", dynamicType);
 
-        deployDynamicModel(server1NodesAPI, dynamicModel, "dynamicModelClusterPropagationTest-" + UUID.randomUUID().toString() + ".xml");
+        deployDynamicModel(this.server1NodesAPI, dynamicModel, "dynamicModelClusterPropagationTest-" + UUID.randomUUID().toString() + ".xml");
 
-        // don't need to validate created nodes much - just the fact that they can be created is sufficient verification
-
-        final NodeResponseEntity createdNode1 = server1NodesAPI.createNode(server1SharedFolder.getId(), createNode);
+        NodeResponseEntity createdNode1 = this.server1NodesAPI.createNode(server1SharedFolder.getId(), createNode);
         Assert.assertEquals(createNode.getName(), createdNode1.getName());
+        Assert.assertEquals(createNode.getProperty(propShortName), createdNode1.getProperty(propShortName));
+
+        createdNode1 = this.server2NodesAPI.getNode(createdNode1.getId());
+        Assert.assertEquals(createNode.getName(), createdNode1.getName());
+        Assert.assertEquals(createNode.getProperty(propShortName), createdNode1.getProperty(propShortName));
 
         createNode.setName(UUID.randomUUID().toString());
+        createNode.setProperties(Map.of(propShortName, UUID.randomUUID().toString()));
 
-        final NodeResponseEntity createdNode2 = server2NodesAPI.createNode(server2SharedFolder.getId(), createNode);
+        NodeResponseEntity createdNode2 = this.server2NodesAPI.createNode(server2SharedFolder.getId(), createNode);
         Assert.assertEquals(createNode.getName(), createdNode2.getName());
+        Assert.assertEquals(createNode.getProperty(propShortName), createdNode2.getProperty(propShortName));
+
+        createdNode2 = this.server1NodesAPI.getNode(createdNode2.getId());
+        Assert.assertEquals(createNode.getName(), createdNode2.getName());
+        Assert.assertEquals(createNode.getProperty(propShortName), createdNode2.getProperty(propShortName));
     }
 
     private static String deployDynamicModel(final NodesV1 nodesAPI, final String dynamicModel, final String modelFileName) throws Exception
@@ -297,6 +317,10 @@ public class CacheConsistency
         updates.setProperty("cm:modelActive", Boolean.TRUE);
         nodesAPI.updateNode(modelFileId, updates);
         LOGGER.info("Activated custom model file {} (UUID: {})", modelFile.getName(), modelFile.getId());
+
+        // compiled models cache is rebuilt asynchronously
+        // require wait before use of dynamic model
+        Thread.sleep(2000);
 
         return modelFileId;
     }

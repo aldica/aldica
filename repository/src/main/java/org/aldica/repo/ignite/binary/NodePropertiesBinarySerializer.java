@@ -267,13 +267,24 @@ public class NodePropertiesBinarySerializer extends AbstractContentSupportBinary
         {
             globalFlags |= FLAG_GLOBAL_REASONABLE_ID;
 
-            Optional<QName> unresolveableQName = nodePropertiesCacheMap.keySet().stream().filter(e -> this.qnameLookup(e) == null)
+            final Optional<QName> unresolveableQName = nodePropertiesCacheMap.keySet().stream().filter(e -> this.qnameLookup(e) == null)
                     .findFirst();
             if (unresolveableQName.isPresent())
             {
-                LOGGER.warn(
-                        "Qualified name {} is not resolveable via QNameDAO in current context - this should not happen in any normal use case",
-                        unresolveableQName.get(), new Exception());
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER.warn(
+                            "Qualified name {} is not resolveable via QNameDAO in current context - "
+                                    + "this should not happen in any normal use case but may temporarily occur on first time model use",
+                            unresolveableQName.get(), new Exception());
+                }
+                else
+                {
+                    LOGGER.warn(
+                            "Qualified name {} is not resolveable via QNameDAO in current context - "
+                                    + "this should not happen in any normal use case but may temporarily occur on first time model use",
+                            unresolveableQName.get());
+                }
                 extraQNameByte = true;
                 globalFlags |= FLAG_GLOBAL_QNAME_EXTRA_BYTE;
             }
@@ -500,7 +511,7 @@ public class NodePropertiesBinarySerializer extends AbstractContentSupportBinary
 
             byte flags = this.writeValueOrId(entry.getKey(), this::localeLookup, (byte) 0, FLAG_MLTEXT_LOCALE_ID,
                     FLAG_MLTEXT_LOCALE_ID_UNSIGNED, out);
-            String str = entry.getValue();
+            final String str = entry.getValue();
             if (str != null)
             {
                 this.writeString(str, out);
