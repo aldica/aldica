@@ -318,10 +318,6 @@ public class CacheConsistency
         nodesAPI.updateNode(modelFileId, updates);
         LOGGER.info("Activated custom model file {} (UUID: {})", modelFile.getName(), modelFile.getId());
 
-        // compiled models cache is rebuilt asynchronously
-        // require wait before use of dynamic model
-        Thread.sleep(2000);
-
         return modelFileId;
     }
 
