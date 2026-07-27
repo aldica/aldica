@@ -7,6 +7,8 @@
            http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
+    <bean class="${aldica.ignite-common.basePackage}.spring.BeanFactoryPredictedTypeEnhancer" />
+
     <bean class="org.alfresco.i18n.ResourceBundleBootstrapComponent">
         <property name="resourceBundles">
             <list>
@@ -16,8 +18,10 @@
     </bean>
 
     <import resource="classpath:alfresco/module/${moduleId}/context/core-instance-context.xml" />
+    <import resource="classpath:alfresco/module/${moduleId}/context/core-binary-context.xml" />
     <import resource="classpath:alfresco/module/${moduleId}/context/caches-context.xml" />
     <import resource="classpath:alfresco/module/${moduleId}/context/behaviours-context.xml" />
     <import resource="classpath:alfresco/module/${moduleId}/context/webscripts-context.xml" />
+    <import resource="classpath:alfresco/module/${moduleId}/context/web-session-cache-context.xml" />
 
 </beans>

@@ -5,31 +5,47 @@ package org.aldica.repo.ignite.binary;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.aldica.repo.ignite.cache.NodePropertiesCacheMap;
-import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.repo.domain.contentdata.ContentDataDAO;
 import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.repo.domain.qname.QNameDAO;
+import org.alfresco.repo.tenant.TenantService;
+import org.alfresco.service.cmr.repository.AssociationRef;
+import org.alfresco.service.cmr.repository.ChildAssociationRef;
 import org.alfresco.service.cmr.repository.ContentData;
+import org.alfresco.service.cmr.repository.MLText;
+import org.alfresco.service.cmr.repository.NodeRef;
+import org.alfresco.service.cmr.repository.Path;
+import org.alfresco.service.cmr.repository.Path.AttributeElement;
+import org.alfresco.service.cmr.repository.Path.ChildAssocElement;
+import org.alfresco.service.cmr.repository.Path.DescendentOrSelfElement;
+import org.alfresco.service.cmr.repository.Path.Element;
+import org.alfresco.service.cmr.repository.Path.ParentElement;
+import org.alfresco.service.cmr.repository.Path.SelfElement;
+import org.alfresco.service.cmr.repository.Period;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
+import org.alfresco.util.VersionNumber;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 /**
@@ -46,8 +62,44 @@ import org.springframework.context.ApplicationContextAware;
  *
  * @author Axel Faust
  */
-public class NodePropertiesBinarySerializer implements BinarySerializer, ApplicationContextAware
+public class NodePropertiesBinarySerializer extends AbstractContentSupportBinarySerializer<NodePropertiesCacheMap>
+        implements ApplicationContextAware
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NodePropertiesBinarySerializer.class);
+
+    private static class SimplePathElement extends Element
+    {
+
+        private static final long serialVersionUID = 6114652324636942668L;
+
+        private final String elementString;
+
+        public SimplePathElement(final String elementString)
+        {
+            this.elementString = elementString;
+        }
+
+        /**
+         *
+         * {@inheritDoc}
+         */
+        @Override
+        public String getElementString()
+        {
+            return this.elementString;
+        }
+
+        /**
+         *
+         * {@inheritDoc}
+         */
+        @Override
+        public Element getBaseNameElement(final TenantService tenantService)
+        {
+            return new SimplePathElement(this.elementString);
+        }
+    }
 
     private static final String VALUES = "values";
 
@@ -55,67 +107,105 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
 
     private static final String CONTENT_ID_VALUES = "contentIdValues";
 
-    private static final byte FLAG_QNAME_ID = 1;
+    private static final byte FLAG_GLOBAL_REASONABLE_ID = 0x01;
 
-    private static final byte FLAG_CONTENT_DATA_VALUE_ID = 2;
+    private static final byte FLAG_GLOBAL_POSSIBLE_ID = 0x02;
 
-    private static final byte FLAG_MULTI_VALUED = 4;
+    private static final byte FLAG_GLOBAL_QNAME_EXTRA_BYTE = 0x04;
 
-    private static final byte FLAG_NULL = 8;
+    // use bits 5 + 6 - using bit 6 for unsigned since we can fold this in with FLAG_TYPE_...
+    // folding is the "normal" case - only if FLAG_GLOBAL_QNAME_EXTRA_BYTE is set do we use an extra flag byte per QName
+    private static final byte FLAG_ENTRY_QNAME_ID = 0x10;
 
-    private static final byte TYPE_NULL = 0;
+    private static final byte FLAG_ENTRY_QNAME_ID_UNSIGNED = 0x20;
 
-    private static final byte TYPE_DEFAULT = 1;
+    @SuppressWarnings("unused")
+    private static final byte MASK_ALL_TYPE_FLAGS = -128 | 0x7e;
 
-    private static final byte TYPE_LIST = 2;
+    private static final byte MASK_CORE_TYPE_FLAGS = 0x1f;
 
-    private static final byte TYPE_BOOLEAN = 3;
+    private static final byte FLAG_MLTEXT_LOCALE_ID_UNSIGNED = 0x01;
 
-    private static final byte TYPE_INTEGER = 4;
+    private static final byte FLAG_MLTEXT_LOCALE_ID = 0x02;
 
-    private static final byte TYPE_LONG = 5;
+    private static final byte FLAG_MLTEXT_STRING_NULL = 0x04;
 
-    private static final byte TYPE_FLOAT = 6;
+    // bits 1-5 used for type information -> 32 potential Java types (implicit null)
 
-    private static final byte TYPE_DOUBLE = 7;
+    private static final byte FLAG_TYPE_LIST = 0x01;
 
-    private static final byte TYPE_STRING = 8;
+    private static final byte FLAG_TYPE_STRING = 0x02;
 
-    private static final byte TYPE_DATE = 9;
+    private static final byte FLAG_TYPE_INT = 0x03;
 
-    protected ApplicationContext applicationContext;
+    private static final byte FLAG_TYPE_LONG = 0x04;
+
+    private static final byte FLAG_TYPE_FLOAT = 0x05;
+
+    private static final byte FLAG_TYPE_DOUBLE = 0x06;
+
+    private static final byte FLAG_TYPE_DATE = 0x07;
+
+    private static final byte FLAG_TYPE_BOOLEAN = 0x08;
+
+    private static final byte FLAG_TYPE_QNAME = 0x09;
+
+    private static final byte FLAG_TYPE_NODEREF = 0x0a;
+
+    private static final byte FLAG_TYPE_CHILDASSOCREF = 0x0b;
+
+    private static final byte FLAG_TYPE_ASSOCREF = 0x0c;
+
+    private static final byte FLAG_TYPE_PATH = 0x0d;
+
+    private static final byte FLAG_TYPE_LOCALE = 0x0e;
+
+    private static final byte FLAG_TYPE_VERSION_NUMBER = 0x0f;
+
+    private static final byte FLAG_TYPE_PERIOD = 0x10;
+
+    private static final byte FLAG_TYPE_MLTEXT = 0x11;
+
+    private static final byte FLAG_TYPE_CONTENT = 0x12;
+
+    private static final byte FLAG_TYPE_OBJECT = 0x13;
+
+    // we have room to handle a few additional Java value types
+
+    // if value is referenced via a DAO-managed entity
+    private static final byte FLAG_TYPE_ID = 0x40;
+
+    // unsigned only used for int/long + Date + IDs
+    private static final byte FLAG_TYPE_UNSIGNED = -128;
+
+    private static final byte MASK_PATH_ELEMENT_TYPES = 0x07;
+
+    private static final byte FLAG_PATH_ELEMENT_TYPE_SELF = 0x01;
+
+    private static final byte FLAG_PATH_ELEMENT_TYPE_CHILD = 0x02;
+
+    private static final byte FLAG_PATH_ELEMENT_TYPE_PARENT = 0x03;
+
+    private static final byte FLAG_PATH_ELEMENT_TYPE_ATTRIBUTE = 0x04;
+
+    private static final byte FLAG_PATH_ELEMENT_TYPE_DESCENDANT_OR_SELF = 0x05;
+
+    private static final byte FLAG_PATH_ELEMENT_TYPE_SIMPLE = 0x06;
 
     protected QNameDAO qnameDAO;
 
     protected ContentDataDAO contentDataDAO;
 
-    protected boolean useIdsWhenReasonable = false;
-
     protected boolean useIdsWhenPossible = false;
 
-    protected boolean useRawSerialForm = false;
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setApplicationContext(final ApplicationContext applicationContext) throws BeansException
+    public NodePropertiesBinarySerializer()
     {
-        this.applicationContext = applicationContext;
-    }
-
-    /**
-     * @param useIdsWhenReasonable
-     *            the useIdsWhenReasonable to set
-     */
-    public void setUseIdsWhenReasonable(final boolean useIdsWhenReasonable)
-    {
-        this.useIdsWhenReasonable = useIdsWhenReasonable;
+        super(NodePropertiesCacheMap.class);
     }
 
     /**
      * @param useIdsWhenPossible
-     *            the useIdsWhenPossible to set
+     *     the useIdsWhenPossible to set
      */
     public void setUseIdsWhenPossible(final boolean useIdsWhenPossible)
     {
@@ -123,399 +213,361 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
     }
 
     /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
-    }
-
-    /**
+     *
      * {@inheritDoc}
      */
     @Override
-    public void writeBinary(final Object obj, final BinaryWriter writer) throws BinaryObjectException
+    protected void ensureDAOsAvailable() throws BinaryObjectException
     {
-        final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(NodePropertiesCacheMap.class))
+        if (this.useIdsWhenReasonable || this.useIdsWhenPossible)
         {
-            throw new BinaryObjectException(cls + " is not supported by this serializer");
-        }
+            if (this.qnameDAO == null)
+            {
+                try
+                {
+                    this.qnameDAO = this.applicationContext.getBean("qnameDAO", QNameDAO.class);
+                }
+                catch (final BeansException be)
+                {
+                    throw new BinaryObjectException(
+                            "Cannot (de-)serialise node properties in current configuration without access to QNameDAO", be);
+                }
+            }
 
-        this.ensureDAOsAvailable();
+            if (this.useIdsWhenPossible && this.contentDataDAO == null)
+            {
+                try
+                {
+                    this.contentDataDAO = this.applicationContext.getBean("contentDataDAO", ContentDataDAO.class);
+                }
+                catch (final BeansException be)
+                {
+                    throw new BinaryObjectException(
+                            "Cannot (de-)serialise node properties in current configuration without access to ContentDataDAO", be);
+                }
+            }
 
-        final NodePropertiesCacheMap properties = (NodePropertiesCacheMap) obj;
-
-        if (this.useRawSerialForm)
-        {
-            final BinaryRawWriter rawWriter = writer.rawWriter();
-            this.writePropertiesRawSerialForm(properties, rawWriter);
-        }
-        else
-        {
-            this.writePropertiesRegularSerialForm(properties, writer);
+            super.ensureDAOsAvailable();
         }
     }
 
     /**
+     *
      * {@inheritDoc}
      */
     @Override
-    public void readBinary(final Object obj, final BinaryReader reader) throws BinaryObjectException
+    protected void writeRawSerialForm(final NodePropertiesCacheMap nodePropertiesCacheMap, final BinaryWriterEx rawWriter)
     {
-        final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(NodePropertiesCacheMap.class))
+        final BinaryOutputStream out = rawWriter.out();
+
+        boolean extraQNameByte = false;
+        byte globalFlags = 0;
+
+        if (this.useIdsWhenReasonable)
         {
-            throw new BinaryObjectException(cls + " is not supported by this serializer");
-        }
+            globalFlags |= FLAG_GLOBAL_REASONABLE_ID;
 
-        this.ensureDAOsAvailable();
-
-        final NodePropertiesCacheMap properties = (NodePropertiesCacheMap) obj;
-
-        if (this.useRawSerialForm)
-        {
-            final BinaryRawReader rawReader = reader.rawReader();
-            this.readPropertiesRawSerialForm(properties, rawReader);
-        }
-        else
-        {
-            this.readPropertiesRegularSerialForm(properties, reader);
-        }
-    }
-
-    protected void writePropertiesRawSerialForm(final NodePropertiesCacheMap properties, final BinaryRawWriter rawWriter)
-    {
-        final int size = properties.size();
-        rawWriter.writeInt(size);
-
-        for (final Entry<QName, Serializable> entry : properties.entrySet())
-        {
-            final QName key = entry.getKey();
-            Long keyId = null;
-            final Serializable value = entry.getValue();
-            long[] valueIds = null;
-
-            byte flags = 0;
-
-            if (value instanceof List<?>)
+            final Optional<QName> unresolveableQName = nodePropertiesCacheMap.keySet().stream().filter(e -> this.qnameLookup(e) == null)
+                    .findFirst();
+            if (unresolveableQName.isPresent())
             {
-                flags |= FLAG_MULTI_VALUED;
-            }
-            else if (value == null)
-            {
-                flags |= FLAG_NULL;
-            }
-
-            if (this.useIdsWhenReasonable)
-            {
-                final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(key);
-                // technically may be null, but practically guaranteed to always be valid
-                if (qnamePair == null)
+                if (LOGGER.isDebugEnabled())
                 {
-                    throw new AlfrescoRuntimeException("Cannot resolve " + key + " to DB ID");
-                }
-                keyId = qnamePair.getFirst();
-
-                if (this.useIdsWhenPossible)
-                {
-                    if (value instanceof ContentDataWithId)
-                    {
-                        valueIds = new long[] { ((ContentDataWithId) value).getId() };
-                    }
-                    else if (value instanceof List<?>)
-                    {
-                        final long[] ids = new long[((List<?>) value).size()];
-                        int idx = 0;
-                        boolean allIds = !((List<?>) value).isEmpty();
-                        for (final Object element : (List<?>) value)
-                        {
-                            if (element instanceof ContentDataWithId)
-                            {
-                                ids[idx++] = ((ContentDataWithId) element).getId();
-                            }
-                            else
-                            {
-                                allIds = false;
-                            }
-                        }
-
-                        if (allIds)
-                        {
-                            valueIds = ids;
-                        }
-                    }
-                }
-            }
-
-            if (keyId != null)
-            {
-                flags |= FLAG_QNAME_ID;
-            }
-            if (valueIds != null)
-            {
-                flags |= FLAG_CONTENT_DATA_VALUE_ID;
-            }
-
-            rawWriter.writeByte(flags);
-            if (keyId != null)
-            {
-                rawWriter.writeLong(keyId);
-            }
-            else
-            {
-                rawWriter.writeObject(key);
-            }
-
-            if (valueIds != null)
-            {
-                if ((flags & FLAG_MULTI_VALUED) == FLAG_MULTI_VALUED)
-                {
-                    rawWriter.writeLongArray(valueIds);
+                    LOGGER.warn(
+                            "Qualified name {} is not resolveable via QNameDAO in current context - "
+                                    + "this should not happen in any normal use case but may temporarily occur on first time model use",
+                            unresolveableQName.get(), new Exception());
                 }
                 else
                 {
-                    rawWriter.writeLong(valueIds[0]);
+                    LOGGER.warn(
+                            "Qualified name {} is not resolveable via QNameDAO in current context - "
+                                    + "this should not happen in any normal use case but may temporarily occur on first time model use",
+                            unresolveableQName.get());
                 }
+                extraQNameByte = true;
+                globalFlags |= FLAG_GLOBAL_QNAME_EXTRA_BYTE;
             }
-            else if (value != null)
+        }
+
+        if (this.useIdsWhenPossible)
+        {
+            globalFlags |= FLAG_GLOBAL_POSSIBLE_ID;
+        }
+
+        final int size = nodePropertiesCacheMap.size();
+
+        // assume 2 bytes for size + avg. of 50 bytes per property
+        // (hard to efficiently estimate, especially with arbitrarily large textual values)
+        // avoid multiple smaller allocations
+        out.unsafeEnsure(3 + size * 50);
+        out.unsafeWriteByte(globalFlags);
+        this.writeUnsigned(size, out);
+
+        final byte qnameNullByte = 0;
+        final byte qnameIdByte = extraQNameByte ? FLAG_ENTRY_QNAME_ID : 0;
+        final byte qnameUnsignedIdByte = FLAG_ENTRY_QNAME_ID_UNSIGNED;
+        final int flagsCount = extraQNameByte ? 2 : 1;
+
+        for (final Entry<QName, Serializable> entry : nodePropertiesCacheMap.entrySet())
+        {
+            final int entryStartPos = out.position();
+            out.unsafeEnsure(flagsCount);
+            out.position(entryStartPos + flagsCount);
+
+            final byte qnameFlags = this.writeValueOrId(entry.getKey(), this::qnameLookup, this::writeQName, qnameNullByte, qnameIdByte,
+                    qnameUnsignedIdByte, out);
+            byte entryFlags = this.writeElementValue(entry.getValue(), rawWriter, out);
+
+            final int entryEndPos = out.position();
+            out.position(entryStartPos);
+            if (extraQNameByte)
             {
-                this.writeValueRawSerialForm(value, rawWriter);
+                out.unsafeWriteByte(qnameFlags);
             }
+            else
+            {
+                entryFlags |= qnameFlags;
+            }
+            out.unsafeWriteByte(entryFlags);
+            out.position(entryEndPos);
         }
     }
 
-    /**
-     * Writes out property values in raw serial form. This operation tries to optimise any type of value that Alfresco supports in the out
-     * of the box dictionary model, apart from generic or complex types, which should be handled by serializers for their specific types if
-     * needed. THe aim of this operation is to optimise storage footprint for 80-90% of expected property values.
-     *
-     * @param value
-     *            the value to write
-     * @param rawWriter
-     *            the raw binary writer to use
-     */
-    protected void writeValueRawSerialForm(final Object value, final BinaryRawWriter rawWriter)
+    protected byte writeElementValue(final Object value, final BinaryRawWriter rawWriter, final BinaryOutputStream out)
     {
-        if (value instanceof List<?>)
+        // implicit NULL is default
+        byte retFlags = 0;
+
+        if (value instanceof Integer)
         {
-            rawWriter.writeByte(TYPE_LIST);
-            final List<?> list = (List<?>) value;
-            rawWriter.writeInt(list.size());
-            for (final Object element : list)
-            {
-                this.writeValueRawSerialForm(element, rawWriter);
-            }
-        }
-        else if (value instanceof Boolean)
-        {
-            rawWriter.writeByte(TYPE_BOOLEAN);
-            rawWriter.writeBoolean(Boolean.TRUE.equals(value));
-        }
-        else if (value instanceof Integer)
-        {
-            rawWriter.writeByte(TYPE_INTEGER);
-            rawWriter.writeInt((Integer) value);
+            retFlags = FLAG_TYPE_INT;
+            retFlags |= this.writeWithFlagIfUnsigned(((Integer) value).intValue(), FLAG_TYPE_UNSIGNED, out);
         }
         else if (value instanceof Long)
         {
-            rawWriter.writeByte(TYPE_LONG);
-            rawWriter.writeLong((Long) value);
+            retFlags = FLAG_TYPE_LONG;
+            retFlags |= this.writeWithFlagIfUnsigned(((Long) value).longValue(), FLAG_TYPE_UNSIGNED, out);
         }
         else if (value instanceof Float)
         {
-            rawWriter.writeByte(TYPE_FLOAT);
-            rawWriter.writeFloat((Float) value);
+            retFlags = FLAG_TYPE_FLOAT;
+            out.writeFloat(((Float) value).floatValue());
         }
         else if (value instanceof Double)
         {
-            rawWriter.writeByte(TYPE_DOUBLE);
-            rawWriter.writeDouble((Double) value);
-        }
-        else if (value instanceof String)
-        {
-            rawWriter.writeByte(TYPE_STRING);
-            rawWriter.writeString((String) value);
+            retFlags = FLAG_TYPE_DOUBLE;
+            out.writeDouble(((Double) value).doubleValue());
         }
         else if (value instanceof Date)
         {
-            rawWriter.writeByte(TYPE_DATE);
-            rawWriter.writeDate((Date) value);
+            retFlags = FLAG_TYPE_DATE;
+            retFlags |= this.writeWithFlagIfUnsigned(((Date) value).getTime(), FLAG_TYPE_UNSIGNED, out);
         }
-        // TODO Support Locale (d:locale) via ID resolution
+        else if (value instanceof Boolean)
+        {
+            retFlags = FLAG_TYPE_BOOLEAN;
+            out.writeBoolean(((Boolean) value).booleanValue());
+        }
+        else if (value instanceof String)
+        {
+            retFlags = FLAG_TYPE_STRING;
+            this.writeString((String) value, out);
+        }
+        else if (value instanceof NodeRef)
+        {
+            retFlags = FLAG_TYPE_NODEREF;
+            this.writeNodeRef((NodeRef) value, out);
+        }
+        else if (value instanceof QName)
+        {
+            retFlags = FLAG_TYPE_QNAME;
+            // values likely way too diverse and not guaranteed at all to be in alf_qname
+            this.writeQName((QName) value, out);
+        }
+        else if (value instanceof Locale)
+        {
+            retFlags = FLAG_TYPE_LOCALE;
+            // locales don't have a too wide range of values - possibly stored in alf_locale
+            retFlags |= this.writeValueOrId((Locale) value, this::possibleLocaleLookup, (byte) 0, FLAG_TYPE_ID, FLAG_TYPE_UNSIGNED, out);
+        }
+        else if (value instanceof ChildAssociationRef)
+        {
+            retFlags = FLAG_TYPE_CHILDASSOCREF;
+            final ChildAssociationRef childAssoc = (ChildAssociationRef) value;
+            // child assoc type names reasonably expected to be in alf_qname
+            this.writeChildAssociationRef(childAssoc, this::qnameLookup, out);
+        }
+        else if (value instanceof AssociationRef)
+        {
+            retFlags = FLAG_TYPE_ASSOCREF;
+            final AssociationRef assoc = (AssociationRef) value;
+            // assoc type names reasonably expected to be in alf_qname
+            this.writeAssociationRef(assoc, this::qnameLookup, out);
+        }
+        else if (value instanceof Period)
+        {
+            retFlags = FLAG_TYPE_PERIOD;
+            this.writeValueAsString(value, out);
+        }
+        else if (value instanceof VersionNumber)
+        {
+            retFlags = FLAG_TYPE_VERSION_NUMBER;
+            this.writeValueAsString(value, out);
+        }
+        else if (value instanceof Path)
+        {
+            retFlags = FLAG_TYPE_PATH;
+            this.writePath((Path) value, out);
+        }
+        else if (value instanceof MLText)
+        {
+            retFlags = FLAG_TYPE_MLTEXT;
+            this.writeMlText((MLText) value, out);
+        }
+        else if (value instanceof ContentData)
+        {
+            retFlags = FLAG_TYPE_CONTENT;
+            retFlags |= this.writeValueOrId((ContentData) value, this::contentLookup, this::writeContentData, (byte) 0, FLAG_TYPE_ID,
+                    FLAG_TYPE_UNSIGNED, out);
+        }
+        else if (value instanceof List<?>)
+        {
+            retFlags = FLAG_TYPE_LIST;
+            this.writeList((List<?>) value, rawWriter, out);
+        }
         else if (value != null)
         {
-            rawWriter.writeByte(TYPE_DEFAULT);
+            retFlags = FLAG_TYPE_OBJECT;
             rawWriter.writeObject(value);
         }
-        else
-        {
-            rawWriter.writeByte(TYPE_NULL);
-        }
+
+        return retFlags;
     }
 
-    protected void readPropertiesRawSerialForm(final NodePropertiesCacheMap properties, final BinaryRawReader rawReader)
-            throws BinaryObjectException
+    protected void writePath(final Path path, final BinaryOutputStream out)
     {
-        final int size = rawReader.readInt();
+        final int size = path.size();
+        this.writeUnsigned(size, out);
 
-        for (int idx = 0; idx < size; idx++)
+        for (int i = 0; i < size; i++)
         {
-            final byte flags = rawReader.readByte();
+            final Element element = path.get(i);
 
-            if (!this.useIdsWhenReasonable && (flags & FLAG_QNAME_ID) == FLAG_QNAME_ID)
-            {
-                throw new BinaryObjectException("Serializer is not configured to use IDs in place of QName keys");
-            }
-            if (!this.useIdsWhenPossible && (flags & FLAG_CONTENT_DATA_VALUE_ID) == FLAG_CONTENT_DATA_VALUE_ID)
-            {
-                throw new BinaryObjectException("Serializer is not configured to use IDs in place of ContentData values");
-            }
+            byte typeFlag;
 
-            final QName key;
-            if ((flags & FLAG_QNAME_ID) == FLAG_QNAME_ID)
+            final int startPos = out.position();
+            out.unsafeEnsure(1);
+            out.position(startPos + 1);
+
+            if (element instanceof SelfElement)
             {
-                final long id = rawReader.readLong();
-                final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(id);
-                if (qnamePair == null)
-                {
-                    throw new BinaryObjectException("Cannot resolve QName for ID " + id);
-                }
-                key = qnamePair.getSecond();
+                typeFlag = FLAG_PATH_ELEMENT_TYPE_SELF;
+            }
+            else if (element instanceof ParentElement)
+            {
+                typeFlag = FLAG_PATH_ELEMENT_TYPE_PARENT;
+            }
+            else if (element instanceof ChildAssocElement)
+            {
+                typeFlag = FLAG_PATH_ELEMENT_TYPE_CHILD;
+                // child assoc type names reasonably expected to be in alf_qname
+                this.writeChildAssociationRef(((ChildAssocElement) element).getRef(), this::qnameLookup, out);
+            }
+            else if (element instanceof DescendentOrSelfElement)
+            {
+                typeFlag = FLAG_PATH_ELEMENT_TYPE_DESCENDANT_OR_SELF;
+            }
+            else if (element instanceof AttributeElement)
+            {
+                typeFlag = FLAG_PATH_ELEMENT_TYPE_ATTRIBUTE;
+                final AttributeElement attributeElement = (AttributeElement) element;
+                this.writeQName(attributeElement.getQName(), out);
+                typeFlag |= this.writeWithFlagIfUnsigned(attributeElement.position(), FLAG_TYPE_UNSIGNED, out);
             }
             else
             {
-                key = rawReader.readObject();
+                typeFlag = FLAG_PATH_ELEMENT_TYPE_SIMPLE;
+                this.writeString(element.getElementString(), out);
             }
 
-            if ((flags & FLAG_NULL) == 0)
+            final int endPos = out.position();
+            out.position(startPos);
+            out.unsafeWriteByte(typeFlag);
+            out.position(endPos);
+        }
+    }
+
+    protected void writeMlText(final MLText mlText, final BinaryOutputStream out)
+    {
+        final int size = mlText.size();
+        this.writeUnsigned(size, out);
+
+        for (final Entry<Locale, String> entry : mlText.entrySet())
+        {
+            final int elementStartIdx = out.position();
+            out.unsafeEnsure(1);
+            out.position(elementStartIdx + 1);
+
+            byte flags = this.writeValueOrId(entry.getKey(), this::localeLookup, (byte) 0, FLAG_MLTEXT_LOCALE_ID,
+                    FLAG_MLTEXT_LOCALE_ID_UNSIGNED, out);
+            final String str = entry.getValue();
+            if (str != null)
             {
-                Serializable value;
-                if ((flags & FLAG_MULTI_VALUED) == FLAG_MULTI_VALUED)
-                {
-                    if ((flags & FLAG_CONTENT_DATA_VALUE_ID) == FLAG_CONTENT_DATA_VALUE_ID)
-                    {
-                        final long[] ids = rawReader.readLongArray();
-                        if (ids != null)
-                        {
-                            final ContentData[] cds = new ContentData[ids.length];
-                            idx = 0;
-
-                            for (final long id : ids)
-                            {
-                                final Pair<Long, ContentData> contentDataPair = this.contentDataDAO.getContentData(id);
-                                if (contentDataPair == null)
-                                {
-                                    throw new BinaryObjectException("Cannot resolve ContentData for ID " + id);
-                                }
-                                cds[idx++] = contentDataPair.getSecond();
-                            }
-
-                            value = new ArrayList<>(Arrays.asList(cds));
-                        }
-                        // else should never occur, but technically can
-                        else
-                        {
-                            value = new ArrayList<>();
-                        }
-                    }
-                    else
-                    {
-                        value = this.readValueRawSerialForm(rawReader);
-                    }
-                }
-                else
-                {
-                    if ((flags & FLAG_CONTENT_DATA_VALUE_ID) == FLAG_CONTENT_DATA_VALUE_ID)
-                    {
-                        final long id = rawReader.readLong();
-                        final Pair<Long, ContentData> contentDataPair = this.contentDataDAO.getContentData(id);
-                        if (contentDataPair == null)
-                        {
-                            throw new BinaryObjectException("Cannot resolve ContentData for ID " + id);
-                        }
-                        value = contentDataPair.getSecond();
-                    }
-                    else
-                    {
-                        value = this.readValueRawSerialForm(rawReader);
-                    }
-                }
-
-                properties.put(key, value);
+                this.writeString(str, out);
             }
             else
             {
-                properties.put(key, null);
+                flags |= FLAG_MLTEXT_STRING_NULL;
             }
+
+            final int elementEndIdx = out.position();
+            out.position(elementStartIdx);
+            out.unsafeWriteByte(flags);
+            out.position(elementEndIdx);
         }
     }
 
-    protected Serializable readValueRawSerialForm(final BinaryRawReader rawReader) throws BinaryObjectException
+    protected void writeList(final List<?> list, final BinaryRawWriter rawWriter, final BinaryOutputStream out)
     {
-        Serializable result;
+        final int size = list.size();
+        this.writeUnsigned(size, out);
 
-        final byte type = rawReader.readByte();
-
-        switch (type)
+        for (final Object element : list)
         {
-            case TYPE_LIST:
-                final int size = rawReader.readInt();
-                final ArrayList<Serializable> list = new ArrayList<>(size);
-                for (int idx = 0; idx < size; idx++)
-                {
-                    list.add(this.readValueRawSerialForm(rawReader));
-                }
-                result = list;
-                break;
-            case TYPE_BOOLEAN:
-                result = rawReader.readBoolean();
-                break;
-            case TYPE_INTEGER:
-                result = rawReader.readInt();
-                break;
-            case TYPE_LONG:
-                result = rawReader.readLong();
-                break;
-            case TYPE_FLOAT:
-                result = rawReader.readFloat();
-                break;
-            case TYPE_DOUBLE:
-                result = rawReader.readDouble();
-                break;
-            case TYPE_STRING:
-                result = rawReader.readString();
-                break;
-            case TYPE_DATE:
-                result = rawReader.readDate();
-                break;
-            case TYPE_DEFAULT:
-                result = rawReader.readObject();
-                break;
-            case TYPE_NULL:
-                result = null;
-                break;
-            default:
-                throw new BinaryObjectException("Read unsupported type flag value " + type);
-        }
+            final int elementStartIdx = out.position();
+            out.unsafeEnsure(1);
+            out.position(elementStartIdx + 1);
 
-        return result;
+            final byte typeFlags = this.writeElementValue(element, rawWriter, out);
+
+            final int elementEndIdx = out.position();
+            out.position(elementStartIdx);
+            out.unsafeWriteByte(typeFlags);
+            out.position(elementEndIdx);
+        }
     }
 
-    protected void writePropertiesRegularSerialForm(final NodePropertiesCacheMap properties, final BinaryWriter writer)
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void writeRegularSerialForm(final NodePropertiesCacheMap nodePropertiesCacheMap, final BinaryWriter writer)
     {
+        // TODO granular serializers for ChildAssociationRef/AssociationRef
         if (this.useIdsWhenPossible)
         {
             final Map<Object, Serializable> contentProperties = new HashMap<>(10);
             final Map<Object, Serializable> regularProperties = new HashMap<>(10);
 
-            properties.forEach((qn, v) -> {
+            nodePropertiesCacheMap.forEach((qn, v) -> {
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(qn);
 
+                final Object effectiveQn = qnamePair != null ? qnamePair.getFirst() : qn;
                 if (v instanceof ContentDataWithId)
                 {
-                    contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ((ContentDataWithId) v).getId());
+                    contentProperties.put(effectiveQn, ((ContentDataWithId) v).getId());
                 }
                 else if (v instanceof List<?>)
                 {
@@ -536,16 +588,16 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
 
                     if (allContent)
                     {
-                        contentProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, ids);
+                        contentProperties.put(effectiveQn, ids);
                     }
                     else
                     {
-                        regularProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, v);
+                        regularProperties.put(effectiveQn, v);
                     }
                 }
                 else
                 {
-                    regularProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, v);
+                    regularProperties.put(effectiveQn, v);
                 }
             });
 
@@ -555,7 +607,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
         else if (this.useIdsWhenReasonable)
         {
             final Map<Serializable, Serializable> mappedProperties = new HashMap<>();
-            properties.forEach((qn, v) -> {
+            nodePropertiesCacheMap.forEach((qn, v) -> {
                 final Pair<Long, QName> qnamePair = this.qnameDAO.getQName(qn);
                 mappedProperties.put(qnamePair != null ? qnamePair.getFirst() : qn, v);
             });
@@ -566,11 +618,222 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
         {
             // must be wrapped otherwise it would be written as self-referential handle
             // effectively preventing ANY values from being written
-            writer.writeMap(VALUES, Collections.unmodifiableMap(properties));
+            writer.writeMap(VALUES, Collections.unmodifiableMap(nodePropertiesCacheMap));
         }
     }
 
-    protected void readPropertiesRegularSerialForm(final NodePropertiesCacheMap properties, final BinaryReader reader)
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void readRawSerialForm(final NodePropertiesCacheMap nodePropertiesCacheMap, final BinaryRawReader rawReader)
+    {
+        final byte globalFlags = rawReader.readByte();
+
+        if ((globalFlags & FLAG_GLOBAL_POSSIBLE_ID) != 0 && !this.useIdsWhenPossible)
+        {
+            throw new BinaryObjectException("Serializer is not configured to use IDs in place of ContentData values");
+        }
+
+        final boolean reasonableIdsPresent = (globalFlags & FLAG_GLOBAL_REASONABLE_ID) != 0;
+        if (reasonableIdsPresent && !this.useIdsWhenReasonable)
+        {
+            throw new BinaryObjectException("Serializer is not configured to use IDs in place of QName keys or various value types");
+        }
+        final boolean extraQNameByte = (globalFlags & FLAG_GLOBAL_QNAME_EXTRA_BYTE) != 0;
+
+        final int size = this.readUnsignedInt(rawReader);
+
+        final byte qnameNullByte = 0;
+        final byte qnameIdByte = extraQNameByte ? FLAG_ENTRY_QNAME_ID : FLAG_TYPE_ID;
+        final byte qnameUnsignedIdByte = FLAG_ENTRY_QNAME_ID_UNSIGNED;
+
+        for (int i = 0; i < size; i++)
+        {
+            byte qnameFlags = extraQNameByte ? rawReader.readByte() : 0;
+            final byte entryFlags = rawReader.readByte();
+
+            if (!extraQNameByte)
+            {
+                // FLAG_TYPE_ID is "faked" to match qnameIdByte - we know it is set with reasonableIdsPresent
+                qnameFlags = (byte) (reasonableIdsPresent ? entryFlags | FLAG_TYPE_ID : entryFlags);
+            }
+            final QName qname = this.doReadValueOrId(rawReader, this::qnameLookup, this::readQName, qnameFlags, qnameNullByte, qnameIdByte,
+                    qnameUnsignedIdByte);
+
+            final Serializable value = this.readElementValue(rawReader, entryFlags);
+            nodePropertiesCacheMap.put(qname, value);
+        }
+    }
+
+    protected Serializable readElementValue(final BinaryRawReader rawReader, final byte flags)
+    {
+        // since we have implicit NULL we can safely use 0x0 as nullFlag in calls to doReadValueOrId
+        // that method does not have to handle null, which is already handled in our case-switch
+        Serializable value;
+
+        switch ((flags & MASK_CORE_TYPE_FLAGS))
+        {
+            case FLAG_TYPE_INT:
+                value = Integer.valueOf(this.readInt(rawReader, (flags & FLAG_TYPE_UNSIGNED) == FLAG_TYPE_UNSIGNED));
+                break;
+            case FLAG_TYPE_LONG:
+                value = Long.valueOf(this.readLong(rawReader, (flags & FLAG_TYPE_UNSIGNED) == FLAG_TYPE_UNSIGNED));
+                break;
+            case FLAG_TYPE_FLOAT:
+                value = Float.valueOf(rawReader.readFloat());
+                break;
+            case FLAG_TYPE_DOUBLE:
+                value = Double.valueOf(rawReader.readDouble());
+                break;
+            case FLAG_TYPE_DATE:
+                value = new Date(this.readLong(rawReader, (flags & FLAG_TYPE_UNSIGNED) == FLAG_TYPE_UNSIGNED));
+                break;
+            case FLAG_TYPE_BOOLEAN:
+                value = Boolean.valueOf(rawReader.readBoolean());
+                break;
+            case FLAG_TYPE_STRING:
+                value = this.readString(rawReader);
+                break;
+            case FLAG_TYPE_NODEREF:
+                value = this.readNodeRef(rawReader);
+                break;
+            case FLAG_TYPE_QNAME:
+                value = this.doReadValueOrId(rawReader, this::qnameLookup, this::readQName, flags, (byte) 0, FLAG_TYPE_ID,
+                        FLAG_TYPE_UNSIGNED);
+                break;
+            case FLAG_TYPE_LOCALE:
+                value = this.readValue(rawReader, this::convertToLocale);
+                break;
+            case FLAG_TYPE_CHILDASSOCREF:
+                value = this.readChildAssociationRef(rawReader, this::qnameLookup);
+                break;
+            case FLAG_TYPE_ASSOCREF:
+                value = this.readAssociationRef(rawReader, this::qnameLookup);
+                break;
+            case FLAG_TYPE_PERIOD:
+                value = new Period(this.readString(rawReader));
+                break;
+            case FLAG_TYPE_VERSION_NUMBER:
+                value = new VersionNumber(this.readString(rawReader));
+                break;
+            case FLAG_TYPE_PATH:
+                value = this.readPath(rawReader);
+                break;
+            case FLAG_TYPE_MLTEXT:
+                value = this.readMlText(rawReader);
+                break;
+            case FLAG_TYPE_CONTENT:
+                value = this.doReadValueOrId(rawReader, this::contentLookup, this::readContentData, flags, (byte) 0, FLAG_TYPE_ID,
+                        FLAG_TYPE_UNSIGNED);
+                break;
+            case FLAG_TYPE_LIST:
+                value = this.readList(rawReader);
+                break;
+            case FLAG_TYPE_OBJECT:
+                value = rawReader.readObject();
+                break;
+            default:
+                value = null;
+        }
+
+        return value;
+    }
+
+    protected Path readPath(final BinaryRawReader rawReader)
+    {
+        final int size = this.readUnsignedInt(rawReader);
+
+        final Path path = new Path();
+        for (int i = 0; i < size; i++)
+        {
+            final byte typeFlag = rawReader.readByte();
+
+            Element el = null;
+            switch (typeFlag & MASK_PATH_ELEMENT_TYPES)
+            {
+                case FLAG_PATH_ELEMENT_TYPE_PARENT:
+                    el = new Path.ParentElement();
+                    break;
+                case FLAG_PATH_ELEMENT_TYPE_DESCENDANT_OR_SELF:
+                    el = new Path.DescendentOrSelfElement();
+                    break;
+                case FLAG_PATH_ELEMENT_TYPE_SELF:
+                    el = new Path.SelfElement();
+                    break;
+                case FLAG_PATH_ELEMENT_TYPE_ATTRIBUTE:
+                    final QName attr = this.readQName(rawReader);
+                    final int pos = this.readInt(rawReader, (typeFlag & FLAG_TYPE_UNSIGNED) == FLAG_TYPE_UNSIGNED);
+                    el = new Path.AttributeElement(attr, pos);
+                    break;
+                case FLAG_PATH_ELEMENT_TYPE_CHILD:
+                    final ChildAssociationRef childRef = this.readChildAssociationRef(rawReader, this::qnameLookup);
+                    el = new Path.ChildAssocElement(childRef);
+                    break;
+                default:
+                    final String elementString = this.readString(rawReader);
+                    el = new SimplePathElement(elementString);
+            }
+
+            if (el != null)
+            {
+                path.append(el);
+            }
+        }
+
+        return path;
+    }
+
+    protected MLText readMlText(final BinaryRawReader rawReader)
+    {
+        final int size = this.readUnsignedInt(rawReader);
+        final MLText mlText = new MLText();
+
+        for (int i = 0; i < size; i++)
+        {
+            final byte flags = rawReader.readByte();
+
+            final Locale locale = this.readValueOrId(rawReader, this::localeLookup, this::convertToLocale, flags, (byte) 0,
+                    FLAG_MLTEXT_LOCALE_ID, FLAG_MLTEXT_LOCALE_ID_UNSIGNED);
+            final String text;
+            if ((flags & FLAG_MLTEXT_STRING_NULL) == 0)
+            {
+                text = this.readString(rawReader);
+            }
+            else
+            {
+                text = null;
+            }
+
+            mlText.addValue(locale, text);
+        }
+
+        return mlText;
+    }
+
+    protected ArrayList<Serializable> readList(final BinaryRawReader rawReader)
+    {
+        final int size = this.readUnsignedInt(rawReader);
+
+        final ArrayList<Serializable> list = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++)
+        {
+            final byte flags = rawReader.readByte();
+            final Serializable element = this.readElementValue(rawReader, flags);
+            list.add(element);
+        }
+
+        return list;
+    }
+
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void readRegularSerialForm(final NodePropertiesCacheMap nodePropertiesCacheMap, final BinaryReader reader)
     {
         final Function<Entry<Object, Serializable>, QName> resolveQName = entry -> {
             final Object key = entry.getKey();
@@ -602,7 +865,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
 
             for (final Entry<Object, Serializable> regularEntry : regularProperties.entrySet())
             {
-                properties.put(resolveQName.apply(regularEntry), regularEntry.getValue());
+                nodePropertiesCacheMap.put(resolveQName.apply(regularEntry), regularEntry.getValue());
             }
 
             final Map<Object, Serializable> contentProperties = reader.readMap(CONTENT_ID_VALUES);
@@ -618,7 +881,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
                     {
                         throw new BinaryObjectException("Cannot resolve ContentData for ID " + value);
                     }
-                    properties.put(qn, contentDataPair.getSecond());
+                    nodePropertiesCacheMap.put(qn, contentDataPair.getSecond());
                 }
                 else if (value instanceof Long[])
                 {
@@ -632,7 +895,7 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
                         }
                         cds.add(contentDataPair.getSecond());
                     }
-                    properties.put(qn, cds);
+                    nodePropertiesCacheMap.put(qn, cds);
                 }
                 else
                 {
@@ -645,40 +908,53 @@ public class NodePropertiesBinarySerializer implements BinarySerializer, Applica
             final Map<Object, Serializable> values = reader.readMap(VALUES);
             values.entrySet().forEach(entry -> {
                 final QName qn = resolveQName.apply(entry);
-                properties.put(qn, entry.getValue());
+                nodePropertiesCacheMap.put(qn, entry.getValue());
             });
         }
     }
 
-    protected void ensureDAOsAvailable() throws BinaryObjectException
+    protected Pair<Long, QName> qnameLookup(final QName qname)
     {
-        if (this.useIdsWhenReasonable || this.useIdsWhenPossible)
+        Pair<Long, QName> result = null;
+        if (this.useIdsWhenReasonable)
         {
-            if (this.qnameDAO == null)
-            {
-                try
-                {
-                    this.qnameDAO = this.applicationContext.getBean("qnameDAO", QNameDAO.class);
-                }
-                catch (final BeansException be)
-                {
-                    throw new BinaryObjectException(
-                            "Cannot (de-)serialise node properties in current configuration without access to QNameDAO", be);
-                }
-            }
-
-            if (this.useIdsWhenPossible || this.contentDataDAO == null)
-            {
-                try
-                {
-                    this.contentDataDAO = this.applicationContext.getBean("contentDataDAO", ContentDataDAO.class);
-                }
-                catch (final BeansException be)
-                {
-                    throw new BinaryObjectException(
-                            "Cannot (de-)serialise node properties in current configuration without access to ContentDataDAO", be);
-                }
-            }
+            result = this.doLookup(LOOKUP_BUCKET_QNAME, qname, this.qnameDAO::getQName);
         }
+        return result;
+    }
+
+    protected Pair<Long, QName> qnameLookup(final Long id)
+    {
+        Pair<Long, QName> result = null;
+        if (this.useIdsWhenReasonable)
+        {
+            result = this.doLookup(LOOKUP_BUCKET_QNAME, id, this.qnameDAO::getQName);
+        }
+        return result;
+    }
+
+    protected Pair<Long, Locale> possibleLocaleLookup(final Locale locale)
+    {
+        Pair<Long, Locale> result = null;
+        if (this.useIdsWhenPossible)
+        {
+            result = this.doLookup(LOOKUP_BUCKET_LOCALE, locale, this.localeDAO::getLocalePair);
+        }
+        return result;
+    }
+
+    protected Pair<Long, ContentData> contentLookup(final ContentData contentData)
+    {
+        if (this.useIdsWhenPossible && contentData instanceof ContentDataWithId)
+        {
+            return new Pair<>(((ContentDataWithId) contentData).getId(), contentData);
+        }
+        return null;
+    }
+
+    protected Pair<Long, ContentData> contentLookup(final Long id)
+    {
+        // no need to use doLookup because content data is not typically reused in different nodes/properties
+        return this.useIdsWhenPossible ? this.contentDataDAO.getContentData(id) : null;
     }
 }

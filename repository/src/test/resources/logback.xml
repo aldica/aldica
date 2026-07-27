@@ -34,7 +34,10 @@
         <appender-ref ref="ERROUT" />
     </root>
 
-    <logger name="${project.basePackage}.binary.TransactionalCacheRegionKeyBinarySerializerTests" additivity="false">
+    <logger name="${project.basePackage}.binary.AclEntityBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.AuthorityEntityBinarySerializerTests" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
     <logger name="${project.basePackage}.binary.CacheRegionKeyBinarySerializerTests" additivity="false">
@@ -43,25 +46,55 @@
     <logger name="${project.basePackage}.binary.CacheRegionValueKeyBinarySerializerTests" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
-    <logger name="${project.basePackage}.binary.QNameBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.StoreRefBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="${project.basePackage}.binary.NodeRefBinarySerializerTests" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
     <logger name="${project.basePackage}.binary.ContentDataBinarySerializerTests" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
-    <logger name="${project.basePackage}.binary.ModuleVersionNumberBinarySerializerTests" additivity="false">
+    <logger name="${project.basePackage}.binary.ContentUrlEntityBinarySerializerTests" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
     <logger name="${project.basePackage}.binary.MLTextBinarySerializerTests" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
+    <logger name="${project.basePackage}.binary.ModuleVersionNumberBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.NodeAspectsBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.NodeEntityBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
     <logger name="${project.basePackage}.binary.NodePropertiesBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.NodeRefBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.PermissionEntityBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.QNameBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.SimpleAccessControlEntryBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.SimpleAccessControlListBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.SimpleAccessControlListPropertiesBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.SimplePermissionReferenceBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.StoreRefBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.TransactionalCacheRegionKeyBinarySerializerTests" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="${project.basePackage}.binary.TransactionalCacheValueHolderBinarySerializerTests" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
 

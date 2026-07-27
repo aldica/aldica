@@ -91,7 +91,7 @@ public class ModuleVersionNumberBinarySerializerTests extends GridTestsBase
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, ModuleVersionNumber> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("values");
             cacheConfig.setDataRegionName("values");
@@ -127,7 +127,7 @@ public class ModuleVersionNumberBinarySerializerTests extends GridTestsBase
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, ModuleVersionNumber> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("values");
             cacheConfig.setDataRegionName("values");
@@ -150,7 +150,7 @@ public class ModuleVersionNumberBinarySerializerTests extends GridTestsBase
         {
             final CacheConfiguration<Long, ModuleVersionNumber> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("moduleVersionNumber");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
             final IgniteCache<Long, ModuleVersionNumber> cache = grid.getOrCreateCache(cacheConfig);
 
             ModuleVersionNumber controlValue;
@@ -163,10 +163,11 @@ public class ModuleVersionNumberBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
         }
     }
 
+    @SuppressWarnings("deprecation")
     protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid,
             final IgniteCache<Long, ModuleVersionNumber> referenceCache, final IgniteCache<Long, ModuleVersionNumber> cache,
             final String serialisationType, final String referenceSerialisationType, final double marginFraction)

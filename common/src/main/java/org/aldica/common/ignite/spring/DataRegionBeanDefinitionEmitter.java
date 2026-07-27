@@ -6,7 +6,7 @@ package org.aldica.common.ignite.spring;
 import java.util.List;
 import java.util.Properties;
 
-import org.alfresco.util.PropertyCheck;
+import org.aldica.common.ignite.util.PropertyCheck;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.slf4j.Logger;
@@ -17,7 +17,6 @@ import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
@@ -50,12 +49,6 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     protected Properties propertiesSource;
 
-    protected String placeholderPrefix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX;
-
-    protected String placeholderSuffix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_SUFFIX;
-
-    protected String valueSeparator = PlaceholderConfigurerSupport.DEFAULT_VALUE_SEPARATOR;
-
     protected PropertyPlaceholderHelper placeholderHelper;
 
     /**
@@ -70,16 +63,12 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
         PropertyCheck.mandatory(this, "dataRegionBeanDefinitionNamePrefix", this.dataRegionBeanDefinitionNamePrefix);
         PropertyCheck.mandatory(this, "instanceNameProperty", this.instanceNameProperty);
         PropertyCheck.mandatory(this, "propertiesSource", this.propertiesSource);
-        PropertyCheck.mandatory(this, "placeholderPrefix", this.placeholderPrefix);
-        PropertyCheck.mandatory(this, "placeholderSuffix", this.placeholderSuffix);
-        PropertyCheck.mandatory(this, "valueSeparator", this.valueSeparator);
-
-        this.placeholderHelper = new PropertyPlaceholderHelper(this.placeholderPrefix, this.placeholderSuffix, this.valueSeparator, true);
+        PropertyCheck.mandatory(this, "placeholderHelper", this.placeholderHelper);
     }
 
     /**
      * @param enabled
-     *            the enabled to set
+     *     the enabled to set
      */
     public void setEnabled(final boolean enabled)
     {
@@ -88,7 +77,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param enabledPropertyKey
-     *            the enabledPropertyKey to set
+     *     the enabledPropertyKey to set
      */
     public void setEnabledPropertyKey(final String enabledPropertyKey)
     {
@@ -97,7 +86,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param propertyPrefix
-     *            the propertyPrefix to set
+     *     the propertyPrefix to set
      */
     public void setPropertyPrefix(final String propertyPrefix)
     {
@@ -106,7 +95,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param storageBeanDefinitionName
-     *            the storageBeanDefinitionName to set
+     *     the storageBeanDefinitionName to set
      */
     public void setStorageBeanDefinitionName(final String storageBeanDefinitionName)
     {
@@ -115,7 +104,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param dataRegionBeanDefinitionNamePrefix
-     *            the dataRegionBeanDefinitionNamePrefix to set
+     *     the dataRegionBeanDefinitionNamePrefix to set
      */
     public void setDataRegionBeanDefinitionNamePrefix(final String dataRegionBeanDefinitionNamePrefix)
     {
@@ -124,7 +113,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param instanceNameProperty
-     *            the instanceNameProperty to set
+     *     the instanceNameProperty to set
      */
     public void setInstanceNameProperty(final String instanceNameProperty)
     {
@@ -133,7 +122,7 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
 
     /**
      * @param propertiesSource
-     *            the propertiesSource to set
+     *     the propertiesSource to set
      */
     public void setPropertiesSource(final Properties propertiesSource)
     {
@@ -141,30 +130,12 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
     }
 
     /**
-     * @param placeholderPrefix
-     *            the placeholderPrefix to set
+     * @param placeholderHelper
+     *     the placeholderHelper to set
      */
-    public void setPlaceholderPrefix(final String placeholderPrefix)
+    public void setPlaceholderHelper(final PropertyPlaceholderHelper placeholderHelper)
     {
-        this.placeholderPrefix = placeholderPrefix;
-    }
-
-    /**
-     * @param placeholderSuffix
-     *            the placeholderSuffix to set
-     */
-    public void setPlaceholderSuffix(final String placeholderSuffix)
-    {
-        this.placeholderSuffix = placeholderSuffix;
-    }
-
-    /**
-     * @param valueSeparator
-     *            the valueSeparator to set
-     */
-    public void setValueSeparator(final String valueSeparator)
-    {
-        this.valueSeparator = valueSeparator;
+        this.placeholderHelper = placeholderHelper;
     }
 
     /**
@@ -264,7 +235,14 @@ public class DataRegionBeanDefinitionEmitter implements BeanDefinitionRegistryPo
                     LOGGER.debug("Setting data region property {} to {} on {} for instance {}", dataRegionPropertyName, configValue,
                             dataRegionName, instanceName);
 
-                    dataRegionBeanDefinition.getPropertyValues().add(dataRegionPropertyName, configValue);
+                    if ("null".equals(configValue))
+                    {
+                        dataRegionBeanDefinition.getPropertyValues().removePropertyValue(propertyName);
+                    }
+                    else
+                    {
+                        dataRegionBeanDefinition.getPropertyValues().add(dataRegionPropertyName, configValue);
+                    }
                 }
             }
         });

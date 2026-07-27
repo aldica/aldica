@@ -41,7 +41,7 @@ The 16 external content files are named *content1* through *content16* and shoul
 
 # Running
 
-The test can be run with a local install of K6 or within a Docker container. Please see the K6 documentation on the [various options to run it](https://docs.k6.io/docs/running-k6). The simplest form of invocation for this test script from within this directory is:
+The test can be run with a local install of K6 or within a Docker container. Please see the K6 documentation on the various options to [install k6s](https://grafana.com/docs/k6/latest/set-up/install-k6/) and [run a test script](https://grafana.com/docs/k6/latest/using-k6/run-k6-test-script/) it. The simplest form of invocation for this test script from within this directory is:
 
 ```
 k6 run ./script.js

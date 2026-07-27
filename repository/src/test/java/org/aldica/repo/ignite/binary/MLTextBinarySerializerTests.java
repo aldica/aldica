@@ -66,8 +66,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
         return appContext;
     }
 
-    protected static IgniteConfiguration createConfiguration(final ApplicationContext applicationContext,
-            final boolean idsWhenReasonable,
+    protected static IgniteConfiguration createConfiguration(final ApplicationContext applicationContext, final boolean idsWhenReasonable,
             final boolean serialForm, final String... regionNames)
     {
         final IgniteConfiguration conf = createConfiguration(1, false, null);
@@ -142,7 +141,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
                 final Ignite useIdGrid = Ignition.start(useIdConf);
 
                 final CacheConfiguration<Long, MLText> cacheConfig = new CacheConfiguration<>();
-                cacheConfig.setCacheMode(CacheMode.LOCAL);
+                cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
                 cacheConfig.setName("comparison1");
                 cacheConfig.setDataRegionName("comparison1");
@@ -167,8 +166,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, MLText> cache3 = useIdGrid.getOrCreateCache(cacheConfig);
 
                 // ID substitution provides main benefit (more for shorter texts) - 20%
-                this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3,
-                        "aldica optimised (ID substitution)",
+                this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3, "aldica optimised (ID substitution)",
                         "aldica optimised", 0.2);
             }
             finally
@@ -214,7 +212,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
                 final Ignite useIdGrid = Ignition.start(useIdConf);
 
                 final CacheConfiguration<Long, MLText> cacheConfig = new CacheConfiguration<>();
-                cacheConfig.setCacheMode(CacheMode.LOCAL);
+                cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
                 cacheConfig.setName("comparison1");
                 cacheConfig.setDataRegionName("comparison1");
@@ -231,19 +229,18 @@ public class MLTextBinarySerializerTests extends GridTestsBase
                 final IgniteCache<Long, MLText> referenceCache2 = referenceGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache2 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // 24%
+                // 23%
                 this.efficiencyImpl(referenceGrid, useIdGrid, referenceCache2, cache2, "aldica raw serial (ID substitution)",
-                        "aldica optimised", 0.24);
+                        "aldica optimised", 0.23);
 
                 cacheConfig.setName("comparison3");
                 cacheConfig.setDataRegionName("comparison3");
                 final IgniteCache<Long, MLText> referenceCache3 = defaultGrid.getOrCreateCache(cacheConfig);
                 final IgniteCache<Long, MLText> cache3 = useIdGrid.getOrCreateCache(cacheConfig);
 
-                // 24%
-                this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3,
-                        "aldica raw serial (ID substitution)",
-                        "aldica raw serial", 0.24);
+                // 23%
+                this.efficiencyImpl(defaultGrid, useIdGrid, referenceCache3, cache3, "aldica raw serial (ID substitution)",
+                        "aldica raw serial", 0.23);
             }
             finally
             {
@@ -258,7 +255,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
         {
             final CacheConfiguration<Long, MLText> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("mlText");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
             final IgniteCache<Long, MLText> cache = grid.getOrCreateCache(cacheConfig);
 
             MLText controlValue;
@@ -273,7 +270,7 @@ public class MLTextBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved (different value instances)
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
 
             // test unsupported locale
             controlValue = new MLText(Locale.UK, "English text");
@@ -285,12 +282,12 @@ public class MLTextBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved (different value instances)
-            Assert.assertFalse(controlValue == cacheValue);
+            Assert.assertNotSame(controlValue, cacheValue);
         }
     }
 
-    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite defaultGrid,
-            final IgniteCache<Long, MLText> referenceCache,
+    @SuppressWarnings("deprecation")
+    protected void efficiencyImpl(final Ignite referenceGrid, final Ignite defaultGrid, final IgniteCache<Long, MLText> referenceCache,
             final IgniteCache<Long, MLText> cache, final String serialisationType, final String referenceSerialisationType,
             final double marginFraction)
     {

@@ -3,16 +3,16 @@ import encoding from 'k6/encoding';
 import { Counter, Rate, Trend } from 'k6/metrics';
 import { sleep, group } from 'k6';
 
-const loginFails = new Rate('Logins failed');
-const badRequests = new Rate('Bad requests');
-const expectedNodeNotFound = new Rate('Expected node not found');
-const permissionDenied = new Rate('Permission denied failures');
-const nameConflicts = new Rate('Name conflicts');
-const integrityViolations = new Rate('Data integrity violation');
-const unspecificFails = new Rate('Non-specific failures');
+const loginFails = new Rate('Logins_failed');
+const badRequests = new Rate('Bad_requests');
+const expectedNodeNotFound = new Rate('Expected_node_not_found');
+const permissionDenied = new Rate('Permission_denied_failures');
+const nameConflicts = new Rate('Name_conflicts');
+const integrityViolations = new Rate('Data_integrity_violation');
+const unspecificFails = new Rate('Non_specific_failures');
 
-const createdNodes = new Counter('(Directly) Created nodes');
-const updatedNodes = new Counter('(Directly) Updated nodes');
+const createdNodes = new Counter('Created_nodes');
+const updatedNodes = new Counter('Updated_nodes');
 
 const users = JSON.parse(open('./users.json'));
 const hosts = JSON.parse(open('./hosts.json'));
@@ -37,30 +37,34 @@ const contents = [
 ];
 
 export let options = {
-	thresholds: {
-    'Logins failed': [{
+  thresholds: {
+    'Logins_failed': [{
       threshold:'rate < 0.01',
       abortOnFail : true,
       delayAbortEval : '5s'
     }],
-    'Bad requests': [{
+    'Bad_requests': [{
       threshold:'rate < 0.01',
       abortOnFail : true,
       delayAbortEval : '15s'
     }],
-    'Expected node not found': [{
+    'Expected_node_not_found': [{
       threshold:'rate < 0.05',
       abortOnFail : true,
       delayAbortEval : '15s'
     }],
-    'Permission denied failures': ['rate < 0.01'],
-    'Non-specific failures': ['rate < 0.05'],
-    'Name conflicts': ['rate < 0.01'],
-    'Data integrity violation': ['rate < 0.01']
+    'Permission_denied_failures': ['rate < 0.01'],
+    'Non_specific_failures': ['rate < 0.05'],
+    'Name_conflicts': ['rate < 0.01'],
+    'Data_integrity_violation': ['rate < 0.01']
   },
   stages: [
-    { duration: "2m", target: 40 },
-    { duration: "26m", target: 40 },
+    { duration: "2m", target: 10 },
+    { duration: "2m", target: 10 },
+    { duration: "4m", target: 15 },
+    { duration: "4m", target: 15 },
+    { duration: "8m", target: 20 },
+    { duration: "8m", target: 20 },
     { duration: "2m", target: 0 }
   ]
 };
@@ -329,9 +333,9 @@ function login(context, headers, tags)
   }
 }
 
-const getNodeTimeTTFB = new Trend('Time to get node (TTFB)', true);
-const getNodeTimeRes = new Trend('Time to get node (res)', true);
-const getNodeTimeDur = new Trend('Time to get node (full)', true);
+const getNodeTimeTTFB = new Trend('Time_to_get_node_TTF', true);
+const getNodeTimeRes = new Trend('Time_to_get_node_res', true);
+const getNodeTimeDur = new Trend('Time_to_get_node_full', true);
 
 function loadNode(context, nodeId, relativePath, include, fields, expectPresence, headers, tags)
 {
@@ -346,22 +350,21 @@ function loadNode(context, nodeId, relativePath, include, fields, expectPresence
     expectedNodeNotFound.add(expectPresence && r.status === 404, t);
     permissionDenied.add(r.status === 403, t);
     unspecificFails.add(r.status >= 400 && !(r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404), t);
+    getNodeTimeTTFB.add(r.timings.waiting, t);
+    getNodeTimeRes.add(r.timings.waiting + r.timings.receiving, t);
+    getNodeTimeDur.add(r.timings.duration, t);
   });
 
   if (res.status === 200)
   {
-    getNodeTimeTTFB.add(res.timings.waiting);
-    getNodeTimeRes.add(res.timings.waiting + res.timings.receiving);
-    getNodeTimeDur.add(res.timings.duration);
-
     let node = JSON.parse(res.body).entry;
     return node;
   }
 }
 
-const loadChildrenTimeTTFB = new Trend('Time to load node children (TTFB)', true);
-const loadChildrenTimeRes = new Trend('Time to load node children (res)', true);
-const loadChildrenTimeDur = new Trend('Time to load node children (full)', true);
+const loadChildrenTimeTTFB = new Trend('Time_to_load_node_children_TTFB', true);
+const loadChildrenTimeRes = new Trend('Time_to_load_node_children_res', true);
+const loadChildrenTimeDur = new Trend('Time_to_load_node_children_full', true);
 
 function loadChildren(context, nodeId, relativePath, where, skipCount, maxItems, orderBy, include, fields, headers, tags)
 {
@@ -380,22 +383,21 @@ function loadChildren(context, nodeId, relativePath, where, skipCount, maxItems,
     expectedNodeNotFound.add(r.status === 404, t);
     permissionDenied.add(r.status === 403, t);
     unspecificFails.add(r.status >= 400 && !(r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404), t);
+    loadChildrenTimeTTFB.add(r.timings.waiting, t);
+    loadChildrenTimeRes.add(r.timings.waiting + r.timings.receiving, t);
+    loadChildrenTimeDur.add(r.timings.duration, t);
   });
 
   if (res.status === 200)
   {
-    loadChildrenTimeTTFB.add(res.timings.waiting);
-    loadChildrenTimeRes.add(res.timings.waiting + res.timings.receiving);
-    loadChildrenTimeDur.add(res.timings.duration);
-
     let node = JSON.parse(res.body).list.entries;
     return node;
   }
 }
 
-const queryTimeTTFB = new Trend('Time to query nodes (TTFB)', true);
-const queryTimeRes = new Trend('Time to query nodes (res)', true);
-const queryTimeDur = new Trend('Time to query nodes (full)', true);
+const queryTimeTTFB = new Trend('Time_to_query_nodes_TTFB', true);
+const queryTimeRes = new Trend('Time_to_query_nodes_res', true);
+const queryTimeDur = new Trend('Time_to_query_nodes_full', true);
 
 function searchNodes(context, queryDefinition, skip, limit, include, fields, headers, tags)
 {
@@ -421,27 +423,26 @@ function searchNodes(context, queryDefinition, skip, limit, include, fields, hea
   let res = post(context, 'search', 1, 'search', null, null, JSON.stringify(effectiveSearchQueryDefinition), headers, tags, null, (r, t) => {
     badRequests.add(r.status === 400, t);
     unspecificFails.add(r.status >= 400 && !(r.status === 400), t);
+    queryTimeTTFB.add(r.timings.waiting, t);
+    queryTimeRes.add(r.timings.waiting + r.timings.receiving, t);
+    queryTimeDur.add(r.timings.duration, t);
   });
 
   if (res.status === 200)
   {
-    queryTimeTTFB.add(res.timings.waiting);
-    queryTimeRes.add(res.timings.waiting + res.timings.receiving);
-    queryTimeDur.add(res.timings.duration);
-
     let resultList = JSON.parse(res.body).list;
     return resultList;
   }
 }
 
-const contentNodeCreationTimeTTFB = new Trend('Time to create node (w content TTFB)', true);
-const contentLessNodeCreationTimeTTFB = new Trend('Time to create node (w/o content TTFB)', true);
+const contentNodeCreationTimeTTFB = new Trend('Time_to_create_node_w_content_TTFB', true);
+const contentLessNodeCreationTimeTTFB = new Trend('Time_to_create_node_wo_content_TTFB', true);
 
-const contentNodeCreationTimeRes = new Trend('Time to create node (w content res)', true);
-const contentLessNodeCreationTimeRes = new Trend('Time to create node (w/o content res)', true);
+const contentNodeCreationTimeRes = new Trend('Time_to_create_node_w_content_res', true);
+const contentLessNodeCreationTimeRes = new Trend('Time_to_create_node_wo_content_res', true);
 
-const contentNodeCreationTimeDur = new Trend('Time to create node (w content dur)', true);
-const contentLessNodeCreationTimeDur = new Trend('Time to create node (w/o content dur)', true);
+const contentNodeCreationTimeDur = new Trend('Time_to_create_node_w_content_dur', true);
+const contentLessNodeCreationTimeDur = new Trend('Time_to_create_node_wo_content_dur', true);
 
 function createNode(context, nodeId, nodeTemplate, content, autoRename, include, fields, allowClash, headers, tags)
 {
@@ -457,6 +458,7 @@ function createNode(context, nodeId, nodeTemplate, content, autoRename, include,
     }
     integrityViolations.add(r.status === 422, t);
     unspecificFails.add(r.status >= 400 && !(r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404 || r.status === 409|| r.status === 422), t);
+    createdNodes.add(r.status === 201, t);
   };
 
   if (content)
@@ -495,14 +497,12 @@ function createNode(context, nodeId, nodeTemplate, content, autoRename, include,
     }, {
       include: include,
       fields: fields
-    }, multipartBody, headers, tags, null, statusCb);
-
-    if (res.status === 201)
-    {
-      contentNodeCreationTimeTTFB.add(res.timings.waiting);
-      contentNodeCreationTimeRes.add(res.timings.waiting + res.timings.receiving);
-      contentNodeCreationTimeDur.add(res.timings.duration);
-    }
+    }, multipartBody, headers, tags, null, (r, t) => {
+      statusCb(r,t);
+      contentNodeCreationTimeTTFB.add(r.timings.waiting, t);
+      contentNodeCreationTimeRes.add(r.timings.waiting + r.timings.receiving, t);
+      contentNodeCreationTimeDur.add(r.timings.duration, t);
+    });
   }
   else
   {
@@ -512,19 +512,16 @@ function createNode(context, nodeId, nodeTemplate, content, autoRename, include,
       autoRename: autoRename,
       include: include,
       fields: fields
-    }, JSON.stringify(nodeTemplate), headers, tags, null, statusCb);
-
-    if (res.status === 201)
-    {
-      contentLessNodeCreationTimeTTFB.add(res.timings.waiting);
-      contentLessNodeCreationTimeRes.add(res.timings.waiting + res.timings.receiving);
-      contentLessNodeCreationTimeDur.add(res.timings.duration);
-    }
+    }, JSON.stringify(nodeTemplate), headers, tags, null,   (r, t) => {
+      statusCb(r,t);
+      contentLessNodeCreationTimeTTFB.add(r.timings.waiting, t);
+      contentLessNodeCreationTimeRes.add(r.timings.waiting + r.timings.receiving, t);
+      contentLessNodeCreationTimeDur.add(r.timings.duration, t);
+    });
   }
 
   if (res.status === 201)
   {
-    createdNodes.add(1);
     let node = JSON.parse(res.body).entry;
     return node;
   }
@@ -535,9 +532,9 @@ function createNode(context, nodeId, nodeTemplate, content, autoRename, include,
   }
 }
 
-const nodeUpdateTimeTTFB = new Trend('Time to update node (TTFB)', true);
-const nodeUpdateTimeRes = new Trend('Time to update node (res)', true);
-const nodeUpdateTimeDur = new Trend('Time to update node (dur)', true);
+const nodeUpdateTimeTTFB = new Trend('Time_to_update_node_TTFB', true);
+const nodeUpdateTimeRes = new Trend('Time_to_update_node_res', true);
+const nodeUpdateTimeDur = new Trend('Time_to_update_node_dur', true);
 
 function updateNode(context, nodeId, updateDefinition, include, fields, headers, tags)
 {
@@ -553,15 +550,14 @@ function updateNode(context, nodeId, updateDefinition, include, fields, headers,
     nameConflicts.add(r.status === 409, t);
     integrityViolations.add(r.status === 422, t);
     unspecificFails.add(r.status >= 400 && !(r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404 || r.status === 409|| r.status === 422), t);
+    updatedNodes.add(r.status === 200, t);
+    nodeUpdateTimeTTFB.add(r.timings.waiting, t);
+    nodeUpdateTimeRes.add(r.timings.waiting + r.timings.receiving, t);
+    nodeUpdateTimeDur.add(r.timings.duration, t);
   });
 
   if (res.status === 200)
   {
-    nodeUpdateTimeTTFB.add(res.timings.waiting);
-    nodeUpdateTimeRes.add(res.timings.waiting + res.timings.receiving);
-    nodeUpdateTimeDur.add(res.timings.duration);
-
-    updatedNodes.add(1);
     let node = JSON.parse(res.body).entry;
     return node;
   }
@@ -613,7 +609,7 @@ function resolveOrCreateFolderPath(context, baseNodeId, relativePath, folderTemp
 
 const y2018StartMillis = 1514764800000;
 
-function createNewDummyContent(tags)
+function createNewDummyContent(baseNodeId, tags)
 {
   let userIds = getUserIds();
   let context = {
@@ -623,7 +619,7 @@ function createNewDummyContent(tags)
   group('Create content file', function(){
     let curDate = new Date();
     let datePath = curDate.getUTCFullYear() + '/' + (curDate.getUTCMonth() + 1) + '/' + curDate.getUTCDate() + '/' + curDate.getUTCHours() + '/' + curDate.getUTCMinutes();
-    let relativePath = 'Shared/' + __VU + '/' + datePath;
+    let relativePath = '' + __VU + '/' + datePath;
 
     let effectivityFrom = new Date(y2018StartMillis + Math.floor(Math.random() * (Date.now() - y2018StartMillis)));
     let effectivityTo = new Date(effectivityFrom.getTime() + Math.floor(Math.random() * (Date.now() - effectivityFrom.getTime())));
@@ -638,7 +634,7 @@ function createNewDummyContent(tags)
         'cm:to': effectivityTo.toISOString()
       }
     };
-    createNode(context, '-root-', contentNodeTemplate, http.file(contents[Math.floor(Math.random() * contents.length)]), false, null, null, false, null, tags);
+    createNode(context, baseNodeId, contentNodeTemplate, http.file(contents[Math.floor(Math.random() * contents.length)]), false, null, null, false, null, tags);
   });
 }
 
@@ -751,7 +747,7 @@ function updateRandomContent(rootFolderId, tags)
   };
 
   group('Lookup and modify existing file', function(){
-    let existingNode = lookupRandomContentInFolderStructure(context, rootFolderId, null, tags);
+    let existingNode = lookupRandomContentInFolderStructure(context, rootFolderId, 3, null, tags);
     if (existingNode)
     {
       let effectivityFrom = new Date(y2018StartMillis + Math.floor(Math.random() * (Date.now() - y2018StartMillis)));
@@ -774,8 +770,8 @@ function updateRandomContent(rootFolderId, tags)
   });
 }
 
-const clusterBeforeUpdateValidationError = new Rate('Cluster node state inconsistencies before update');
-const clusterAfterUpdateValidationError = new Rate('Cluster node state inconsistencies after update');
+const clusterBeforeUpdateValidationError = new Rate('Cluster_node_state_inconsistencies_before_update');
+const clusterAfterUpdateValidationError = new Rate('Cluster_node_state_inconsistencies_after_update');
 
 function updateRandomRecentlyModifiedContentAndVerifyInCluster(tags)
 {
@@ -918,10 +914,10 @@ function updateRandomContentAndVerifyInCluster(rootFolderId, tags)
   });
 }
 
-const contentCreationRuns = new Rate('Runs simulating content creation');
-const contentPropUpdateRuns = new Rate('Runs simulating property update on content');
-const contentPropUpdateVerificationRuns = new Rate('Runs simulating property update on content (with cluster verification)');
-const contentUpdateRuns = new Rate('Runs simulating content update on content');
+const contentCreationRuns = new Rate('Runs_simulating_content_creation');
+const contentPropUpdateRuns = new Rate('Runs_simulating_property_update_on_content');
+const contentPropUpdateVerificationRuns = new Rate('Runs_simulating_property_update_on_content_with_cluster_verification');
+const contentUpdateRuns = new Rate('Runs_simulating_content_update_on_content');
 
 export default function() {
   let rnd = Math.random();
@@ -929,6 +925,12 @@ export default function() {
   let isContentPropUpdate = !isContentCreation && rnd >= 0.3 && rnd < 0.8;
   let isContentPropUpdateAndClusterVerification = !isContentCreation && rnd >= 0.8;
   let isContentUpdate = false;
+  let baseNodeId = null;
+  let userIds = getUserIds();
+  let context = {
+    userId: userIds[Math.floor(Math.random() * userIds.length)]
+  };
+  baseNodeId = resolveOrCreateFolderPath(context, '-shared-', 'k6');
 
   contentCreationRuns.add(isContentCreation);
   contentPropUpdateRuns.add(isContentPropUpdate);
@@ -937,14 +939,17 @@ export default function() {
 
   if (isContentCreation)
   {
-    createNewDummyContent();
+    createNewDummyContent(baseNodeId);
   }
-  else if (isContentPropUpdate)
+  else
   {
-    updateRandomContent('-shared-');
-  }
-  else if (isContentPropUpdateAndClusterVerification)
-  {
-    updateRandomContentAndVerifyInCluster('-shared-');
+    if (isContentPropUpdate)
+    {
+      updateRandomContent(baseNodeId);
+    }
+    else if (isContentPropUpdateAndClusterVerification)
+    {
+      updateRandomContentAndVerifyInCluster(baseNodeId);
+    }
   }
 };

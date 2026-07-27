@@ -4,11 +4,12 @@
 package org.aldica.repo.ignite.cache;
 
 import java.io.Serializable;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import javax.cache.configuration.Factory;
@@ -41,7 +42,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.PropertyPlaceholderHelper;
@@ -85,11 +85,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     protected Properties properties;
 
-    protected String placeholderPrefix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX;
-
-    protected String placeholderSuffix = PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_SUFFIX;
-
-    protected String valueSeparator = PlaceholderConfigurerSupport.DEFAULT_VALUE_SEPARATOR;
+    protected Executor executor;
 
     protected PropertyPlaceholderHelper placeholderHelper;
 
@@ -105,6 +101,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     protected boolean disableAllStatistics;
 
+    private final List<SimpleLazySwapCacheInvoker> invokers = new ArrayList<>();
+
     /**
      *
      * {@inheritDoc}
@@ -112,9 +110,10 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     @Override
     public void afterPropertiesSet()
     {
+        PropertyCheck.mandatory(this, "properties", this.properties);
+        PropertyCheck.mandatory(this, "executor", this.executor);
         PropertyCheck.mandatory(this, "instanceName", this.instanceName);
-
-        this.placeholderHelper = new PropertyPlaceholderHelper(this.placeholderPrefix, this.placeholderSuffix, this.valueSeparator, true);
+        PropertyCheck.mandatory(this, "placeholderHelper", this.placeholderHelper);
     }
 
     /**
@@ -138,30 +137,21 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     }
 
     /**
-     * @param placeholderPrefix
-     *            the placeholderPrefix to set
+     * @param executor
+     *     the executor to set
      */
-    public void setPlaceholderPrefix(final String placeholderPrefix)
+    public void setExecutor(final Executor executor)
     {
-        this.placeholderPrefix = placeholderPrefix;
+        this.executor = executor;
     }
 
     /**
-     * @param placeholderSuffix
-     *            the placeholderSuffix to set
+     * @param placeholderHelper
+     *     the placeholderHelper to set
      */
-    public void setPlaceholderSuffix(final String placeholderSuffix)
+    public void setPlaceholderHelper(final PropertyPlaceholderHelper placeholderHelper)
     {
-        this.placeholderSuffix = placeholderSuffix;
-    }
-
-    /**
-     * @param valueSeparator
-     *            the valueSeparator to set
-     */
-    public void setValueSeparator(final String valueSeparator)
-    {
-        this.valueSeparator = valueSeparator;
+        this.placeholderHelper = placeholderHelper;
     }
 
     /**
@@ -182,6 +172,8 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         if (EqualsHelper.nullSafeEquals(this.instanceName, instanceName))
         {
             this.instanceStarted = true;
+
+            this.invokers.stream().forEach(SimpleLazySwapCacheInvoker::checkSwapInstance);
         }
     }
 
@@ -208,7 +200,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     /**
      * @param instanceName
-     *            the name of the Ignite instance to which to attach caches
+     *     the name of the Ignite instance to which to attach caches
      */
     public void setInstanceName(final String instanceName)
     {
@@ -217,7 +209,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     /**
      * @param partitionsCount
-     *            the partitionsCount to set
+     *     the partitionsCount to set
      */
     public void setPartitionsCount(final int partitionsCount)
     {
@@ -226,7 +218,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     /**
      * @param enableRemoteSupport
-     *            the enableRemoteSupport to set
+     *     the enableRemoteSupport to set
      */
     public void setEnableRemoteSupport(final boolean enableRemoteSupport)
     {
@@ -235,7 +227,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     /**
      * @param ignoreDefaultEvictionConfiguration
-     *            the ignoreDefaultEvictionConfiguration to set
+     *     the ignoreDefaultEvictionConfiguration to set
      */
     public void setIgnoreDefaultEvictionConfiguration(final boolean ignoreDefaultEvictionConfiguration)
     {
@@ -244,7 +236,7 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
     /**
      * @param disableAllStatistics
-     *            the disableAllStatistics to set
+     *     the disableAllStatistics to set
      */
     public void setDisableAllStatistics(final boolean disableAllStatistics)
     {
@@ -273,29 +265,28 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
         boolean requiresIgnite = true;
         switch (cacheType)
         {
-            case CACHE_TYPE_LOCAL:
-                requiresRemoteSupport = false;
-                break;
             case CACHE_TYPE_LOCAL_DEFAULT_SIMPLE:
+                LOGGER.info("Cache {} is configured with the legacy aldica type {} - this alias for 'local' may be removed in the future",
+                        cacheName, cacheType);
+                // fallthrough intended
+            case CACHE_TYPE_LOCAL:
                 requiresRemoteSupport = false;
                 requiresIgnite = false;
                 break;
+            case CACHE_TYPE_INVALIDATING_DEFAULT_SIMPLE:
+                LOGGER.info(
+                        "Cache {} is configured with the legacy aldica type {} - this alias for 'invalidating' may be removed in the future",
+                        cacheName, cacheType);
+                // fallthrough intended
             case CACHE_TYPE_INVALIDATING:
                 if (!this.enableRemoteSupport)
                 {
                     requiresRemoteSupport = false;
+                    requiresIgnite = false;
                     cacheType = CACHE_TYPE_LOCAL;
                 }
                 break;
-            case CACHE_TYPE_INVALIDATING_DEFAULT_SIMPLE:
-                if (!this.enableRemoteSupport)
-                {
-                    requiresRemoteSupport = false;
-                    requiresIgnite = false;
-                    cacheType = CACHE_TYPE_LOCAL_DEFAULT_SIMPLE;
-                }
-                break;
-            case CACHE_TYPE_ALFRESCO_FULLY_DISTRIBUTED:
+            case CACHE_TYPE_ALFRESCO_FULLY_DISTRIBUTED: // fallthrough intended
             case CACHE_TYPE_PARTITIONED:
                 if (!this.enableRemoteSupport)
                 {
@@ -332,20 +323,25 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
             switch (cacheType)
             {
-                case CACHE_TYPE_LOCAL:
-                    cache = this.createLocalCache(grid, cacheName, false, false);
-                    break;
                 case CACHE_TYPE_LOCAL_DEFAULT_SIMPLE:
+                    LOGGER.info(
+                            "Cache {} is configured with the legacy aldica type {} - this alias for 'local' may be removed in the future",
+                            cacheName, cacheType);
+                    // fallthrough intended
+                case CACHE_TYPE_LOCAL:
                     cache = this.createLocalDefaultSimpleCache(cacheName);
-                    break;
-                case CACHE_TYPE_INVALIDATING:
-                    cache = this.createLocalCache(grid, cacheName, true, alwaysInvalidateOnPut);
                     break;
                 case CACHE_TYPE_INVALIDATING_DEFAULT_SIMPLE:
+                    LOGGER.info(
+                            "Cache {} is configured with the legacy aldica type {} - this alias for 'invalidating' may be removed in the future",
+                            cacheName, cacheType);
+                    // fallthrough intended
+                case CACHE_TYPE_INVALIDATING:
                     cache = this.createLocalDefaultSimpleCache(cacheName);
-                    cache = new InvalidatingCacheFacade<>(cacheName, cache, grid, alwaysInvalidateOnPut, allowValueSentinels);
+                    cache = new InvalidatingCacheFacade<>(cacheName, cache, grid, alwaysInvalidateOnPut, allowValueSentinels,
+                            this.executor);
                     break;
-                case CACHE_TYPE_ALFRESCO_FULLY_DISTRIBUTED:
+                case CACHE_TYPE_ALFRESCO_FULLY_DISTRIBUTED:  // fallthrough intended
                 case CACHE_TYPE_PARTITIONED:
                     cache = this.createPartitionedCache(grid, cacheName);
                     break;
@@ -405,11 +401,11 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
     {
         LOGGER.debug("Creating enhanced cache proxy to lazily swap temporary cache {} with real instance when grid has started", cacheName);
 
+        final SimpleLazySwapCacheInvoker invoker = new SimpleLazySwapCacheInvoker(temporaryCache, cacheName);
         @SuppressWarnings("unchecked")
         final SimpleCache<K, V> proxyInstance = (SimpleCache<K, V>) Proxy.newProxyInstance(CacheFactoryImpl.class.getClassLoader(),
-                new Class<?>[] { SimpleCache.class, IgniteInstanceLifecycleAware.class, CacheWithMetrics.class },
-
-                new SimpleLazySwapCacheInvoker(temporaryCache, cacheName));
+                new Class<?>[] { SimpleCache.class, CacheWithMetrics.class }, invoker);
+        this.invokers.add(invoker);
         return proxyInstance;
     }
 
@@ -425,30 +421,6 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         final DefaultSimpleCache<K, V> cache = new DefaultSimpleCache<>(maxItems, useMaxItems, ttlSeconds, maxIdleSeconds, cacheName);
         return cache;
-    }
-
-    protected SimpleCache<K, V> createLocalCache(final Ignite grid, final String cacheName, final boolean invalidate,
-            final boolean alwaysInvalidateOnPut)
-    {
-        LOGGER.debug("Creating local cache {} in grid {}", cacheName, grid.name());
-
-        final CacheConfiguration<K, V> cacheConfig = new CacheConfiguration<>();
-
-        cacheConfig.setName(cacheName.startsWith("cache.") ? cacheName.substring(6) : cacheName);
-        cacheConfig.setCacheMode(CacheMode.LOCAL);
-        cacheConfig.setStatisticsEnabled(!this.disableAllStatistics);
-        cacheConfig.setStoreKeepBinary(true);
-
-        this.processMemoryConfig(cacheName, cacheConfig);
-        this.processExpiryPolicy(cacheName, cacheConfig);
-
-        final boolean allowValueSentinels = Boolean
-                .parseBoolean(this.getProperty(cacheName, "ignite.allowValueSentinels", "allowValueSentinels", "true"));
-
-        final IgniteCache<K, V> backingCache = grid.getOrCreateCache(cacheConfig);
-        final SimpleIgniteBackedCache<K, V> localCache = new SimpleIgniteBackedCache<>(grid,
-                SimpleIgniteBackedCache.Mode.getLocalCacheMode(invalidate, alwaysInvalidateOnPut), backingCache, allowValueSentinels);
-        return localCache;
     }
 
     protected SimpleCache<K, V> createPartitionedCache(final Ignite grid, final String cacheName)
@@ -669,7 +641,6 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
      *
      * @author Axel Faust
      */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     public class SimpleLazySwapCacheInvoker extends SimpleCacheInvoker
     {
 
@@ -677,55 +648,33 @@ public class CacheFactoryImpl<K extends Serializable, V extends Serializable> ex
 
         private boolean swapped = false;
 
+        @SuppressWarnings("rawtypes")
         protected SimpleLazySwapCacheInvoker(final SimpleCache backingCache, final String cacheName)
         {
             super(backingCache);
             this.cacheName = cacheName;
         }
 
-        /**
-         *
-         * {@inheritDoc}
-         */
-        @Override
-        public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        protected void checkSwapInstance()
         {
-            Object result = null;
-            final String methodName = method.getName();
-            if (IgniteInstanceLifecycleAware.class.isAssignableFrom(method.getDeclaringClass())
-                    && (methodName.startsWith("beforeInstance") || methodName.startsWith("afterInstance")))
+            if (!this.swapped)
             {
-                if ("afterInstanceStartup".equals(methodName) && args.length == 1
-                        && EqualsHelper.nullSafeEquals(CacheFactoryImpl.this.instanceName, args[0]))
-                {
-                    // cannot rely on lifecycle call ordering based on some inherent Spring order, so forward to factory itself
-                    if (!CacheFactoryImpl.this.instanceStarted)
-                    {
-                        CacheFactoryImpl.this.afterInstanceStartup(CacheFactoryImpl.this.instanceName);
-                    }
+                final SimpleCache newCache = CacheFactoryImpl.this.createCache(this.cacheName, false);
 
-                    if (!this.swapped)
-                    {
-                        final SimpleCache newCache = CacheFactoryImpl.this.createCache(this.cacheName, false);
+                // transfer
+                this.backingObject.getKeys().forEach(key -> {
+                    newCache.put((Serializable) key, this.backingObject.get((Serializable) key));
+                });
 
-                        // transfer
-                        this.backingCache.getKeys().forEach(key -> {
-                            newCache.put((Serializable) key, this.backingCache.get((Serializable) key));
-                        });
+                this.backingObject = newCache;
+                this.swapped = true;
 
-                        this.backingCache = newCache;
-                        this.swapped = true;
+                this.resetBoundMethodHandles();
 
-                        LOGGER.debug("Lazily swapped temporary cache {} with real instance", this.cacheName);
-                    }
-                }
-                result = null;
+                LOGGER.debug("Lazily swapped temporary cache {} with real instance", this.cacheName);
             }
-            else
-            {
-                result = super.invoke(proxy, method, args);
-            }
-            return result;
         }
+
     }
 }

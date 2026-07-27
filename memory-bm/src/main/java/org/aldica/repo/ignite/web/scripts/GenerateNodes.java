@@ -3,6 +3,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.repo.ignite.web.scripts;
 
+import com.thedeanda.lorem.Lorem;
+import com.thedeanda.lorem.LoremIpsum;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -15,29 +18,49 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.aldica.repo.ignite.binary.Namespace;
+import org.alfresco.error.AlfrescoRuntimeException;
+import org.alfresco.model.BlogIntegrationModel;
 import org.alfresco.model.ContentModel;
+import org.alfresco.model.ImapModel;
+import org.alfresco.model.QuickShareModel;
+import org.alfresco.opencmis.mapping.CMISMapping;
+import org.alfresco.repo.action.ActionModel;
 import org.alfresco.repo.batch.BatchProcessWorkProvider;
 import org.alfresco.repo.batch.BatchProcessor;
 import org.alfresco.repo.batch.BatchProcessor.BatchProcessWorker;
+import org.alfresco.repo.calendar.CalendarModel;
 import org.alfresco.repo.content.MimetypeMap;
+import org.alfresco.repo.download.DownloadModel;
+import org.alfresco.repo.module.ModuleComponentHelper;
 import org.alfresco.repo.policy.BehaviourFilter;
+import org.alfresco.repo.remotecredentials.RemoteCredentialsModel;
+import org.alfresco.repo.rule.RuleModel;
+import org.alfresco.repo.search.impl.solr.facet.SolrFacetModel;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
+import org.alfresco.repo.site.SiteModel;
+import org.alfresco.repo.transfer.TransferModel;
+import org.alfresco.repo.version.Version2Model;
+import org.alfresco.repo.version.VersionModel;
+import org.alfresco.repo.virtual.VirtualContentModel;
 import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.repository.StoreRef;
 import org.alfresco.service.cmr.rule.RuleService;
+import org.alfresco.service.cmr.security.PermissionService;
+import org.alfresco.service.cmr.security.PersonService;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.service.transaction.TransactionService;
@@ -48,13 +71,12 @@ import org.apache.commons.logging.LogFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.dao.ConcurrencyFailureException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.extensions.webscripts.AbstractWebScript;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.springframework.extensions.webscripts.WebScriptResponse;
-
-import com.thedeanda.lorem.Lorem;
-import com.thedeanda.lorem.LoremIpsum;
 
 /**
  * @author Axel Faust
@@ -80,7 +102,27 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
 
     public static final QName LOV_STRING = QName.createQName("http://www.aldica.org/model/mem-bm/1.0", "lovString");
 
-    private static final Namespace[] NAMESPACES = Namespace.values();
+    private static final String[] NAMESPACES = { NamespaceService.ALFRESCO_URI, NamespaceService.SYSTEM_MODEL_1_0_URI,
+            "http://www.alfresco.org/system/registry/1.0", ModuleComponentHelper.URI_MODULES_1_0, ContentModel.USER_MODEL_URI,
+            NamespaceService.DICTIONARY_MODEL_1_0_URI, NamespaceService.CONTENT_MODEL_1_0_URI, NamespaceService.APP_MODEL_1_0_URI,
+            NamespaceService.AUDIO_MODEL_1_0_URI, NamespaceService.EXIF_MODEL_1_0_URI, NamespaceService.WEBDAV_MODEL_1_0_URI,
+            NamespaceService.DATALIST_MODEL_1_0_URI, NamespaceService.BPM_MODEL_1_0_URI, NamespaceService.WORKFLOW_MODEL_1_0_URI,
+            NamespaceService.FORUMS_MODEL_1_0_URI, NamespaceService.LINKS_MODEL_1_0_URI, NamespaceService.RENDITION_MODEL_1_0_URI,
+            NamespaceService.REPOSITORY_VIEW_1_0_URI, NamespaceService.SECURITY_MODEL_1_0_URI, NamespaceService.EMAILSERVER_MODEL_URI,
+            SiteModel.SITE_MODEL_URL, SiteModel.SITE_CUSTOM_PROPERTY_URL, VersionModel.NAMESPACE_URI, Version2Model.NAMESPACE_URI,
+            TransferModel.TRANSFER_MODEL_1_0_URI, ActionModel.ACTION_MODEL_URI, RuleModel.RULE_MODEL_URI,
+            DownloadModel.DOWNLOAD_MODEL_1_0_URI, ImapModel.IMAP_MODEL_1_0_URI, CalendarModel.CALENDAR_MODEL_URL,
+            RemoteCredentialsModel.REMOTE_CREDENTIALS_MODEL_URL, BlogIntegrationModel.MODEL_URL,
+            VirtualContentModel.VIRTUAL_CONTENT_MODEL_1_0_URI, CMISMapping.CMIS_MODEL_URI, CMISMapping.CMIS_EXT_URI,
+            QuickShareModel.QSHARE_MODEL_1_0_URI, SolrFacetModel.SOLR_FACET_MODEL_URL, SolrFacetModel.SOLR_FACET_CUSTOM_PROPERTY_URL };
+
+    private static final String[] AUTHORITY_NAMES = { "mjackson", "abeecher", "mmustermann", UUID.randomUUID().toString(),
+            "GROUP_site_test_SiteConsumer", "GROUP_site_test_SiteManager", "GROUP_site_test_SiteContributor",
+            "GROUP_site_test_SiteCollaboroator", "GROUP_DMS_User", "GROUP_" + UUID.randomUUID().toString() };
+
+    private static final String[] PERMISSION_NAMES = { PermissionService.CONSUMER, PermissionService.CONTRIBUTOR, PermissionService.EDITOR,
+            PermissionService.COORDINATOR, "Collaborator", SiteModel.SITE_COLLABORATOR, SiteModel.SITE_CONSUMER, SiteModel.SITE_CONTRIBUTOR,
+            SiteModel.SITE_MANAGER };
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenerateNodes.class);
 
@@ -103,11 +145,17 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
 
     protected NodeService nodeService;
 
+    protected PermissionService permissionService;
+
+    protected PersonService personService;
+
     protected ContentService contentService;
 
     protected RuleService ruleService;
 
     protected BehaviourFilter behaviourFilter;
+
+    protected String guaranteedAccessUserName;
 
     /**
      *
@@ -118,13 +166,16 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
     {
         PropertyCheck.mandatory(this, "transactionService", this.transactionService);
         PropertyCheck.mandatory(this, "nodeService", this.nodeService);
+        PropertyCheck.mandatory(this, "permissionService", this.permissionService);
+        PropertyCheck.mandatory(this, "personService", this.personService);
         PropertyCheck.mandatory(this, "ruleService", this.ruleService);
         PropertyCheck.mandatory(this, "behaviourFilter", this.behaviourFilter);
+        PropertyCheck.mandatory(this, "guaranteedAccessUserName", this.guaranteedAccessUserName);
     }
 
     /**
      * @param transactionService
-     *            the transactionService to set
+     *     the transactionService to set
      */
     public void setTransactionService(final TransactionService transactionService)
     {
@@ -133,13 +184,35 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
 
     /**
      * @param nodeService
-     *            the nodeService to set
+     *     the nodeService to set
      */
     public void setNodeService(final NodeService nodeService)
     {
         this.nodeService = nodeService;
     }
 
+    /**
+     * @param permissionService
+     *     the permissionService to set
+     */
+    public void setPermissionService(final PermissionService permissionService)
+    {
+        this.permissionService = permissionService;
+    }
+
+    /**
+     * @param personService
+     *     the personService to set
+     */
+    public void setPersonService(final PersonService personService)
+    {
+        this.personService = personService;
+    }
+
+    /**
+     * @param contentService
+     *     the contentService to set
+     */
     public void setContentService(final ContentService contentService)
     {
         this.contentService = contentService;
@@ -147,7 +220,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
 
     /**
      * @param ruleService
-     *            the ruleService to set
+     *     the ruleService to set
      */
     public void setRuleService(final RuleService ruleService)
     {
@@ -156,11 +229,20 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
 
     /**
      * @param behaviourFilter
-     *            the behaviourFilter to set
+     *     the behaviourFilter to set
      */
     public void setBehaviourFilter(final BehaviourFilter behaviourFilter)
     {
         this.behaviourFilter = behaviourFilter;
+    }
+
+    /**
+     * @param guaranteedAccessUserName
+     *     the guaranteedAccessUserName to set
+     */
+    public void setGuaranteedAccessUserName(final String guaranteedAccessUserName)
+    {
+        this.guaranteedAccessUserName = guaranteedAccessUserName;
     }
 
     /**
@@ -184,13 +266,19 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
             final NodeRef companyHome = this.nodeService.getChildAssocs(rootNode, ContentModel.ASSOC_CHILDREN,
                     QName.createQName("http://www.alfresco.org/model/application/1.0", "company_home")).get(0).getChildRef();
 
+            if (!this.personService.personExists(this.guaranteedAccessUserName))
+            {
+                this.personService.createPerson(new HashMap<>(Map.of(ContentModel.PROP_USERNAME, this.guaranteedAccessUserName,
+                        ContentModel.PROP_FIRSTNAME, "Test", ContentModel.PROP_LASTNAME, "User")));
+            }
+
             final int requiredTargetFolderCount = (int) Math.ceil(1.0f * count / maxChildrenPerFolder);
             LOGGER.info("{} nodes require {} target folders for sub-division", count, requiredTargetFolderCount);
             final List<NodeRef> targetFolders = this.generateTargetFolders(companyHome, requiredTargetFolderCount, maxChildrenPerFolder,
                     threads, wordsPerNode);
 
-            final String nameSuffix = "of" + count;
-            this.generateNodes(targetFolders, count, threads, i -> i + nameSuffix, this::generateRandomContentTypeAndProperties, (t) -> {
+            final String nameSuffix = " of " + count;
+            this.generateNodes(targetFolders, count, threads, i -> i + nameSuffix, this::generateRandomContentTypeAndProperties, t -> {
                 // NO-OP
             }, wordsPerNode);
 
@@ -205,12 +293,17 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
     {
         final List<NodeRef> targetFolders = new ArrayList<>(folderCount);
         final List<NodeRef> parentFolders;
-        if (folderCount > maxChildrenPerFolder)
+        final boolean subDivide = folderCount > maxChildrenPerFolder;
+        if (subDivide)
         {
-            final int requiredParentFolderCount = (int) Math.ceil(1.0f * folderCount / maxChildrenPerFolder);
+            final int requiredParentFolderCount = (int) Math.ceil((1.0d * folderCount) / maxChildrenPerFolder);
             LOGGER.info("{} folders is more than the allowed limit of children - need to generate {} folders for further sub-divison",
                     folderCount, requiredParentFolderCount);
             parentFolders = this.generateTargetFolders(rootNode, requiredParentFolderCount, maxChildrenPerFolder, threads, wordsPerNode);
+            if (parentFolders.isEmpty())
+            {
+                throw new AlfrescoRuntimeException("No folders were generated in recursive step");
+            }
         }
         else
         {
@@ -222,6 +315,45 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         final Pair<QName, Map<QName, Serializable>> typeAndProperties = new Pair<>(ContentModel.TYPE_FOLDER, Collections.emptyMap());
 
         this.generateNodes(parentFolders, folderCount, threads, i -> i + nameSuffix, () -> typeAndProperties, folders -> {
+            if (subDivide)
+            {
+                this.transactionService.getRetryingTransactionHelper().doInTransaction(() -> AuthenticationUtil.runAsSystem(() -> {
+                    for (final NodeRef folder : folders)
+                    {
+                        final boolean inherit = RN_JESUS.nextBoolean();
+                        this.permissionService.setInheritParentPermissions(folder, inherit);
+
+                        final int assignments = 1 + RN_JESUS.nextInt(4);
+                        final Set<Pair<String, String>> authorityPermissionPairs = new HashSet<>();
+                        for (int i = 0; i < assignments; i++)
+                        {
+                            final String authority = AUTHORITY_NAMES[RN_JESUS.nextInt(AUTHORITY_NAMES.length)];
+                            final String permission = PERMISSION_NAMES[RN_JESUS.nextInt(PERMISSION_NAMES.length)];
+                            final Pair<String, String> pair = new Pair<>(authority, permission);
+                            if (!authorityPermissionPairs.contains(pair))
+                            {
+                                authorityPermissionPairs.add(pair);
+                                try
+                                {
+                                    this.permissionService.setPermission(folder, authority, permission, RN_JESUS.nextBoolean());
+                                }
+                                catch (final DuplicateKeyException dke)
+                                {
+                                    // potential conflict via alf_access_control_entry.permission_id constraint
+                                    // use a concurrency failure to trigger retry
+                                    throw new ConcurrencyFailureException("Concurrent alf_access_control_entry insert problem", dke);
+                                }
+                            }
+                        }
+
+                        if (!inherit)
+                        {
+                            this.permissionService.setPermission(folder, this.guaranteedAccessUserName, PermissionService.CONSUMER, true);
+                        }
+                    }
+                    return null;
+                }), false, true);
+            }
             synchronized (targetFolders)
             {
                 targetFolders.addAll(folders);
@@ -231,8 +363,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         return targetFolders;
     }
 
-    protected void generateNodes(final List<NodeRef> parentFolders, final int nodeCount,
-            final int threads,
+    protected void generateNodes(final List<NodeRef> parentFolders, final int nodeCount, final int threads,
             final Function<Integer, String> nodeNameProvider,
             final Supplier<Pair<QName, Map<QName, Serializable>>> typeAndPropertiesProvider,
             final Consumer<List<NodeRef>> nodeBatchProcessor, final int wordsPerNode)
@@ -242,7 +373,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         final int batchSize = Math.min(50, Math.max(5, nodeCount / (parentFolders.size() * threads)));
         final int effectiveThreadCount = Math.min(threads, parentFolders.size());
 
-        final BatchProcessWorkProvider<String> provider = new BatchProcessWorkProvider<String>()
+        final BatchProcessWorkProvider<String> provider = new BatchProcessWorkProvider<>()
         {
 
             private int totalProvided = 0;
@@ -390,7 +521,7 @@ public class GenerateNodes extends AbstractWebScript implements InitializingBean
         properties.put(DATE_E, generateDate());
         properties.put(DATE_F, generateDateTime());
         properties.put(NODE_G, new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, UUID.randomUUID().toString()));
-        properties.put(QNAME_H, QName.createQName(NAMESPACES[RN_JESUS.nextInt(NAMESPACES.length)].getUri(), lorem.getWords(2)));
+        properties.put(QNAME_H, QName.createQName(NAMESPACES[RN_JESUS.nextInt(NAMESPACES.length)], lorem.getWords(2)));
         properties.put(LOV_STRING, LOVS[RN_JESUS.nextInt(LOVS.length)]);
 
         return new Pair<>(ContentModel.TYPE_CONTENT, properties);

@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <bean id="Configuration.${moduleId}.core.binary" class="org.apache.ignite.configuration.BinaryConfiguration" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheRegionKey"
+        class="org.aldica.repo.ignite.binary.TransactionalCacheRegionKeyBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedTxnCacheValueHolder"
+        class="org.aldica.repo.ignite.binary.TransactionalCacheValueHolderBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionKey"
+        class="org.aldica.repo.ignite.binary.CacheRegionKeyBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedCacheRegionValueKey"
+        class="org.aldica.repo.ignite.binary.CacheRegionValueKeyBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedStoreRef"
+        class="org.aldica.repo.ignite.binary.StoreRefBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeRef"
+        class="org.aldica.repo.ignite.binary.NodeRefBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedQName"
+        class="org.aldica.repo.ignite.binary.QNameBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedMLText"
+        class="org.aldica.repo.ignite.binary.MLTextBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedContentData"
+        class="org.aldica.repo.ignite.binary.ContentDataBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedModuleVersionNumber"
+        class="org.aldica.repo.ignite.binary.ModuleVersionNumberBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeEntity"
+        class="org.aldica.repo.ignite.binary.NodeEntityBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedContentUrlEntity"
+        class="org.aldica.repo.ignite.binary.ContentUrlEntityBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedAclEntity"
+        class="org.aldica.repo.ignite.binary.AclEntityBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedAuthorityEntity"
+        class="org.aldica.repo.ignite.binary.AuthorityEntityBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedPermissionEntity"
+        class="org.aldica.repo.ignite.binary.PermissionEntityBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedSimpleAccessControlList"
+        class="org.aldica.repo.ignite.binary.SimpleAccessControlListBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedSimpleAccessControlListProperties"
+        class="org.aldica.repo.ignite.binary.SimpleAccessControlListPropertiesBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedSimpleAccessControlEntry"
+        class="org.aldica.repo.ignite.binary.SimpleAccessControlEntryBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedSimplePermissionReference"
+        class="org.aldica.repo.ignite.binary.SimplePermissionReferenceBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeAspects"
+        class="org.aldica.repo.ignite.binary.NodeAspectsBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.serializer.alfresco.optimisedNodeProperties"
+        class="org.aldica.repo.ignite.binary.NodePropertiesBinarySerializer" />
+
+    <bean id="Configuration.${moduleId}.core.binary.binaryTypeConfigurationBeanEmitter"
+        class="${aldica.ignite-common.basePackage}.spring.BinaryTypeConfigurationBeanDefinitionEmitter">
+        <property name="enabled" value="true" />
+        <property name="propertyPrefix" value="${moduleId}.core.binary.type." />
+        <property name="binaryConfigurationBeanDefinitionName">
+            <idref bean="Configuration.${moduleId}.core.binary" />
+        </property>
+        <property name="binaryTypeConfigurationBeanDefinitionNamePrefix" value="Configuration.${moduleId}.core.binary.type." />
+        <property name="instanceNameProperty" value="${moduleId}.core.name" />
+        <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper">
+            <bean class="org.springframework.util.PropertyPlaceholderHelper">
+                <constructor-arg name="placeholderPrefix" value="{" />
+                <constructor-arg name="placeholderSuffix" value="}" />
+                <constructor-arg name="valueSeparator" value=":" />
+                <constructor-arg name="ignoreUnresolvablePlaceholders" value="false" />
+            </bean>
+        </property>
+    </bean>
+
+</beans>

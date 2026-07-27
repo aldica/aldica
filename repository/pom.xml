@@ -18,27 +18,10 @@
 
     <properties>
         <project.basePackage>org.aldica.repo.ignite</project.basePackage>
-
-        <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>de.acosix.alfresco.rest.client</groupId>
-                <artifactId>de.acosix.alfresco.rest.client</artifactId>
-                <version>${acosix.alfresco.client.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>de.acosix.alfresco.rest.client</groupId>
-                <artifactId>de.acosix.alfresco.rest.client</artifactId>
-                <version>${acosix.alfresco.client.version}</version>
-                <classifier>tests</classifier>
-                <scope>test</scope>
-            </dependency>
-
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>${aldica.ignite-common.artifactId}</artifactId>
@@ -106,40 +89,8 @@
         </dependency>
 
         <dependency>
-            <groupId>de.acosix.alfresco.utility</groupId>
-            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
-            <classifier>installable</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.orderofthebee.support-tools</groupId>
-            <artifactId>support-tools-repo</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxb-provider</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jackson2-provider</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>de.acosix.alfresco.rest.client</groupId>
-            <artifactId>de.acosix.alfresco.rest.client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>de.acosix.alfresco.rest.client</groupId>
-            <artifactId>de.acosix.alfresco.rest.client</artifactId>
-            <classifier>tests</classifier>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
         </dependency>
 
         <dependency>
@@ -162,171 +113,6 @@
             <artifactId>easymock</artifactId>
         </dependency>
     </dependencies>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-
-                <!-- some image customisations -->
-                <!-- Maven + docker-maven-plugin result in somewhat weird inheritance handling -->
-                <!-- (relying on positional order of images for overrides) -->
-                <plugin>
-                    <groupId>io.fabric8</groupId>
-                    <artifactId>docker-maven-plugin</artifactId>
-                    <configuration>
-                        <sourceDirectory>src/test/docker</sourceDirectory>
-                        <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
-                        <images>
-                            <image>
-                                <!-- no change to postgres image (first image in parent POM) -->
-                            </image>
-                            <image>
-                                <run>
-                                    <!-- override JAVA_OPTS -->
-                                    <env>
-                                        <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.repositoryCommonJavaOpts}
-                                            -D${moduleId}.core.local.host=repository
-                                        ]]></JAVA_OPTS>
-                                    </env>
-                                    <!-- add log directory mount to just the contentstore -->
-                                    <!-- (cannot be done in parent POM due to hard requirement on specific project structure -->
-                                    <volumes>
-                                        <bind>
-                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
-                                            <volume>${project.build.directory}/docker/repository-1-logs:/usr/local/tomcat/logs</volume>
-                                        </bind>
-                                    </volumes>
-                                </run>
-                            </image>
-                            <image>
-                                <!-- no customisation to Share image (3rd image in parent POM) -->
-                                <!-- we don't use Share in this sub-module -->
-                            </image>
-                            <image>
-                                <!-- no customisation to SOLR image (4th image in parent POM) -->
-                                <!-- we don't use SOLR in this sub-module -->
-                            </image>
-                            <image>
-                                <!-- add second Repository instance -->
-                                <name>${moduleId}-repository-test</name>
-                                <alias>repository-2</alias>
-                                <build>
-                                    <skip>true</skip>
-                                </build>
-                                <run>
-                                    <skip>${docker.tests.skipRepositoryImage}</skip>
-                                    <hostname>repository-2</hostname>
-                                    <env>
-                                        <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.repositoryCommonJavaOpts}
-                                            -D${moduleId}.core.local.host=repository-2
-                                        ]]></JAVA_OPTS>
-                                    </env>
-                                    <ports>
-                                        <port>${docker.tests.repositoryPort2}:8080</port>
-                                        <port>${docker.tests.repositoryDebugPort2}:${docker.tests.repositoryDebugPort}</port>
-                                    </ports>
-                                    <network>
-                                        <mode>custom</mode>
-                                        <name>${moduleId}-test</name>
-                                        <alias>repository-2</alias>
-                                    </network>
-                                    <volumes>
-                                        <bind>
-                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
-                                            <volume>${project.build.directory}/docker/repository-2-logs:/usr/local/tomcat/logs</volume>
-                                        </bind>
-                                    </volumes>
-                                    <dependsOn>
-                                        <container>postgres</container>
-                                    </dependsOn>
-                                    <wait>
-                                        <http>
-                                            <url>http://localhost:${docker.tests.repositoryPort2}/alfresco/favicon.ico</url>
-                                            <method>GET</method>
-                                            <status>200</status>
-                                        </http>
-                                        <time>${docker.tests.repositoryStartupWaitTime}</time>
-                                    </wait>
-                                </run>
-                            </image>
-                            <image>
-                                <!-- and add third Repository, as previously some issues (like IGNITE-11352) have only shown up with more than two active instances -->
-                                <name>${moduleId}-repository-test</name>
-                                <alias>repository-3</alias>
-                                <build>
-                                    <skip>true</skip>
-                                </build>
-                                <run>
-                                    <skip>${docker.tests.skipRepositoryImage}</skip>
-                                    <hostname>repository-3</hostname>
-                                    <env>
-                                        <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.repositoryCommonJavaOpts}
-                                            -D${moduleId}.core.local.host=repository-3
-                                        ]]></JAVA_OPTS>
-                                    </env>
-                                    <ports>
-                                        <port>${docker.tests.repositoryPort3}:8080</port>
-                                        <port>${docker.tests.repositoryDebugPort3}:${docker.tests.repositoryDebugPort}</port>
-                                    </ports>
-                                    <network>
-                                        <mode>custom</mode>
-                                        <name>${moduleId}-test</name>
-                                        <alias>repository-3</alias>
-                                    </network>
-                                    <volumes>
-                                        <bind>
-                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
-                                            <volume>${project.build.directory}/docker/repository-3-logs:/usr/local/tomcat/logs</volume>
-                                        </bind>
-                                    </volumes>
-                                    <dependsOn>
-                                        <container>postgres</container>
-                                    </dependsOn>
-                                    <wait>
-                                        <http>
-                                            <url>http://localhost:${docker.tests.repositoryPort3}/alfresco/favicon.ico</url>
-                                            <method>GET</method>
-                                            <status>200</status>
-                                        </http>
-                                        <time>${docker.tests.repositoryStartupWaitTime}</time>
-                                    </wait>
-                                </run>
-                            </image>
-                        </images>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <argLine><![CDATA[
-                            -Xmx512M
-                            -Dfile.encoding=UTF-8
-                            -Djava.net.preferIPv4Stack=true
-                            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
-                            -DIGNITE_QUIET=true
-                            -DIGNITE_NO_ASCII=true
-                            -DIGNITE_UPDATE_NOTIFIER=false
-                            -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
-                        ]]></argLine>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
-        <plugins>
-            <!-- Explicitly enable Docker use (can't be done in Acosix parent POM without enabling it for all POMs,
-                even if Docker use is not relevant, e.g. in intermediate parent POMs) -->
-            <plugin>
-                <groupId>io.fabric8</groupId>
-                <artifactId>docker-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-
-    </build>
 
     <profiles>
         <profile>

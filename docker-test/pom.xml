@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+ <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.aldica</groupId>
+        <artifactId>aldica-parent</artifactId>
+        <version>1.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>aldica-docker-test</artifactId>
+    <name>Alternative/Alfresco Distributed Cache - Docker Test Module</name>
+    <description>Docker Compose-based integration tests for Ignite-based distributed caching and data grid capabilities</description>
+
+    <properties>
+        <project.basePackage>org.aldica.repo.ignite</project.basePackage>
+        <moduleId>aldica-docker-test</moduleId>
+        <baseModuleId>aldica</baseModuleId>
+
+        <!-- compatible with Alfresco rest client dependency -->
+        <jackson.version>2.9.8</jackson.version>
+        <resteasy.version>3.6.3.Final</resteasy.version>
+
+        <docker.tests.repository.dependency.artifactIds>de.acosix.alfresco.utility.repo,aldica-repo-ignite,support-tools-repo</docker.tests.repository.dependency.artifactIds>
+        <docker.tests.share.dependency.artifactIds>de.acosix.alfresco.utility.share,aldica-share-ignite,support-tools-share</docker.tests.share.dependency.artifactIds>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.utility</groupId>
+                <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+                <version>${acosix.utility.version}</version>
+                <type>amp</type>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.utility</groupId>
+                <artifactId>de.acosix.alfresco.utility.share</artifactId>
+                <version>${acosix.utility.version}</version>
+                <type>amp</type>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>aldica-repo-ignite</artifactId>
+                <version>${project.version}</version>
+                <type>amp</type>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>aldica-repo-ignite-companion</artifactId>
+                <version>${project.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>aldica-share-ignite</artifactId>
+                <version>${project.version}</version>
+                <type>amp</type>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+            <dependency>
+                <groupId>org.orderofthebee.support-tools</groupId>
+                <artifactId>support-tools-repo</artifactId>
+                <classifier>amp</classifier>
+                <version>${ootbee.support-tools.version}</version>
+                <type>amp</type>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+            <dependency>
+                <groupId>org.orderofthebee.support-tools</groupId>
+                <artifactId>support-tools-share</artifactId>
+                <classifier>amp</classifier>
+                <version>${ootbee.support-tools.version}</version>
+                <type>amp</type>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.rest.client</groupId>
+                <artifactId>de.acosix.alfresco.rest.client</artifactId>
+                <version>${acosix.alfresco.client.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>de.acosix.alfresco.rest.client</groupId>
+                <artifactId>de.acosix.alfresco.rest.client</artifactId>
+                <version>${acosix.alfresco.client.version}</version>
+                <classifier>tests</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>${micrometer.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${micrometer.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+    
+    <dependencies>
+
+        <dependency>
+            <groupId>org.alfresco</groupId>
+            <artifactId>alfresco-remote-api</artifactId>
+            <exclusions>
+                <!-- xmlfactory and cxf mess with resteasy / JAX-RS in integration tests -->
+                <!-- opencmis exclusion excludes various transitive cxf inclusions -->
+                <!-- none of these are needed for this specific addon -->
+                <exclusion>
+                    <groupId>org.alfresco</groupId>
+                    <artifactId>alfresco-xmlfactory</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.chemistry.opencmis</groupId>
+                    <artifactId>chemistry-opencmis-client-impl</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.chemistry.opencmis</groupId>
+                    <artifactId>chemistry-opencmis-server-bindings</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.cxf</groupId>
+                    <artifactId>cxf-rt-rs-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.utility</groupId>
+            <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+            <type>amp</type>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.utility</groupId>
+            <artifactId>de.acosix.alfresco.utility.share</artifactId>
+            <type>amp</type>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>aldica-repo-ignite</artifactId>
+            <type>amp</type>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>aldica-repo-ignite-companion</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>aldica-share-ignite</artifactId>
+            <type>amp</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.orderofthebee.support-tools</groupId>
+            <artifactId>support-tools-repo</artifactId>
+            <classifier>amp</classifier>
+            <type>amp</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.orderofthebee.support-tools</groupId>
+            <artifactId>support-tools-share</artifactId>
+            <classifier>amp</classifier>
+            <type>amp</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxb-provider</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson2-provider</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.rest.client</groupId>
+            <artifactId>de.acosix.alfresco.rest.client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.acosix.alfresco.rest.client</groupId>
+            <artifactId>de.acosix.alfresco.rest.client</artifactId>
+            <classifier>tests</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+
+        <pluginManagement>
+            <plugins>
+
+                <plugin>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <configuration>
+                        <argLine><![CDATA[
+                            -Dalfresco.host1.port=${alfresco.repo.docker.port}
+                            -Dalfresco.host2.port=${alfresco.repo.docker.port2}
+                        ]]></argLine>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>copyDockerITCompanionDependencies</id>
+                            <phase>generate-test-resources</phase>
+                            <goals>
+                                <goal>copy-dependencies</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/docker/companion</outputDirectory>
+                                <includeTypes>jar</includeTypes>
+                                <includeArtifactIds>aldica-repo-ignite-companion</includeArtifactIds>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>startDockerBeforeIT</id>
+                            <phase>pre-integration-test</phase>
+                            <goals>
+                                <goal>exec</goal>
+                            </goals>
+                            <configuration>
+                                <executable>docker</executable>
+                                <arguments>
+                                    <argument>compose</argument>
+                                    <argument>-f</argument>
+                                    <argument>${project.build.directory}/docker/docker-compose.yaml</argument>
+                                    <argument>up</argument>
+                                    <argument>-d</argument>
+                                    <argument>--wait</argument>
+                                    <argument>--wait-timeout</argument>
+                                    <argument>180</argument>
+                                    <argument>${moduleId}-repository-1</argument>
+                                    <argument>${moduleId}-repository-2</argument>
+                                    <argument>${moduleId}-share-1</argument>
+                                    <argument>${moduleId}-share-2</argument>
+                                </arguments>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>startDockerBeforeIT-Remainder</id>
+                            <phase>pre-integration-test</phase>
+                            <goals>
+                                <goal>exec</goal>
+                            </goals>
+                            <configuration>
+                                <executable>docker</executable>
+                                <arguments>
+                                    <argument>compose</argument>
+                                    <argument>-f</argument>
+                                    <argument>${project.build.directory}/docker/docker-compose.yaml</argument>
+                                    <argument>up</argument>
+                                    <argument>-d</argument>
+                                    <argument>--wait</argument>
+                                    <argument>--wait-timeout</argument>
+                                    <argument>180</argument>
+                                </arguments>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <artifactId>maven-toolchains-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>acs-26</id>
+            <properties>
+                <alfresco.repo.docker.version>26.1.0</alfresco.repo.docker.version>
+                <alfresco.repo.docker.java.version>21</alfresco.repo.docker.java.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>acs-25</id>
+            <properties>
+                <alfresco.repo.docker.version>25.3.0</alfresco.repo.docker.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>acs-23</id>
+            <properties>
+                <alfresco.repo.docker.version>23.3.0</alfresco.repo.docker.version>
+            </properties>
+        </profile>
+    </profiles>
+</project>

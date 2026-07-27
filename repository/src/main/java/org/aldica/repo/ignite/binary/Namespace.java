@@ -73,8 +73,7 @@ public enum Namespace
     CMIS_EXT_MODEL(CMISMapping.CMIS_EXT_URI),
     QUICKSHARE_MODEL(QuickShareModel.QSHARE_MODEL_1_0_URI),
     SOLR_FACET_MODEL(SolrFacetModel.SOLR_FACET_MODEL_URL),
-    SOLR_FACET_CUSTOM_PROPERTY(SolrFacetModel.SOLR_FACET_CUSTOM_PROPERTY_URL),
-    CUSTOM(null);
+    SOLR_FACET_CUSTOM_PROPERTY(SolrFacetModel.SOLR_FACET_CUSTOM_PROPERTY_URL);
 
     private static final Map<String, Namespace> LOOKUP = new HashMap<>();
     static
@@ -91,7 +90,7 @@ public enum Namespace
 
     private final String uri;
 
-    private Namespace(final String uri)
+    Namespace(final String uri)
     {
         this.uri = uri;
     }
@@ -108,13 +107,13 @@ public enum Namespace
      * Retrieves the enumeration literal corresponding to the provided cache region name.
      *
      * @param uri
-     *            the namespace URI for which to retrieve the literal
-     * @return the literal matching the namespace URI - will never be {@code null} and fall back to {@link #CUSTOM} for any namespace URI
-     *         not matching the well known predefined Alfresco namespace
+     *     the namespace URI for which to retrieve the literal
+     * @return the literal matching the namespace URI - {@code null} for any namespace URI not matching the well known predefined Alfresco
+     * namespace
      */
     public static Namespace getLiteral(final String uri)
     {
-        final Namespace literal = LOOKUP.getOrDefault(uri, CUSTOM);
+        final Namespace literal = LOOKUP.get(uri);
         return literal;
     }
 }

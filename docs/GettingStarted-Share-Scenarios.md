@@ -1,6 +1,6 @@
 # Getting Started: Alfresco Share Configuration Scenarios
 
-The configuration for Alfresco Share uses the non-standard configuration file share-global.properties provided by the Acosix Utility module. This configuration file can be placed in the *tomcat/shared/classes* directory just like the alfresco-global.properties file for Alfresco Content Services. 
+The configuration for Alfresco Share uses the non-standard configuration file `share-global.properties` provided by the Acosix Utility module. This configuration file can be placed in the `&lt;tomcatPath&gt;/shared/classes/` directory just like the alfresco-global.properties file for Alfresco Content Services, or any other path that may have been added to the Share web application's classpath root. 
 
 ## Trivial: running on a single node
 
@@ -44,9 +44,8 @@ The following configuration parameters have different default values in Alfresco
 In environments where two or more instances of Share are running, it is _required_ to use
 sticky sessions in the load balancer running in front of Share. Session stickyness will ensure
 that all requests to Share endpoints will be routed to the same instance of Share (for a given
-session) running behind the
-load balancer. This can for example be accomplished as described below for Apache, Nginx and 
-Nginx-Ingress (Kubernetes), respectively.
+session) running behind the load balancer. This can for example be accomplished as described
+below for Apache or Nginx, respectively.
 
 ### Apache
 
@@ -95,24 +94,3 @@ http {
 
 }
 ```
-
-### Nginx-Ingress (Kubernetes)
-
-Alfrescos [acs-deployment](https://github.com/Alfresco/acs-deployment.git) project provides a
-Kubernetes Ingress example
-[here](https://github.com/Alfresco/acs-deployment/blob/master/helm/alfresco-content-services/templates/ingress-share.yaml).
-The important lines to note regarding stickyness are these lines in the `annotations` section:
-```
-nginx.ingress.kubernetes.io/affinity: "cookie"
-nginx.ingress.kubernetes.io/session-cookie-name: "alfrescoShare"
-nginx.ingress.kubernetes.io/session-cookie-path: "/share"
-nginx.ingress.kubernetes.io/session-cookie-max-age: "604800"
-nginx.ingress.kubernetes.io/session-cookie-expires: "604800"
-```
-The extra annotation
-```
-nginx.ingress.kubernetes.io/affinity-mode: "persistent"
-```
-can also be set. The [documentation](https://kubernetes.github.io/ingress-nginx/examples/affinity/cookie/)
-states "The affinity mode defines how sticky a session is. Use balanced to redistribute some sessions when
-scaling pods or persistent for maximum stickyness".

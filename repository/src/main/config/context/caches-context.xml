@@ -21,10 +21,11 @@
                 <value>cacheFactory</value>
                 <value>lockStoreFactory</value>
                 <value>node</value>
-                <value>immutableEntitySharedCache</value>
+                <value>immutableEntityCache</value>
             </list>
         </property>
         <property name="propertiesSource" ref="global-properties" />
+        <property name="placeholderHelper" ref="acosix-utility-core.nonStrictPlaceholderHelper" />
     </bean>
 
     <bean id="${moduleId}-nodeAspectsCacheValueTransformer" class="${project.basePackage}.cache.NodeAspectsTransformer" />

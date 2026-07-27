@@ -18,29 +18,70 @@
     <properties>
         <project.basePackage>org.aldica.repo.ignite</project.basePackage>
         <moduleId>aldica-mem-bm</moduleId>
-        <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
+        <baseModuleId>aldica</baseModuleId>
+        <aldica.version>${project.version}</aldica.version>
 
-        <!-- optional switch to different base image (6.2.0 Enterprise in this case) -->
-        <!--
-        <docker.tests.repositoryBaseImage>alfresco/alfresco-content-repository:6.2.0</docker.tests.repositoryBaseImage>
-         -->
+        <docker.tests.repository.dependency.artifactIds>de.acosix.alfresco.utility.repo,aldica-repo-ignite,support-tools-repo</docker.tests.repository.dependency.artifactIds>
+        <alfresco.repo.docker.java.version>17</alfresco.repo.docker.java.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+
             <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>aldica-repo-ignite</artifactId>
-                <version>${project.version}</version>
+                <groupId>de.acosix.alfresco.utility</groupId>
+                <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+                <version>${acosix.utility.version}</version>
+                <type>amp</type>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>aldica-repo-ignite</artifactId>
-                <version>${project.version}</version>
-                <classifier>installable</classifier>
-                <scope>test</scope>
+                <version>${aldica.version}</version>
+                <type>amp</type>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
+
+            <dependency>
+                <groupId>org.orderofthebee.support-tools</groupId>
+                <artifactId>support-tools-repo</artifactId>
+                <classifier>amp</classifier>
+                <version>${ootbee.support-tools.version}</version>
+                <type>amp</type>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>${micrometer.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${micrometer.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -72,191 +113,60 @@
         </dependency>
 
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>aldica-repo-ignite</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>aldica-repo-ignite</artifactId>
-            <classifier>installable</classifier>
+            <groupId>com.thedeanda</groupId>
+            <artifactId>lorem</artifactId>
+            <version>2.2</version>
         </dependency>
 
         <dependency>
             <groupId>de.acosix.alfresco.utility</groupId>
-            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
+            <artifactId>de.acosix.alfresco.utility.repo</artifactId>
+            <type>amp</type>
         </dependency>
 
         <dependency>
-            <groupId>de.acosix.alfresco.utility</groupId>
-            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
-            <classifier>installable</classifier>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>aldica-repo-ignite</artifactId>
+            <type>amp</type>
         </dependency>
 
         <dependency>
             <groupId>org.orderofthebee.support-tools</groupId>
             <artifactId>support-tools-repo</artifactId>
+            <classifier>amp</classifier>
+            <type>amp</type>
         </dependency>
 
         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client</artifactId>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxb-provider</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jackson2-provider</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.thedeanda</groupId>
-            <artifactId>lorem</artifactId>
-            <version>2.1</version>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
     </dependencies>
 
-    <build>
-        <pluginManagement>
-            <plugins>
-
-                <!-- some image customisations -->
-                <!-- Maven + docker-maven-plugin result in somewhat weird inheritance handling -->
-                <!-- (relying on positional order of images for overrides) -->
-                <plugin>
-                    <groupId>io.fabric8</groupId>
-                    <artifactId>docker-maven-plugin</artifactId>
-                    <configuration>
-                        <sourceDirectory>src/test/docker</sourceDirectory>
-                        <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
-                        <images>
-                            <image>
-                                <!-- no change to postgres image (first image in parent POM) -->
-                            </image>
-                            <image>
-                                <run>
-                                    <!-- override JAVA_OPTS -->
-                                    <env>
-                                        <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.igniteCommonJavaOpts}
-                                            -Dmessaging.broker.url=vm://localhost?broker.persistent=false
-                                            -Ddb.driver=org.postgresql.Driver
-                                            -Ddb.username=alfresco
-                                            -Ddb.password=alfresco
-                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
-                                            -Dsolr.host=search
-                                            -Dsolr.port=${docker.tests.internalSearchPort}
-                                            -Dsolr.secureComms=none
-                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
-                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
-                                            -Dcsrf.filter.enabled=false
-                                            -Xms4g -Xmx4g
-                                            -Daldica.core.enabled=true
-                                        ]]></JAVA_OPTS>
-                                    </env>
-                                    <!-- add log directory mount to just the contentstore -->
-                                    <!-- (cannot be done in parent POM due to hard requirement on specific project structure -->
-                                    <volumes>
-                                        <bind>
-                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
-                                            <volume>${project.build.directory}/docker/repository-1-logs:/usr/local/tomcat/logs</volume>
-                                        </bind>
-                                    </volumes>
-                                </run>
-                            </image>
-                            <image>
-                                <!-- no customisation to Share image (3rd image in parent POM) -->
-                                <!-- we don't use Share in this sub-module -->
-                            </image>
-                            <image>
-                                <!-- no customisation to SOLR image (4th image in parent POM) -->
-                                <!-- we don't use SOLR in this sub-module -->
-                            </image>
-                            <image>
-                                <!-- add another Repository image with Ignite disabled (default caching) -->
-                                <name>${moduleId}-repository-test</name>
-                                <alias>repository-2</alias>
-                                <build>
-                                    <skip>true</skip>
-                                </build>
-                                <run>
-                                    <skip>${docker.tests.skipRepositoryImage}</skip>
-                                    <hostname>repository-2</hostname>
-                                    <env>
-                                        <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.igniteCommonJavaOpts}
-                                            -Dmessaging.broker.url=vm://localhost?broker.persistent=false
-                                            -Ddb.driver=org.postgresql.Driver
-                                            -Ddb.username=alfresco
-                                            -Ddb.password=alfresco
-                                            -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
-                                            -Dsolr.host=search
-                                            -Dsolr.port=${docker.tests.internalSearchPort}
-                                            -Dsolr.secureComms=none
-                                            -Dsolr.base.url=${docker.tests.searchBaseUrl}
-                                            -Dindex.subsystem.name=${docker.tests.searchSubsystem}
-                                            -Dcsrf.filter.enabled=false
-                                            -Xms6g -Xmx6g
-                                            -Daldica.core.enabled=false
-                                        ]]></JAVA_OPTS>
-                                    </env>
-                                    <ports>
-                                        <port>${docker.tests.repositoryPort2}:8080</port>
-                                        <port>${docker.tests.repositoryDebugPort2}:${docker.tests.repositoryDebugPort}</port>
-                                    </ports>
-                                    <network>
-                                        <mode>custom</mode>
-                                        <name>${moduleId}-test</name>
-                                        <alias>repository-2</alias>
-                                    </network>
-                                    <volumes>
-                                        <bind>
-                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
-                                            <volume>${project.build.directory}/docker/repository-2-logs:/usr/local/tomcat/logs</volume>
-                                        </bind>
-                                    </volumes>
-                                    <dependsOn>
-                                        <container>postgres</container>
-                                    </dependsOn>
-                                    <wait>
-                                        <http>
-                                            <url>http://localhost:${docker.tests.repositoryPort2}/alfresco/favicon.ico</url>
-                                            <method>GET</method>
-                                            <status>200</status>
-                                        </http>
-                                        <time>${docker.tests.repositoryStartupWaitTime}</time>
-                                    </wait>
-                                </run>
-                            </image>
-                        </images>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
-        <plugins>
-            <!-- Explicitly enable Docker use (can't be done in Acosix parent POM without enabling it for all POMs,
-                even if Docker use is not relevant, e.g. in intermediate parent POMs) -->
-            <plugin>
-                <groupId>io.fabric8</groupId>
-                <artifactId>docker-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-
-    </build>
-
+    <profiles>
+        <profile>
+            <id>acs-26</id>
+            <properties>
+                <alfresco.repo.docker.version>26.1.0</alfresco.repo.docker.version>
+                <alfresco.repo.docker.java.version>21</alfresco.repo.docker.java.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>acs-25</id>
+            <properties>
+                <alfresco.repo.docker.version>25.3.0</alfresco.repo.docker.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>acs-23</id>
+            <properties>
+                <alfresco.repo.docker.version>23.3.0</alfresco.repo.docker.version>
+            </properties>
+        </profile>
+    </profiles>
 </project>

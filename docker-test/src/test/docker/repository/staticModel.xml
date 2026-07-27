@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- xsi:schemaLocation="http://www.alfresco.org/model/dictionary/1.0 modelSchema.xsd" -->
+<model name="stat:staticModel" xmlns="http://www.alfresco.org/model/dictionary/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <imports>
+        <import uri="http://www.alfresco.org/model/dictionary/1.0" prefix="d" />
+        <import uri="http://www.alfresco.org/model/content/1.0" prefix="cm" />
+    </imports>
+
+    <namespaces>
+        <namespace uri="http://aldica.org/static/model/1.0" prefix="stat" />
+    </namespaces>
+
+    <types>
+        <type name="stat:content">
+            <parent>cm:content</parent>
+            <properties>
+                <property name="stat:meta">
+                    <type>d:text</type>
+                    <mandatory>false</mandatory>
+                    <index enabled="true">
+                        <atomic>false</atomic>
+                        <stored>false</stored>
+                        <tokenised>both</tokenised>
+                        <facetable>true</facetable>
+                    </index>
+                </property>
+            </properties>
+        </type>
+    </types>
+
+    <aspects>
+        <aspect name="stat:marker" />
+    </aspects>
+</model>

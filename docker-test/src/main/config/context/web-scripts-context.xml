@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <bean id="${moduleId}-prometheusMeterRegistry" class="${project.basePackage}.spring.PrometheusMeterRegistryFactoryBean" />
+
+    <bean id="webscript.org.aldica.ignite.prometheusMetrics.get" class="${project.basePackage}.web.scripts.PrometheusMetricsGet"
+        parent="webscript">
+        <property name="meterRegistry" ref="${moduleId}-prometheusMeterRegistry" />
+    </bean>
+
+</beans>

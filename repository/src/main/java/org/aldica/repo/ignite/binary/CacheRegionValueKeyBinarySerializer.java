@@ -3,17 +3,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.aldica.repo.ignite.binary;
 
-import java.lang.reflect.Field;
+import java.io.Serializable;
 
 import org.alfresco.repo.cache.lookup.CacheRegionValueKey;
 import org.alfresco.repo.cache.lookup.EntityLookupCache;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Instances of this class handle (de-)serialisations of {@link EntityLookupCache entity lookup} {@link CacheRegionValueKey cache region
@@ -22,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
  *
  * @author Axel Faust
  */
-public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
+public class CacheRegionValueKeyBinarySerializer extends AbstractKeyBinarySerializer<CacheRegionValueKey>
 {
 
     private static final String CACHE_REGION_TYPE = "cacheRegionType";
@@ -31,39 +32,19 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
 
     private static final String CACHE_VALUE_KEY = "cacheValueKey";
 
-    private static final Field CACHE_REGION_FIELD;
+    private static short MASK_DEFAULT_REGIONS = 0x1f;
 
-    private static final Field CACHE_VALUE_KEY_FIELD;
+    private static short FLAG_CUSTOM_REGION = 0x20;
 
-    private static final Field HASH_CODE_FIELD;
+    private static final long CACHE_REGION_FIELD_OFFSET = getFieldOffset(CacheRegionValueKey.class, CACHE_REGION, String.class);
 
-    static
+    private static final long CACHE_VALUE_KEY_FIELD_OFFSET = getFieldOffset(CacheRegionValueKey.class, CACHE_VALUE_KEY, Serializable.class);
+
+    private static final long HASH_CODE_FIELD_OFFSET = getFieldOffset(CacheRegionValueKey.class, "hashCode", int.class);
+
+    public CacheRegionValueKeyBinarySerializer()
     {
-        try
-        {
-            CACHE_REGION_FIELD = CacheRegionValueKey.class.getDeclaredField(CACHE_REGION);
-            CACHE_VALUE_KEY_FIELD = CacheRegionValueKey.class.getDeclaredField(CACHE_VALUE_KEY);
-            HASH_CODE_FIELD = CacheRegionValueKey.class.getDeclaredField("hashCode");
-
-            CACHE_REGION_FIELD.setAccessible(true);
-            CACHE_VALUE_KEY_FIELD.setAccessible(true);
-            HASH_CODE_FIELD.setAccessible(true);
-        }
-        catch (final NoSuchFieldException nsfe)
-        {
-            throw new RuntimeException("Failed to initialise reflective field accessors", nsfe);
-        }
-    }
-
-    protected boolean useRawSerialForm = false;
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
+        super(CacheRegionValueKey.class);
     }
 
     /**
@@ -71,101 +52,118 @@ public class CacheRegionValueKeyBinarySerializer implements BinarySerializer
      * {@inheritDoc}
      */
     @Override
-    public void writeBinary(final Object obj, final BinaryWriter writer) throws BinaryObjectException
+    protected void writeRawSerialForm(final CacheRegionValueKey cacheRegionValueKey, final BinaryWriterEx rawWriter)
+            throws BinaryObjectException
     {
-        final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(CacheRegionValueKey.class))
+        final String cacheRegion = (String) GridUnsafe.getObjectField(cacheRegionValueKey, CACHE_REGION_FIELD_OFFSET);
+        final Serializable cacheValueKey = (Serializable) GridUnsafe.getObjectField(cacheRegionValueKey, CACHE_VALUE_KEY_FIELD_OFFSET);
+
+        final BinaryOutputStream out = rawWriter.out();
+
+        short flags = 0;
+
+        final int startPos = out.position();
+        out.unsafeEnsure(2);
+        out.position(startPos + 2);
+
+        final CacheRegion literal = CacheRegion.getLiteral(cacheRegion);
+        if (literal != null)
         {
-            throw new BinaryObjectException(cls + " is not supported by this serializer");
-        }
-
-        try
-        {
-            final String cacheRegion = (String) CACHE_REGION_FIELD.get(obj);
-            final Object cacheValueKey = CACHE_VALUE_KEY_FIELD.get(obj);
-
-            final CacheRegion literal = CacheRegion.getLiteral(cacheRegion);
-
-            if (this.useRawSerialForm)
-            {
-                final BinaryRawWriter rawWriter = writer.rawWriter();
-                rawWriter.writeByte((byte) literal.ordinal());
-                if (literal == CacheRegion.CUSTOM)
-                {
-                    rawWriter.writeString(cacheRegion);
-                }
-                rawWriter.writeObject(cacheValueKey);
-            }
-            else
-            {
-                writer.writeByte(CACHE_REGION_TYPE, (byte) literal.ordinal());
-                if (literal == CacheRegion.CUSTOM)
-                {
-                    writer.writeString(CACHE_REGION, cacheRegion);
-                }
-                writer.writeObject(CACHE_VALUE_KEY, cacheValueKey);
-            }
-        }
-        catch (final IllegalAccessException iae)
-        {
-            throw new BinaryObjectException("Failed to retrieve fields to write", iae);
-        }
-    }
-
-    /**
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void readBinary(final Object obj, final BinaryReader reader) throws BinaryObjectException
-    {
-        final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(CacheRegionValueKey.class))
-        {
-            throw new BinaryObjectException(cls + " is not supported by this serializer");
-        }
-
-        String cacheRegion = null;
-        CacheRegion literal;
-        Object cacheValueKey;
-
-        if (this.useRawSerialForm)
-        {
-            final BinaryRawReader rawReader = reader.rawReader();
-
-            final byte literalOrdinal = rawReader.readByte();
-            literal = CacheRegion.values()[literalOrdinal];
-            if (literal == CacheRegion.CUSTOM)
-            {
-                cacheRegion = rawReader.readString();
-            }
-            cacheValueKey = rawReader.readObject();
+            flags |= (short) literal.ordinal();
         }
         else
         {
-            final byte literalOrdinal = reader.readByte(CACHE_REGION_TYPE);
-            literal = CacheRegion.values()[literalOrdinal];
-            if (literal == CacheRegion.CUSTOM)
-            {
-                cacheRegion = reader.readString(CACHE_REGION);
-            }
-            cacheValueKey = reader.readObject(CACHE_VALUE_KEY);
+            flags |= FLAG_CUSTOM_REGION;
         }
 
-        cacheRegion = cacheRegion != null ? cacheRegion : literal.getCacheRegionName();
+        if (literal == null)
+        {
+            this.writeString(cacheRegion, out);
+        }
 
-        try
-        {
-            CACHE_REGION_FIELD.set(obj, cacheRegion);
-            CACHE_VALUE_KEY_FIELD.set(obj, cacheValueKey);
-            // reconstruct the hash code
-            HASH_CODE_FIELD.set(obj, Integer
-                    .valueOf((cacheRegion != null ? cacheRegion.hashCode() : 0) + (cacheValueKey != null ? cacheValueKey.hashCode() : 0)));
-        }
-        catch (final IllegalAccessException iae)
-        {
-            throw new BinaryObjectException("Failed to write deserialised field values", iae);
-        }
+        flags |= this.writeKey(cacheValueKey, rawWriter, out);
+
+        final int endPos = out.position();
+        out.position(startPos);
+        out.unsafeWriteShort(flags);
+        out.position(endPos);
     }
 
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void writeRegularSerialForm(final CacheRegionValueKey cacheRegionValueKey, final BinaryWriter writer)
+    {
+        final String cacheRegion = (String) GridUnsafe.getObjectField(cacheRegionValueKey, CACHE_REGION_FIELD_OFFSET);
+        final Serializable cacheValueKey = (Serializable) GridUnsafe.getObjectField(cacheRegionValueKey, CACHE_VALUE_KEY_FIELD_OFFSET);
+
+        final CacheRegion literal = CacheRegion.getLiteral(cacheRegion);
+        if (literal != null)
+        {
+            writer.writeByte(CACHE_REGION_TYPE, (byte) literal.ordinal());
+        }
+        else
+        {
+            writer.writeString(CACHE_REGION, cacheRegion);
+        }
+        writer.writeObject(CACHE_VALUE_KEY, cacheValueKey);
+    }
+
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void readRawSerialForm(final CacheRegionValueKey cacheRegionValueKey, final BinaryRawReader rawReader)
+            throws BinaryObjectException
+    {
+        final String cacheRegion;
+        final Serializable cacheValueKey;
+
+        final short flags = rawReader.readShort();
+
+        if ((flags & FLAG_CUSTOM_REGION) != 0)
+        {
+            cacheRegion = this.readString(rawReader);
+        }
+        else
+        {
+            final int ordinal = (flags & MASK_DEFAULT_REGIONS);
+            final CacheRegion literal = CacheRegion.values()[ordinal];
+            cacheRegion = literal.getCacheRegionName();
+        }
+
+        cacheValueKey = this.readKey(rawReader, flags);
+
+        GridUnsafe.putObjectField(cacheRegionValueKey, CACHE_REGION_FIELD_OFFSET, cacheRegion);
+        GridUnsafe.putObjectField(cacheRegionValueKey, CACHE_VALUE_KEY_FIELD_OFFSET, cacheValueKey);
+        GridUnsafe.putIntField(cacheRegionValueKey, HASH_CODE_FIELD_OFFSET, cacheRegion.hashCode() + cacheValueKey.hashCode());
+    }
+
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void readRegularSerialForm(final CacheRegionValueKey cacheRegionValueKey, final BinaryReader reader)
+            throws BinaryObjectException
+    {
+        String cacheRegion;
+        final Serializable cacheValueKey;
+
+        cacheRegion = reader.readString(CACHE_REGION);
+        if (cacheRegion == null)
+        {
+            final byte literalOrdinal = reader.readByte(CACHE_REGION_TYPE);
+            final CacheRegion literal = CacheRegion.values()[literalOrdinal];
+            cacheRegion = literal.getCacheRegionName();
+        }
+        cacheValueKey = reader.readObject(CACHE_VALUE_KEY);
+
+        GridUnsafe.putObjectField(cacheRegionValueKey, CACHE_REGION_FIELD_OFFSET, cacheRegion);
+        GridUnsafe.putObjectField(cacheRegionValueKey, CACHE_VALUE_KEY_FIELD_OFFSET, cacheValueKey);
+        GridUnsafe.putIntField(cacheRegionValueKey, HASH_CODE_FIELD_OFFSET, cacheRegion.hashCode() + cacheValueKey.hashCode());
+    }
 }

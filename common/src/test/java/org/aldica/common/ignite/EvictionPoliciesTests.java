@@ -41,7 +41,7 @@ public class EvictionPoliciesTests extends GridTestsBase
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final MemoryCountingEvictionPolicyFactory<Long, String> evictionPolicyFactory = new MemoryCountingEvictionPolicyFactory<>();
             cacheConfig.setOnheapCacheEnabled(true);
@@ -94,7 +94,7 @@ public class EvictionPoliciesTests extends GridTestsBase
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final LruEvictionPolicyFactory<Long, String> evictionPolicyFactory = new LruEvictionPolicyFactory<>();
             evictionPolicyFactory.setMaxSize(90);
@@ -181,7 +181,7 @@ public class EvictionPoliciesTests extends GridTestsBase
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final LruEvictionPolicyFactory<Long, String> evictionPolicyFactory = new LruEvictionPolicyFactory<>();
             evictionPolicyFactory.setMaxSize(90);
@@ -269,7 +269,7 @@ public class EvictionPoliciesTests extends GridTestsBase
 
             final CacheConfiguration<Long, Long> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final LruEvictionPolicyFactory<Long, Long> evictionPolicyFactory = new LruEvictionPolicyFactory<>();
             evictionPolicyFactory.setMaxMemorySize(memoryLimit);
@@ -349,7 +349,7 @@ public class EvictionPoliciesTests extends GridTestsBase
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final FifoEvictionPolicyFactory<Long, String> evictionPolicyFactory = new FifoEvictionPolicyFactory<>();
             evictionPolicyFactory.setMaxSize(90);
@@ -436,7 +436,7 @@ public class EvictionPoliciesTests extends GridTestsBase
 
             final CacheConfiguration<Long, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final FifoEvictionPolicyFactory<Long, String> evictionPolicyFactory = new FifoEvictionPolicyFactory<>();
             evictionPolicyFactory.setMaxSize(90);
@@ -524,7 +524,7 @@ public class EvictionPoliciesTests extends GridTestsBase
 
             final CacheConfiguration<Long, Long> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final FifoEvictionPolicyFactory<Long, Long> evictionPolicyFactory = new FifoEvictionPolicyFactory<>();
             evictionPolicyFactory.setMaxMemorySize(memoryLimit);

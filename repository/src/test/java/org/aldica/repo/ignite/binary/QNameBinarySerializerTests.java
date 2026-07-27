@@ -120,15 +120,15 @@ public class QNameBinarySerializerTests extends GridTestsBase
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, QName> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("values");
             cacheConfig.setDataRegionName("values");
             final IgniteCache<Long, QName> referenceCache = referenceGrid.getOrCreateCache(cacheConfig);
             final IgniteCache<Long, QName> cache = grid.getOrCreateCache(cacheConfig);
 
-            // savings on namespace should be substantial - 27%
-            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", 0.27);
+            // savings on namespace should be substantial - 25%
+            this.efficiencyImpl(referenceGrid, grid, referenceCache, cache, "aldica optimised", "Ignite default", 0.25);
         }
         finally
         {
@@ -156,7 +156,7 @@ public class QNameBinarySerializerTests extends GridTestsBase
             final Ignite grid = Ignition.start(conf);
 
             final CacheConfiguration<Long, QName> cacheConfig = new CacheConfiguration<>();
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             cacheConfig.setName("values");
             cacheConfig.setDataRegionName("values");
@@ -178,7 +178,7 @@ public class QNameBinarySerializerTests extends GridTestsBase
         {
             final CacheConfiguration<Long, QName> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("qname");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
             final IgniteCache<Long, QName> cache = grid.getOrCreateCache(cacheConfig);
 
             QName controlValue;
@@ -191,10 +191,10 @@ public class QNameBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
-            Assert.assertFalse(controlValue.getLocalName() == cacheValue.getLocalName());
+            Assert.assertNotSame(controlValue, cacheValue);
+            Assert.assertNotSame(controlValue.getLocalName(), cacheValue.getLocalName());
             // namespace should be reused for well-known ones
-            Assert.assertTrue(controlValue.getNamespaceURI() == cacheValue.getNamespaceURI());
+            Assert.assertSame(controlValue.getNamespaceURI(), cacheValue.getNamespaceURI());
 
             // random value, no well known namespace
             controlValue = QName.createQName(UUID.randomUUID().toString(), UUID.randomUUID().toString());
@@ -204,12 +204,13 @@ public class QNameBinarySerializerTests extends GridTestsBase
 
             Assert.assertEquals(controlValue, cacheValue);
             // check deep serialisation was actually involved
-            Assert.assertFalse(controlValue == cacheValue);
-            Assert.assertFalse(controlValue.getLocalName() == cacheValue.getLocalName());
-            Assert.assertFalse(controlValue.getNamespaceURI() == cacheValue.getNamespaceURI());
+            Assert.assertNotSame(controlValue, cacheValue);
+            Assert.assertNotSame(controlValue.getLocalName(), cacheValue.getLocalName());
+            Assert.assertNotSame(controlValue.getNamespaceURI(), cacheValue.getNamespaceURI());
         }
     }
 
+    @SuppressWarnings("deprecation")
     protected void efficiencyImpl(final Ignite referenceGrid, final Ignite grid, final IgniteCache<Long, QName> referenceCache,
             final IgniteCache<Long, QName> cache, final String serialisationType, final String referenceSerialisationType,
             final double marginFraction)

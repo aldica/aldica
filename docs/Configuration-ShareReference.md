@@ -70,7 +70,6 @@ These properties should generally not need to be set / modified. They refer to v
 | aldica.core.asyncCallbackThreadPoolSize | ``1`` | Number of threads in the Ignite async callback thread pool, responsible for processing asynchronous callback - aldica in its current state does not use async callbacks either directly or indirectly, so this is set extremely low instead of the ``Math.max(8, #available_proc_count)`` default value (setting a value of ``0`` is not supported) |
 | aldica.core.managementThreadPoolSize | ``4`` | Number of threads in the Ignite management pool, responsible for processing internal / visor compute jobs (setting a value of ``0`` is not supported) |
 | aldica.core.peerClassLoadingThreadPoolSize | ``1`` | Number of threads in the Ignite async callback thread pool, responsible for processing loading of classes from remote servers - aldica in its current state disallows peer class loading, so this is set even lower than the default value of ``2`` (setting a value of ``0`` is not supported) |
-| aldica.core.igfsThreadPoolSize | ``1`` | Number of threads in the Ignite file system pool, responsible for processing outgoing Ignite file system messages - aldica in its current state does not use the distributed Ignite file system either directly or indirectly, so this is set lower than the default value of ``#available_proc_count`` (setting a value of ``0`` is not supported) |
 | aldica.core.dataStreamerThreadPoolSize | ``${aldica.core.publicThreadPoolSize}`` | Number of threads in the Ignite data streamer pool, responsible for processing data stream messages - default Ignite would actually use ``Math.max(8, #available_proc_count)`` without this property (setting a value of ``0`` is not supported) |
 | aldica.core.utilityCacheThreadPoolSize | ``${aldica.core.publicThreadPoolSize}`` | Number of threads in the Ignite utility pool, responsible for processing utility cache messages - default Ignite would actually use ``Math.max(8, #available_proc_count)`` without this property (setting a value of ``0`` is not supported) |
 | aldica.core.queryThreadPoolSize | ``1`` | Number of threads in the Ignite query pool, responsible for processing query messages - aldica in its current state does not use the distributed queries either directly or indirectly, so this is set significantly lower than the default value of ``Math.max(8, #available_proc_count)`` (setting a value of ``0`` is not supported) |
@@ -89,8 +88,7 @@ The following configuration properties affect Ignite-backed cache instances. Thi
 | aldica.webSessionCache.cacheName | ``servlet.webSesssionCache`` | The unique name / identifier of the cache, which must be identical on all active servers in the data grid |
 | aldica.webSessionCache.retriesOnFailure | ``2`` | The number of retries that should be attempted when retrieving / storing a web session |
 | aldica.webSessionCache.retriesTimeout | ``5000`` | The timeout (in ms) between retries that should be attempted when retrieving / storing a web session |
-| aldica.webSessionCache.keepBinary | ``true`` | Flag to control whether the cache should keep / use the serialised form of the web session across all cache tiers of Ignite (on-heap, off-heap) |
-| aldica.webSessionCache.cacheMode | ``REPLICATED`` | The mode of the web session cache - defaults to ``REPLICATED`` for the best possible read performance (as HTTP sessions are rarely modified on the Alfresco Repository tier) and least chance for data loss in case of a sudden failure of a data grid member |
+| aldica.webSessionCache.cacheMode | ``REPLICATED`` | The mode of the web session cache - defaults to ``REPLICATED`` for the best possible read performance and least chance for data loss in case of a sudden failure of a data grid member |
 | aldica.webSessionCache.backups | ``1`` | The number of backups to keep for each partition of the cache |
 | aldica.webSessionCache.maxSize | ``10000`` | The maximum amount of session to keep in the on-heap cache | 
 
@@ -107,7 +105,6 @@ The configuration of the web session cache requires a change to the default Alfr
 | aldica.webSessionCache.cacheName | ``servlet.webSessionCache`` | The name of the Ignite cache to instantiate for the feature |
 | aldica.webSessionCache.retriesOnFailure | ``2`` | The number of retries that should be attempted when a cache operation affecting a session failed |
 | aldica.webSessionCache.retriesTimeout | ``5000`` | The number of milliseconds before a retry cache operation affecting a session will timeout |
-| aldica.webSessionCache.keepBinary | ``true`` | Technical flag to specify whether the Ignite backed cache should keep the internal binary representation on all internal layers - should never need to be changed |
 | aldica.webSessionCache.cacheMode | ``REPLICATED`` | The mode in which the Ignite cache should operate - no other cache mode makes sense for the use case of a distributed web session cache, so this should never need to be changed |
 | aldica.webSessionCache.maxSize | ``10000`` | The limit of session objects to hold in the on-heap cache |
 | aldica.webSessionCache.partitionsCount | ``32`` | The number of partitions that should be used to split the data of the Ignite cache - since there is no global ``aldica.caches.partitionsCount`` property in Share like there is for the Repository (the web session cache is the only Ignite cache actually used in Share), this is set directly on the cache; the value should generally be significantly higher than the number of servers in a data grid |
@@ -115,6 +112,24 @@ The configuration of the web session cache requires a change to the default Alfr
 ### _web.xml_ Changes
 
 The web session cache requires an additional web filter to be defined and registered on a global level before any of the default filters defined by Alfresco. This configuration change is not possible via a Web Fragment, and so requires explicit change of the _web.xml_ file. The following configuration snippets need to be added to the file - it is important that the &lt;filter-mapping&gt; section be added before any similar sections of the default file.
+
+```xml
+<filter>
+    <filter-name>WebSessionCacheFilter</filter-name>
+    <filter-class>org.springframework.extensions.webscripts.servlet.BeanProxyFilter</filter-class>
+    <init-param>
+        <param-name>beanName</param-name>
+        <param-value>aldica-webSessionCacheFilter</param-value>
+    </init-param>
+</filter>
+
+<filter-mapping>
+    <filter-name>WebSessionCacheFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+</filter-mapping>
+```
+
+In versions prior to 1.1.0, the relevant section would be defined as follows:
 
 ```xml
 <filter>

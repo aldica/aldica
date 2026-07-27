@@ -41,8 +41,7 @@ public enum CacheRegion
     PROPERTY_DOUBLE_VALUE("PropertyDoubleVlaue"),
     PROPERTY_SERIALIZABLE_VALUE("PropertySerializableValue"),
     PROPERTY_VALUE("PropertyValue"),
-    PROPERTY("Property"),
-    CUSTOM(null);
+    PROPERTY("Property");
 
     private static final Map<String, CacheRegion> LOOKUP = new HashMap<>();
     static
@@ -59,7 +58,7 @@ public enum CacheRegion
 
     private final String cacheRegionName;
 
-    private CacheRegion(final String cacheRegionName)
+    CacheRegion(final String cacheRegionName)
     {
         this.cacheRegionName = cacheRegionName;
     }
@@ -76,13 +75,13 @@ public enum CacheRegion
      * Retrieves the enumeration literal corresponding to the provided cache region name.
      *
      * @param cacheRegion
-     *            the name of the cache region for which to retrieve the literal
-     * @return the literal matching the cache region name - will never be {@code null} and fall back to {@link #CUSTOM} for any cache region
-     *         name not matching the well known predefined Alfresco cache regions
+     *     the name of the cache region for which to retrieve the literal
+     * @return the literal matching the cache region name - {@code null} for any cache region name not matching the well known predefined
+     * Alfresco cache regions
      */
     public static CacheRegion getLiteral(final String cacheRegion)
     {
-        final CacheRegion literal = LOOKUP.getOrDefault(cacheRegion, CUSTOM);
+        final CacheRegion literal = LOOKUP.get(cacheRegion);
         return literal;
     }
 }

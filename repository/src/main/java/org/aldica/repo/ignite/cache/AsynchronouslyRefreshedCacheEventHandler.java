@@ -18,6 +18,8 @@ import org.alfresco.util.transaction.TransactionSupportUtil;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -61,7 +63,7 @@ public class AsynchronouslyRefreshedCacheEventHandler extends TransactionListene
 
     /**
      * @param registry
-     *            the registry to set
+     *     the registry to set
      */
     public void setRegistry(final AsynchronouslyRefreshedCacheRegistry registry)
     {
@@ -70,7 +72,7 @@ public class AsynchronouslyRefreshedCacheEventHandler extends TransactionListene
 
     /**
      * @param instanceName
-     *            the instanceName to set
+     *     the instanceName to set
      */
     public void setInstanceName(final String instanceName)
     {
@@ -79,7 +81,7 @@ public class AsynchronouslyRefreshedCacheEventHandler extends TransactionListene
 
     /**
      * @param topicName
-     *            the topicName to set
+     *     the topicName to set
      */
     public void setTopicName(final String topicName)
     {
@@ -109,6 +111,10 @@ public class AsynchronouslyRefreshedCacheEventHandler extends TransactionListene
                 if (event instanceof RefreshableCacheEvent)
                 {
                     LOGGER.debug("Received refreshable cache event {}", event);
+
+                    // we don't detach from Ignite messaging thread
+                    // expensive caches (AuthorityBridgeTable...) should internally detach
+
                     // only to the listeners interested in the specific cache
                     // (should be the cache itself, and definitely not us)
                     this.registry.broadcastEvent((RefreshableCacheEvent) event, false);
@@ -162,7 +168,7 @@ public class AsynchronouslyRefreshedCacheEventHandler extends TransactionListene
             final ClusterGroup remotes = ignite.cluster().forRemotes().forServers();
             if (!remotes.nodes().isEmpty())
             {
-                ignite.message(remotes).send(this.topicName, refreshableCacheEvent);
+                this.doSendEvent(ignite, remotes, refreshableCacheEvent);
             }
         }
     }
@@ -181,7 +187,7 @@ public class AsynchronouslyRefreshedCacheEventHandler extends TransactionListene
             final ClusterGroup remotes = ignite.cluster().forRemotes().forServers();
             if (!remotes.nodes().isEmpty())
             {
-                queuedEvents.forEach(event -> ignite.message(remotes).send(this.topicName, event));
+                queuedEvents.forEach(event -> this.doSendEvent(ignite, remotes, event));
             }
         }
     }
@@ -194,7 +200,23 @@ public class AsynchronouslyRefreshedCacheEventHandler extends TransactionListene
     public String getCacheId()
     {
         // no interest in any particular cache - want to catch events for "any" cache
-        return null;
+        // must provide a cacheId or else there'll be a NPE doing registry.broadcastEvent(..., false);
+        return AsynchronouslyRefreshedCacheEventHandler.class.getName();
     }
 
+    private void doSendEvent(final Ignite ignite, final ClusterGroup remotes, final RefreshableCacheEvent event)
+    {
+        for (final ClusterNode node : remotes.nodes())
+        {
+            // send individually so we can catch errors and ensure best-effort sending
+            try
+            {
+                ignite.message(remotes.forNode(node)).send(this.topicName, event);
+            }
+            catch (final ClusterTopologyException ex)
+            {
+                LOGGER.warn("Failed sending refreshable cache event {} - {}", event, ex.getMessage());
+            }
+        }
+    }
 }

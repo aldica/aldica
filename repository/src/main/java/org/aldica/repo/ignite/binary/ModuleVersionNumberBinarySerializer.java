@@ -4,16 +4,16 @@
 package org.aldica.repo.ignite.binary;
 
 import java.io.Externalizable;
-import java.lang.reflect.Field;
 
 import org.alfresco.repo.module.ModuleVersionNumber;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 
 /**
@@ -24,36 +24,16 @@ import org.apache.maven.artifact.versioning.ComparableVersion;
  *
  * @author Axel Faust
  */
-public class ModuleVersionNumberBinarySerializer implements BinarySerializer
+public class ModuleVersionNumberBinarySerializer extends AbstractBinarySerializer<ModuleVersionNumber>
 {
 
     private static final String VERSION = "version";
 
-    private static final Field DELEGATE_FIELD;
+    private static final long DELEGATE_FIELD_OFFSET = getFieldOffset(ModuleVersionNumber.class, "delegate", ComparableVersion.class);
 
-    static
+    public ModuleVersionNumberBinarySerializer()
     {
-        try
-        {
-            DELEGATE_FIELD = ModuleVersionNumber.class.getDeclaredField("delegate");
-
-            DELEGATE_FIELD.setAccessible(true);
-        }
-        catch (final NoSuchFieldException nsfe)
-        {
-            throw new RuntimeException("Failed to initialise reflective field accessors", nsfe);
-        }
-    }
-
-    protected boolean useRawSerialForm = false;
-
-    /**
-     * @param useRawSerialForm
-     *            the useRawSerialForm to set
-     */
-    public void setUseRawSerialForm(final boolean useRawSerialForm)
-    {
-        this.useRawSerialForm = useRawSerialForm;
+        super(ModuleVersionNumber.class);
     }
 
     /**
@@ -61,25 +41,10 @@ public class ModuleVersionNumberBinarySerializer implements BinarySerializer
      * {@inheritDoc}
      */
     @Override
-    public void writeBinary(final Object obj, final BinaryWriter writer) throws BinaryObjectException
+    protected void writeRawSerialForm(final ModuleVersionNumber moduleVersion, final BinaryWriterEx rawWriter)
     {
-        final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(ModuleVersionNumber.class))
-        {
-            throw new BinaryObjectException(cls + " is not supported by this serializer");
-        }
-
-        final String version = obj.toString();
-
-        if (this.useRawSerialForm)
-        {
-            final BinaryRawWriter rawWriter = writer.rawWriter();
-            rawWriter.writeString(version);
-        }
-        else
-        {
-            writer.writeString(VERSION, version);
-        }
+        final BinaryOutputStream out = rawWriter.out();
+        this.writeString(moduleVersion.toString(), out);
     }
 
     /**
@@ -87,26 +52,35 @@ public class ModuleVersionNumberBinarySerializer implements BinarySerializer
      * {@inheritDoc}
      */
     @Override
-    public void readBinary(final Object obj, final BinaryReader reader) throws BinaryObjectException
+    protected void writeRegularSerialForm(final ModuleVersionNumber moduleVersion, final BinaryWriter writer)
     {
-        final Class<? extends Object> cls = obj.getClass();
-        if (!cls.equals(ModuleVersionNumber.class))
-        {
-            throw new BinaryObjectException(cls + " is not supported by this serializer");
-        }
+        writer.writeString(VERSION, moduleVersion.toString());
+    }
 
-        final String version = this.useRawSerialForm ? reader.rawReader().readString() : reader.readString(VERSION);
-        // null will never occur, but technically possible
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void readRawSerialForm(final ModuleVersionNumber moduleVersion, final BinaryRawReader rawReader)
+    {
+        final String version = this.readString(rawReader);
         final ComparableVersion delegate = new ComparableVersion(version != null ? version : "");
 
-        try
-        {
-            DELEGATE_FIELD.set(obj, delegate);
-        }
-        catch (final IllegalAccessException iae)
-        {
-            throw new BinaryObjectException("Failed to write deserialised field values", iae);
-        }
+        GridUnsafe.putObjectField(moduleVersion, DELEGATE_FIELD_OFFSET, delegate);
+    }
+
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    protected void readRegularSerialForm(final ModuleVersionNumber moduleVersion, final BinaryReader reader)
+    {
+        final String version = reader.readString(VERSION);
+        final ComparableVersion delegate = new ComparableVersion(version != null ? version : "");
+
+        GridUnsafe.putObjectField(moduleVersion, DELEGATE_FIELD_OFFSET, delegate);
     }
 
 }

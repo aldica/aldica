@@ -1,0 +1,604 @@
+{
+  "transactions": {
+    "slowThresholdMillis": 2000,
+    "profilingIntervalMillis": 1000,
+    "captureThreadStats": true
+  },
+  "jvm": {
+    "maskSystemProperties": [
+      "*password*",
+      "*token*",
+      "*access*",
+      "*secret*"
+    ],
+    "maskMBeanAttributes": [
+      "*password*",
+      "*token*",
+      "*access*",
+      "*secret*"
+    ]
+  },
+  "uiDefaults": {
+    "defaultTransactionType": "Web",
+    "defaultPercentiles": [
+      50.0,
+      95.0,
+      99.0
+    ],
+    "defaultGaugeNames": [
+      "java.lang:type=Memory:HeapMemoryUsage.used"
+    ]
+  },
+  "advanced": {
+    "immediatePartialStoreThresholdSeconds": 60,
+    "maxTransactionAggregates": 500,
+    "maxQueryAggregates": 500,
+    "maxServiceCallAggregates": 500,
+    "maxTraceEntriesPerTransaction": 2000,
+    "maxProfileSamplesPerTransaction": 50000,
+    "mbeanGaugeNotFoundDelaySeconds": 60
+  },
+  "gauges": [
+    {
+      "mbeanObjectName": "java.lang:type=Memory",
+      "mbeanAttributes": [
+        {
+          "name": "HeapMemoryUsage.used"
+        }
+      ]
+    },
+    {
+      "mbeanObjectName": "java.lang:type=GarbageCollector,name=*",
+      "mbeanAttributes": [
+        {
+          "name": "CollectionCount",
+          "counter": true
+        },
+        {
+          "name": "CollectionTime",
+          "counter": true
+        }
+      ]
+    },
+    {
+      "mbeanObjectName": "java.lang:type=MemoryPool,name=*",
+      "mbeanAttributes": [
+        {
+          "name": "Usage.used"
+        }
+      ]
+    },
+    {
+      "mbeanObjectName": "java.lang:type=OperatingSystem",
+      "mbeanAttributes": [
+        {
+          "name": "FreePhysicalMemorySize"
+        },
+        {
+          "name": "ProcessCpuLoad"
+        },
+        {
+          "name": "SystemCpuLoad"
+        }
+      ]
+    }
+  ],
+  "plugins": [
+    {
+      "properties": {
+        "stackTraceThresholdMillis": 1000.0
+      },
+      "id": "cassandra"
+    },
+    {
+      "properties": {
+        "stackTraceThresholdMillis": 1000.0
+      },
+      "id": "elasticsearch"
+    },
+    {
+      "properties": {
+        "sessionUserAttribute": "",
+        "captureSessionAttributes": [ ],
+        "captureRequestParameters": [
+          "*"
+        ],
+        "maskRequestParameters": [
+          "*password*",
+          "*token*",
+          "*access*",
+          "*secret*"
+        ],
+        "captureRequestHeaders": [ ],
+        "captureResponseHeaders": [ ],
+        "traceErrorOn4xxResponseCode": false,
+        "captureRequestRemoteAddr": false,
+        "captureRequestRemoteHostname": false,
+        "captureRequestRemotePort": false,
+        "captureRequestLocalAddr": false,
+        "captureRequestLocalHostname": false,
+        "captureRequestLocalPort": false,
+        "captureRequestServerHostname": false,
+        "captureRequestServerPort": false
+      },
+      "id": "jakartaservlet"
+    },
+    {
+      "properties": {
+        "captureRequestHeaders": [ ],
+        "maskRequestHeaders": [
+          "Authorization"
+        ],
+        "captureRequestRemoteAddr": false,
+        "captureRequestRemoteHost": false,
+        "captureResponseHeaders": [ ],
+        "traceErrorOn4xxResponseCode": false
+      },
+      "id": "java-http-server"
+    },
+    {
+      "properties": {
+        "useAltTransactionNaming": false
+      },
+      "id": "jaxrs"
+    },
+    {
+      "properties": {
+        "captureBindParametersIncludes": [
+          ".*"
+        ],
+        "captureBindParametersExcludes": [ ],
+        "captureResultSetNavigate": true,
+        "captureResultSetGet": false,
+        "captureConnectionPoolLeaks": false,
+        "captureConnectionPoolLeakDetails": false,
+        "captureGetConnection": true,
+        "captureConnectionClose": false,
+        "capturePreparedStatementCreation": false,
+        "captureStatementClose": false,
+        "captureTransactionLifecycleTraceEntries": false,
+        "captureConnectionLifecycleTraceEntries": false,
+        "stackTraceThresholdMillis": 1000.0
+      },
+      "id": "jdbc"
+    },
+    {
+      "properties": {
+        "traceErrorOnErrorWithThrowable": true,
+        "traceErrorOnErrorWithoutThrowable": false,
+        "traceErrorOnWarningWithThrowable": false,
+        "traceErrorOnWarningWithoutThrowable": false
+      },
+      "id": "logger"
+    },
+    {
+      "properties": {
+        "stackTraceThresholdMillis": 1000.0
+      },
+      "id": "mongodb"
+    },
+    {
+      "properties": {
+        "useAltTransactionNaming": false
+      },
+      "id": "play"
+    },
+    {
+      "properties": {
+        "sessionUserAttribute": "",
+        "captureSessionAttributes": [ ],
+        "captureRequestParameters": [
+          "*"
+        ],
+        "maskRequestParameters": [
+          "*password*",
+          "*token*",
+          "*access*",
+          "*secret*"
+        ],
+        "captureRequestHeaders": [ ],
+        "captureResponseHeaders": [ ],
+        "traceErrorOn4xxResponseCode": false,
+        "captureRequestRemoteAddr": false,
+        "captureRequestRemoteHostname": false,
+        "captureRequestRemotePort": false,
+        "captureRequestLocalAddr": false,
+        "captureRequestLocalHostname": false,
+        "captureRequestLocalPort": false,
+        "captureRequestServerHostname": false,
+        "captureRequestServerPort": false
+      },
+      "id": "servlet"
+    },
+    {
+      "properties": {
+        "useAltTransactionNaming": false
+      },
+      "id": "spring"
+    }
+  ],
+  "instrumentation": [
+    {
+      "className": "org.alfresco.service.cmr.search.SearchService",
+      "methodName": "query",
+      "methodParameterTypes": [
+        "org.alfresco.service.cmr.repository.StoreRef",
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "SearchServiceQuery"
+    },
+    {
+      "className": "org.alfresco.repo.cache.TransactionalCache",
+      "methodName": "get",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "TxnCacheGet"
+    },
+    {
+      "className": "org.alfresco.repo.cache.TransactionalCache",
+      "methodName": "put",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "TxnCachePut"
+    },
+    {
+      "className": "org.alfresco.repo.cache.TransactionalCache",
+      "methodName": "putSharedCacheValue",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "TxnCachePutShared"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.NodePropertiesBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaNodePropertiesWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.NodeAspectsBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaNodeAspectsWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.ContentDataBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaContentDataWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.ContentUrlEntityBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaContentUrlWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.AclEntityBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaAclEntityWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.cache.SimpleIgniteBackedCache",
+      "methodName": "get",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaIgniteCacheGet"
+    },
+    {
+      "className": "org.aldica.repo.ignite.cache.SimpleIgniteBackedCache",
+      "methodName": "put",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaIgniteCachePut"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.AbstractBinarySerializer",
+      "methodName": "writeBinary",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaSerializerWriteBinary"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.NodePropertiesBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaNodePropertiesReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.NodeAspectsBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaNodeAspectsReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.ContentDataBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaContentDataReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.ContentUrlEntityBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaContentUrlReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.AclEntityBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaAclEntityReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.AbstractBinarySerializer",
+      "methodName": "readBinary",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaSerializerReadBinary"
+    },
+    {
+      "className": "org.alfresco.service.cmr.security.PermissionService",
+      "methodName": "hasReadPermission",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "PermissionServiceHasRead"
+    },
+    {
+      "className": "org.alfresco.service.cmr.repository.NodeService",
+      "methodName": "getProperties",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "NodeServiceGetProperties"
+    },
+    {
+      "className": "org.alfresco.service.cmr.repository.NodeService",
+      "methodName": "getProperty",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "NodeServiceGetProperty"
+    },
+    {
+      "className": "org.alfresco.service.cmr.repository.NodeService",
+      "methodName": "getAspects",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "NodeServiceGetAspects"
+    },
+    {
+      "className": "org.alfresco.service.cmr.repository.NodeService",
+      "methodName": "getType",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "NodeServiceGetType"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.CacheRegionKeyBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaCacheRegionKeyWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.CacheRegionKeyBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaCacheRegionKeyReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.CacheRegionValueKeyBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaCacheRegionValueKeyReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.CacheRegionKeyBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaCacheRegionValueKeyWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.TransactionalCacheRegionKeyBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaTxnCacheRegionKeyReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.TransactionalCacheRegionKeyBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaTxnCacheRegionKeyWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.NodeEntityBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaNodeEntityReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.NodeEntityBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaNodeEntityWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.NodeRefBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaNodeRefReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.NodeRefBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaNodeRefWriteRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.QNameBinarySerializer",
+      "methodName": "readRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaQNameReadRaw"
+    },
+    {
+      "className": "org.aldica.repo.ignite.binary.QNameBinarySerializer",
+      "methodName": "writeRawSerialForm",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "AldicaQNameWriteRaw"
+    },
+    {
+      "className": "org.alfresco.repo.search.impl.querymodel.impl.db.NodePermissionAssessor",
+      "methodName": "isIncluded",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "NodePermissionAssessorIsIncluded"
+    },
+    {
+      "className": "org.alfresco.service.cmr.security.PermissionService",
+      "methodName": "getReaders",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "PermissionServiceGetReaders"
+    },
+    {
+      "className": "org.alfresco.service.cmr.security.PermissionService",
+      "methodName": "getReadersDenied",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "order": 0,
+      "captureKind": "timer",
+      "timerName": "PermissionServiceGetReadersDenied"
+    }
+  ]
+}

@@ -18,10 +18,6 @@
 
     <properties>
         <project.basePackage>org.aldica.repo.ignite.companion</project.basePackage>
-
-        <acosix.alfresco.client.version>0.1.0</acosix.alfresco.client.version>
-        <docker.tests.companionBaseImage>openjdk:8-jdk-slim</docker.tests.companionBaseImage>
-        <docker.tests.skipCompanionImageBuild>false</docker.tests.skipCompanionImageBuild>
     </properties>
 
     <dependencyManagement>
@@ -72,33 +68,10 @@
             </dependency>
 
             <dependency>
-                <groupId>de.acosix.alfresco.rest.client</groupId>
-                <artifactId>de.acosix.alfresco.rest.client</artifactId>
-                <version>${acosix.alfresco.client.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>de.acosix.alfresco.rest.client</groupId>
-                <artifactId>de.acosix.alfresco.rest.client</artifactId>
-                <version>${acosix.alfresco.client.version}</version>
-                <classifier>tests</classifier>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>${aldica.ignite-common.artifactId}</artifactId>
                 <version>${project.version}</version>
                 <classifier>tests</classifier>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>${aldica.ignite-repo.artifactId}</artifactId>
-                <version>${project.version}</version>
-                <classifier>installable</classifier>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -114,54 +87,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${aldica.ignite-common.artifactId}</artifactId>
-            <classifier>tests</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${aldica.ignite-repo.artifactId}</artifactId>
-            <classifier>installable</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>de.acosix.alfresco.utility</groupId>
-            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>de.acosix.alfresco.utility</groupId>
-            <artifactId>de.acosix.alfresco.utility.core.repo</artifactId>
-            <classifier>installable</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.orderofthebee.support-tools</groupId>
-            <artifactId>support-tools-repo</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxb-provider</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jackson2-provider</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>de.acosix.alfresco.rest.client</groupId>
-            <artifactId>de.acosix.alfresco.rest.client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>de.acosix.alfresco.rest.client</groupId>
-            <artifactId>de.acosix.alfresco.rest.client</artifactId>
             <classifier>tests</classifier>
         </dependency>
 
@@ -304,10 +229,6 @@
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
-                        <excludes>
-                            <exclude>**/integration/*.java</exclude>
-                            <exclude>**/integration/**/*.java</exclude>
-                        </excludes>
                         <!-- Note: IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK is hopefully temporary until https://github.com/aldica/aldica/issues/39 is fixed upstream -->
                         <argLine><![CDATA[
                             -Xmx512M
@@ -320,96 +241,6 @@
                             -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true
                             -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true
                         ]]></argLine>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <artifactId>maven-failsafe-plugin</artifactId>
-                    <configuration>
-                        <includes>
-                            <include>**/integration/*.java</include>
-                            <include>**/integration/**/*.java</include>
-                        </includes>
-                    </configuration>
-                </plugin>
-
-                <!-- some image customisations -->
-                <!-- Maven + docker-maven-plugin result in somewhat weird inheritance handling -->
-                <!-- (relying on positional order of images for overrides) -->
-                <plugin>
-                    <groupId>io.fabric8</groupId>
-                    <artifactId>docker-maven-plugin</artifactId>
-                    <configuration>
-                        <sourceDirectory>src/test/docker</sourceDirectory>
-                        <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
-                        <images>
-                            <image>
-                                <!-- no change to postgres image (first image in parent POM) -->
-                            </image>
-                            <image>
-                                <run>
-                                    <!-- override JAVA_OPTS -->
-                                    <env>
-                                        <JAVA_OPTS><![CDATA[
-                                            ${docker.tests.repositoryCommonJavaOpts}
-                                            -D${moduleId}.core.local.host=repository
-                                            -D${moduleId}.core.public.host=${docker.tests.host.name}
-                                        ]]></JAVA_OPTS>
-                                    </env>
-                                    <ports>
-                                        <port>${docker.tests.repositoryPort}:8080</port>
-                                        <port>${docker.tests.repositoryDebugPort}:${docker.tests.repositoryDebugPort}</port>
-                                        <port>47100:47100</port>
-                                        <port>47110:47110</port>
-                                        <port>47120:47120</port>
-                                    </ports>
-                                    <!-- add log directory mount to just the contentstore -->
-                                    <!-- (cannot be done in parent POM due to hard requirement on specific project structure -->
-                                    <volumes>
-                                        <bind>
-                                            <volume>${moduleId}-repository-test-contentstore:/usr/local/tomcat/alf_data</volume>
-                                            <volume>${project.build.directory}/docker/repository-1-logs:/usr/local/tomcat/logs</volume>
-                                        </bind>
-                                    </volumes>
-                                </run>
-                            </image>
-                            <image>
-                                <!-- no change to share image (third image in parent POM) -->
-                            </image>
-                            <image>
-                                <!-- no change to search image (fourth image in parent POM) -->
-                            </image>
-                            <image>
-                                <!-- additional image - built solely for use in external start-stop test script -->
-                                <name>${moduleId}-companion-test</name>
-                                <alias>companion</alias>
-                                <build>
-                                    <from>${docker.tests.companionBaseImage}</from>
-                                    <skip>${docker.tests.skipCompanionImageBuild}</skip>
-                                    <assembly>
-                                        <inline>
-                                            <file>
-                                                <source>${project.build.directory}/${project.build.finalName}.jar</source>
-                                                <outputDirectory>.</outputDirectory>
-                                            </file>
-                                            <file>
-                                                <source>${project.build.directory}/${project.build.finalName}.jar</source>
-                                                <outputDirectory>.</outputDirectory>
-                                            </file>
-                                        </inline>
-                                    </assembly>
-                                    <workdir>/maven</workdir>
-                                    <cmd> 
-                                        <shell>java -Xms512M -Xmx512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${docker.tests.repositoryDebugPort2} -Dfile.encoding=UTF-8 -Djava.net.preferIPv4Stack=true -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true -DIGNITE_QUIET=true -DIGNITE_NO_ASCII=true -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_JVM_PAUSE_DETECTOR_DISABLED=true -DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true -jar ${project.build.finalName}.jar</shell>
-                                    </cmd>
-                                </build>
-                                <run>
-                                    <ports>
-                                        <port>${docker.tests.repositoryDebugPort2}:${docker.tests.repositoryDebugPort2}</port>
-                                    </ports>
-                                </run>
-                            </image>
-                        </images>
                     </configuration>
                 </plugin>
             </plugins>
@@ -463,204 +294,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
 
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-            </plugin>
-
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>RunIntegrationTestsWithDocker</id>
-            <activation>
-                <property>
-                    <name>docker.tests.enabled</name>
-                    <value>true</value>
-                </property>
-            </activation>
-
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.codehaus.mojo</groupId>
-                            <artifactId>build-helper-maven-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <phase>pre-integration-test</phase>
-                                    <goals>
-                                        <goal>local-ip</goal>
-                                    </goals>
-                                    <configuration>
-                                        <localIpProperty>docker.tests.host.ip</localIpProperty>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-
-                        <plugin>
-                            <groupId>org.codehaus.gmaven</groupId>
-                            <artifactId>groovy-maven-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <phase>pre-integration-test</phase>
-                                    <goals>
-                                        <goal>execute</goal>
-                                    </goals>
-                                    <configuration>
-                                        <source>
-                                            project.properties["docker.tests.host.name"] =
-                                            InetAddress.getLocalHost().getHostName().toLowerCase(Locale.ENGLISH)
-                                        </source>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-
-                        <plugin>
-                            <artifactId>maven-resources-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>processIntegrationTestDockerResources</id>
-                                    <phase>pre-integration-test</phase>
-                                    <goals>
-                                        <goal>copy-resources</goal>
-                                    </goals>
-                                    <configuration>
-                                        <outputDirectory>${project.build.directory}/docker</outputDirectory>
-                                        <resources>
-                                            <resource>
-                                                <directory>src/test/docker</directory>
-                                                <filtering>true</filtering>
-                                            </resource>
-                                        </resources>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-
-                        <plugin>
-                            <groupId>io.fabric8</groupId>
-                            <artifactId>docker-maven-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>build-test-image</id>
-                                    <phase>pre-integration-test</phase>
-                                    <goals>
-                                        <goal>build</goal>
-                                    </goals>
-                                </execution>
-                                <execution>
-                                    <id>start-test-containers</id>
-                                    <phase>pre-integration-test</phase>
-                                    <goals>
-                                        <goal>volume-create</goal>
-                                        <goal>start</goal>
-                                    </goals>
-                                </execution>
-                                <execution>
-                                    <id>stop-test-containers</id>
-                                    <phase>post-integration-test</phase>
-                                    <goals>
-                                        <goal>stop</goal>
-                                        <goal>remove</goal>
-                                        <goal>volume-remove</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                        </plugin>
-
-                        <plugin>
-                            <artifactId>maven-failsafe-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <goals>
-                                        <goal>integration-test</goal>
-                                        <goal>verify</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.codehaus.gmaven</groupId>
-                        <artifactId>groovy-maven-plugin</artifactId>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                    </plugin>
-
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>StartStopTestPreparations</id>
-
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <artifactId>maven-resources-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>processIntegrationTestDockerResources</id>
-                                    <phase>pre-integration-test</phase>
-                                    <goals>
-                                        <goal>copy-resources</goal>
-                                    </goals>
-                                    <configuration>
-                                        <outputDirectory>${project.build.directory}/docker</outputDirectory>
-                                        <resources>
-                                            <resource>
-                                                <directory>src/test/docker</directory>
-                                                <filtering>true</filtering>
-                                            </resource>
-                                        </resources>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-
-                        <plugin>
-                            <groupId>io.fabric8</groupId>
-                            <artifactId>docker-maven-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>build-test-image</id>
-                                    <phase>pre-integration-test</phase>
-                                    <goals>
-                                        <goal>build</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-
-                <plugins>
-
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
 </project>

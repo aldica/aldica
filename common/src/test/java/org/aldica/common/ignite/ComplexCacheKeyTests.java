@@ -217,7 +217,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
 
             final CacheConfiguration<String, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final LruEvictionPolicyFactory<String, String> evictionPolicyFactory = new LruEvictionPolicyFactory<>(1000);
             cacheConfig.setOnheapCacheEnabled(true);
@@ -265,7 +265,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
 
             final CacheConfiguration<String, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final Ignite grid = Ignition.start(conf);
 
@@ -308,7 +308,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
 
             final CacheConfiguration<CacheKeyWithOnlyHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final LruEvictionPolicyFactory<CacheKeyWithOnlyHashRelevantFields, String> evictionPolicyFactory = new LruEvictionPolicyFactory<>(
                     1000);
@@ -355,7 +355,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
 
             final CacheConfiguration<CacheKeyWithOnlyHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final Ignite grid = Ignition.start(conf);
 
@@ -397,7 +397,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
 
             final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final LruEvictionPolicyFactory<CacheKeyWithNonHashRelevantFields, String> evictionPolicyFactory = new LruEvictionPolicyFactory<>(
                     1000);
@@ -471,7 +471,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
 
             final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final LruEvictionPolicyFactory<CacheKeyWithNonHashRelevantFields, String> evictionPolicyFactory = new LruEvictionPolicyFactory<>(
                     1000);
@@ -531,7 +531,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
 
             final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final Ignite grid = Ignition.start(conf);
 
@@ -600,7 +600,7 @@ public class ComplexCacheKeyTests extends GridTestsBase
 
             final CacheConfiguration<CacheKeyWithNonHashRelevantFields, String> cacheConfig = new CacheConfiguration<>();
             cacheConfig.setName("testCache");
-            cacheConfig.setCacheMode(CacheMode.LOCAL);
+            cacheConfig.setCacheMode(CacheMode.REPLICATED);
 
             final Ignite grid = Ignition.start(conf);
 
